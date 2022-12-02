@@ -24,30 +24,39 @@ import (
 	"net/http"
 
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/sessionclient"
 	"github.com/gin-gonic/gin"
 )
 
+const sessionIdName = "sessionId"
+const cookieName = "pw_session_id"
+
 func sessionCookie(c *gin.Context) {
-	var session_id uint64
-	cookie, err := c.Cookie("pw_session_id")
+	var sessionId uint64
+	cookie, err := c.Cookie(cookieName)
 	if err == nil {
 		var id_bytes []byte
 		id_bytes, err = base64.StdEncoding.DecodeString(cookie)
 		if err == nil {
-			session_id = new(big.Int).SetBytes(id_bytes).Uint64()
+			sessionId = new(big.Int).SetBytes(id_bytes).Uint64()
 		} else {
-			c.AbortWithStatus(http.StatusInternalServerError)
+			sessionId = generateSessionCookie(c)
 		}
 	} else {
-		session_id, cookie = generateCookie()
-		c.SetCookie("pw_session_id", cookie, config.SessionTimeOut, "/", config.Domain, true, true)
+		sessionId = generateSessionCookie(c)
 	}
 
-	c.Set("session_id", session_id)
+	c.Set(sessionIdName, sessionId)
 }
 
-func generateCookie() (uint64, string) {
-	var session_id uint64
-	var cookie = base64.StdEncoding.EncodeToString(big.NewInt(int64(session_id)).Bytes())
-	return session_id, cookie
+func generateSessionCookie(c *gin.Context) uint64 {
+	sessionId, err := sessionclient.Generate()
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+	}
+
+	cookie := base64.StdEncoding.EncodeToString(big.NewInt(int64(sessionId)).Bytes())
+	c.SetCookie(cookieName, cookie, config.SessionTimeOut, "/", config.Domain, true, true)
+
+	return sessionId
 }

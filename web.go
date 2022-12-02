@@ -19,24 +19,35 @@
 package puzzleweb
 
 import (
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 )
 
-type Router struct {
-	engine gin.Engine
+type Widget interface {
+	LoadInto(*Site)
 }
 
-func Default() *Router {
+type Site struct {
+	Engine gin.Engine
+	Root   PageTree
+}
+
+func CreateSite() *Site {
 	engine := gin.Default()
-	engine.Use(sessionCookie)
-	return &Router{engine: *engine}
+
+	engine.LoadHTMLGlob(config.TemplatePath + "/*.html")
+
+	engine.Static("/static", config.StaticPath)
+
+	engine.Use(sessionCookie, manageSession)
+
+	root := MakePageTree("root")
+
+	engine.Use(initAriane(&root))
+
+	return &Site{Engine: *engine, Root: root}
 }
 
-func New(engine *gin.Engine) *Router {
-	engine.Use(sessionCookie)
-	return &Router{engine: *engine}
-}
-
-func (router *Router) Run() error {
-	return router.engine.Run()
+func (site *Site) Run() error {
+	return site.Engine.Run(":" + config.Port)
 }

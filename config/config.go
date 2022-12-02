@@ -19,14 +19,25 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 )
 
+const defaultSessionTimeOut = 1200
+
 var Domain string
+var Port string
+
+var LogConfig []byte
+
 var SessionTimeOut int
 
+var StaticPath string
+var TemplatePath string
+
 var SessionServiceAddr string
+var MarkdownServiceAddr string
 
 func init() {
 	Domain = os.Getenv("SITE_DOMAIN")
@@ -34,19 +45,51 @@ func init() {
 		Domain = "localhost"
 	}
 
+	Port = os.Getenv("SITE_PORT")
+	if Port == "" {
+		Port = "8080"
+	}
+
+	fileLogConfigPath := os.Getenv("LOG_CONFIG_PATH")
+	if fileLogConfigPath == "" {
+		LogConfig = make([]byte, 0)
+	} else {
+		var err error
+		LogConfig, err = os.ReadFile(fileLogConfigPath)
+		if err != nil {
+			fmt.Println("failed to read logging config file :", err)
+			LogConfig = make([]byte, 0)
+		}
+	}
+
 	sessionTimeOutStr := os.Getenv("SESSION_TIME_OUT")
 	if sessionTimeOutStr == "" {
-		SessionTimeOut = 1800
+		SessionTimeOut = defaultSessionTimeOut
 	} else {
 		var err error
 		SessionTimeOut, err = strconv.Atoi(sessionTimeOutStr)
 		if err != nil {
-			SessionTimeOut = 1800
+			SessionTimeOut = defaultSessionTimeOut
 		}
+	}
+
+	StaticPath = os.Getenv("STATIC_PATH")
+	if StaticPath == "" {
+		StaticPath = "static"
+	}
+
+	TemplatePath = os.Getenv("TEMPLATE_PATH")
+	if TemplatePath == "" {
+		TemplatePath = "templates"
 	}
 
 	SessionServiceAddr = os.Getenv("SESSION_SERVICE_ADDR")
 	if SessionServiceAddr == "" {
 		SessionServiceAddr = "localhost:50051"
+	}
+
+	MarkdownServiceAddr = os.Getenv("MARKDOWN_SERVICE_ADDR")
+	if MarkdownServiceAddr == "" {
+		MarkdownServiceAddr = "localhost:50051"
 	}
 }

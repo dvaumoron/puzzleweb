@@ -23,14 +23,19 @@ import "strings"
 type PageTree struct {
 	Name     string
 	SubPages []PageTree
+	Widget   Widget
 }
 
-func MakePageTree(name string) PageTree {
+func MakePage(name string) PageTree {
 	return PageTree{Name: name, SubPages: make([]PageTree, 0)}
 }
 
-func (pt *PageTree) AddSubPage(name string) {
-	pt.SubPages = append(pt.SubPages, MakePageTree(name))
+func (pt *PageTree) SetWidget(widget Widget) {
+	pt.Widget = widget
+}
+
+func (pt *PageTree) AddSubPage(page PageTree) {
+	pt.SubPages = append(pt.SubPages, page)
 }
 
 func (pt *PageTree) getSubPage(name string) *PageTree {

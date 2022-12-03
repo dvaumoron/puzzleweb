@@ -36,7 +36,10 @@ var SessionTimeOut int
 var StaticPath string
 var TemplatePath string
 
+const defaultServiceAddr = "localhost:50051"
+
 var SessionServiceAddr string
+var LoginServiceAddr string
 var MarkdownServiceAddr string
 
 func init() {
@@ -85,11 +88,16 @@ func init() {
 
 	SessionServiceAddr = os.Getenv("SESSION_SERVICE_ADDR")
 	if SessionServiceAddr == "" {
-		SessionServiceAddr = "localhost:50051"
+		SessionServiceAddr = defaultServiceAddr
+	}
+
+	LoginServiceAddr = os.Getenv("LOGIN_SERVICE_ADDR")
+	if LoginServiceAddr == "" {
+		LoginServiceAddr = defaultServiceAddr
 	}
 
 	MarkdownServiceAddr = os.Getenv("MARKDOWN_SERVICE_ADDR")
 	if MarkdownServiceAddr == "" {
-		MarkdownServiceAddr = "localhost:50051"
+		MarkdownServiceAddr = defaultServiceAddr
 	}
 }

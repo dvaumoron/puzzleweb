@@ -19,17 +19,20 @@
 package puzzleweb
 
 import (
+	"net/http"
+
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 )
 
 type Widget interface {
-	LoadInto(*Site)
+	LoadInto(gin.IRouter)
 }
 
 type Site struct {
-	Engine gin.Engine
-	Root   PageTree
+	Engine  gin.Engine
+	Root    PageTree
+	Page404 PageTree
 }
 
 func CreateSite() *Site {
@@ -38,16 +41,47 @@ func CreateSite() *Site {
 	engine.LoadHTMLGlob(config.TemplatePath + "/*.html")
 
 	engine.Static("/static", config.StaticPath)
+	const favicon = "/favicon.ico"
+	engine.StaticFile(favicon, config.StaticPath+favicon)
 
-	engine.Use(sessionCookie, manageSession)
+	engine.Use(manageSession)
 
-	root := MakePageTree("root")
+	root := MakePage("root")
+	page404 := MakePage("page404")
 
 	engine.Use(initAriane(&root))
 
-	return &Site{Engine: *engine, Root: root}
+	return &Site{Engine: *engine, Root: root, Page404: page404}
+}
+
+func (site *Site) AddPage(page PageTree) {
+	site.Root.AddSubPage(page)
 }
 
 func (site *Site) Run() error {
+	site.Engine.NoRoute()
+
 	return site.Engine.Run(":" + config.Port)
+}
+
+func initDisplay(c *gin.Context) gin.H {
+	ariane, _ := c.Get(arianeName)
+	names, _ := c.Get(subPagesName)
+	return gin.H{
+		arianeName:   ariane,
+		subPagesName: names,
+	}
+}
+
+type InfoAdder func(gin.H, *gin.Context)
+
+func AddNothing(data gin.H, c *gin.Context) {
+}
+
+func CreateHandlerFunc(tmplName string, adder InfoAdder) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		displayData := initDisplay(c)
+		adder(displayData, c)
+		c.HTML(http.StatusOK, tmplName, displayData)
+	}
 }

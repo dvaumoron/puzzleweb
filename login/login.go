@@ -20,45 +20,54 @@ package login
 
 import (
 	"fmt"
-	"net/http"
+	"net/url"
 
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/login/client"
 	"github.com/gin-gonic/gin"
 )
 
-type LoginPage struct {
+type loginWidget struct {
 	tmplName string
 }
 
 const LoginName = "login"
 const UserIdName = "userId"
 
-func (p *LoginPage) LoadInto(router gin.IRouter) {
-	router.GET("/", puzzleweb.CreateHandlerFunc(p.tmplName, func(data gin.H, c *gin.Context) {
-		if c.Query("error") != "" {
-			data["msg"] = ""
+func (w *loginWidget) LoadInto(router gin.IRouter) {
+	const redirectName = "redirect"
+	const prevUrlWithErrorName = "prevUrlWithError"
+	router.GET("/", puzzleweb.CreateTemplateHandler(w.tmplName, func(data gin.H, c *gin.Context) {
+		if errorMsg := c.Query("error"); errorMsg != "" {
+			data["errorMsg"] = errorMsg
 		}
-		data["redirect"] = c.Query("redirect")
-		url := c.Request.URL
+
+		redirectUrl := c.Query(redirectName)
+		if redirectUrl == "" {
+			redirectUrl = "/"
+		}
+		data[redirectName] = redirectUrl
+
+		currentUrl := c.Request.URL
 		var errorKey string
-		if len(url.Query()) == 0 {
+		if len(currentUrl.Query()) == 0 {
 			errorKey = "?error="
 		} else {
 			errorKey = "&error="
 		}
-		data["prevError"] = url.String() + errorKey
+		data[prevUrlWithErrorName] = currentUrl.String() + errorKey
 	}))
-	router.POST("/submit", func(c *gin.Context) {
+	router.POST("/submit", puzzleweb.CreateRedirectHandler(func(c *gin.Context) string {
 		login := c.PostForm(LoginName)
 		password := c.PostForm("password")
+		register := c.PostForm("register") == "true"
 
-		id, success, err := client.Validate(login, password)
+		id, success, err := client.VerifyOrRegister(login, password, register)
 		var errorMsg string
 		if err != nil {
 			errorMsg = err.Error()
 		} else if !success {
-			errorMsg = ""
+			errorMsg = "" // TODO
 		}
 
 		var target string
@@ -66,11 +75,46 @@ func (p *LoginPage) LoadInto(router gin.IRouter) {
 			session := puzzleweb.GetSession(c)
 			session.Store(LoginName, login)
 			session.Store(UserIdName, fmt.Sprint(id))
-			target = c.PostForm("redirect")
+			target = c.PostForm(redirectName)
 		} else {
-			target = c.PostForm("prevError")
+			target = c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
 		}
+		return target
+	}))
+	router.GET("/logout", puzzleweb.CreateRedirectHandler(func(c *gin.Context) string {
+		session := puzzleweb.GetSession(c)
+		session.Delete(LoginName)
+		session.Delete(UserIdName)
+		target := c.Query(redirectName)
+		if target == "" {
+			target = "/"
+		}
+		return target
+	}))
+}
 
-		c.Redirect(http.StatusFound, target)
-	})
+func wrapInitData(loginUrl string, logoutUrl string, idf puzzleweb.InitDataFunc) puzzleweb.InitDataFunc {
+	return func(c *gin.Context) gin.H {
+		data := idf(c)
+		escapedUrl := url.QueryEscape(c.Request.URL.Path)
+		if login := puzzleweb.GetSession(c).Load(LoginName); login == "" {
+			data["loginUrl"] = loginUrl + escapedUrl
+		} else {
+			data[LoginName] = login
+			data["logoutUrl"] = logoutUrl + escapedUrl
+		}
+		return data
+	}
+}
+
+func AddLoginPage(site *puzzleweb.Site, name string, tmplName string) {
+	p := puzzleweb.NewHiddenPage(name)
+	p.Widget = &loginWidget{tmplName: tmplName}
+
+	baseUrl := "/" + name
+	loginUrl := baseUrl + "?redirect="
+	logoutUrl := baseUrl + "/logout?redirect="
+	site.InitData = wrapInitData(loginUrl, logoutUrl, site.InitData)
+
+	site.AddPage(p)
 }

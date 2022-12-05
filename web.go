@@ -29,11 +29,16 @@ type Widget interface {
 	LoadInto(gin.IRouter)
 }
 
+type InitDataFunc func(c *gin.Context) gin.H
+
 type Site struct {
-	Engine  gin.Engine
-	Root    PageTree
-	Page404 PageTree
+	engine     *gin.Engine
+	root       *Page
+	Page404Url string
+	InitData   InitDataFunc
 }
+
+const siteName = "site"
 
 func CreateSite() *Site {
 	engine := gin.Default()
@@ -46,42 +51,66 @@ func CreateSite() *Site {
 
 	engine.Use(manageSession)
 
-	root := MakePage("root")
-	page404 := MakePage("page404")
+	site := &Site{
+		engine:     engine,
+		root:       NewStaticPage("root", "index.html"),
+		Page404Url: "/",
+		InitData:   initData,
+	}
 
-	engine.Use(initAriane(&root))
+	engine.Use(func(c *gin.Context) {
+		c.Set(siteName, site)
+	})
 
-	return &Site{Engine: *engine, Root: root, Page404: page404}
+	return site
 }
 
-func (site *Site) AddPage(page PageTree) {
-	site.Root.AddSubPage(page)
+func (site *Site) AddPage(page *Page) {
+	site.root.AddSubPage(page)
 }
 
 func (site *Site) Run() error {
-	site.Engine.NoRoute()
-
-	return site.Engine.Run(":" + config.Port)
+	engine := site.engine
+	site.root.Widget.LoadInto(engine)
+	engine.NoRoute(Found(site.Page404Url))
+	return engine.Run(":" + config.Port)
 }
 
-func initDisplay(c *gin.Context) gin.H {
-	ariane, _ := c.Get(arianeName)
-	names, _ := c.Get(subPagesName)
+func getSite(c *gin.Context) *Site {
+	siteAny, _ := c.Get(siteName)
+	return siteAny.(*Site)
+}
+
+func initData(c *gin.Context) gin.H {
+	page, path := getSite(c).root.extractPageAndPath(c.Request.URL.Path)
 	return gin.H{
-		arianeName:   ariane,
-		subPagesName: names,
+		"ariane":   extractAriane(path),
+		"subPages": page.extractSubPageNames(),
 	}
 }
 
 type InfoAdder func(gin.H, *gin.Context)
 
-func AddNothing(data gin.H, c *gin.Context) {
+func CreateTemplateHandler(tmplName string, adder InfoAdder) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		data := getSite(c).InitData(c)
+		adder(data, c)
+		c.HTML(http.StatusOK, tmplName, data)
+	}
 }
 
-func CreateHandlerFunc(tmplName string, adder InfoAdder) gin.HandlerFunc {
+func AddNothing(data gin.H, c *gin.Context) {}
+
+type Redirecter func(*gin.Context) string
+
+func CreateRedirectHandler(redirecter Redirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		displayData := initDisplay(c)
-		adder(displayData, c)
-		c.HTML(http.StatusOK, tmplName, displayData)
+		c.Redirect(http.StatusFound, redirecter(c))
+	}
+}
+
+func Found(target string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Redirect(http.StatusFound, target)
 	}
 }

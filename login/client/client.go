@@ -20,6 +20,8 @@ package client
 
 import (
 	"context"
+	"crypto/sha512"
+	"encoding/hex"
 	"time"
 
 	pb "github.com/dvaumoron/puzzleloginservice"
@@ -37,7 +39,14 @@ func createClient() (*grpc.ClientConn, pb.LoginClient, error) {
 	return conn, pb.NewLoginClient(conn), nil
 }
 
-func Validate(login, password string) (uint64, bool, error) {
+func salt(password string) string {
+	// TODO improve the security
+	sha512Hasher := sha512.New()
+	sha512Hasher.Write([]byte(password))
+	return hex.EncodeToString(sha512Hasher.Sum(nil))
+}
+
+func VerifyOrRegister(login string, password string, register bool) (uint64, bool, error) {
 	conn, client, err := createClient()
 	if err != nil {
 		return 0, false, err
@@ -46,7 +55,15 @@ func Validate(login, password string) (uint64, bool, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	response, err := client.Verify(ctx, &pb.LoginRequest{Login: login, Salted: password})
+
+	request := &pb.LoginRequest{Login: login, Salted: salt(password)}
+	var response *pb.LoginResponse
+	if register {
+		response, err = client.Register(ctx, request)
+	} else {
+		response, err = client.Verify(ctx, request)
+	}
+
 	if err != nil {
 		return 0, false, err
 	}

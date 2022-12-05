@@ -16,7 +16,7 @@
  *
  */
 
-package puzzleweb
+package log
 
 import (
 	"encoding/json"
@@ -35,7 +35,6 @@ func init() {
 		if err != nil {
 			fmt.Println("failed to init logging with default config :", err)
 		}
-
 	}
 
 	if len(config.LogConfig) == 0 {

@@ -24,6 +24,7 @@ import (
 	"strconv"
 
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/sessionclient"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -48,7 +49,11 @@ func getSessionId(c *gin.Context) (uint64, error) {
 func generateSessionCookie(c *gin.Context) (uint64, error) {
 	sessionId, err := sessionclient.Generate()
 	if err == nil {
-		c.SetCookie(cookieName, fmt.Sprint(sessionId), config.SessionTimeOut, "/", config.Domain, true, true)
+		c.SetCookie(
+			cookieName, fmt.Sprint(sessionId),
+			config.SessionTimeOut, "/",
+			config.Domain, true, true,
+		)
 	}
 	return sessionId, err
 }
@@ -88,7 +93,7 @@ func manageSession(c *gin.Context) {
 		session, err := sessionclient.GetInfo(sessionId)
 		var change bool
 		if change = err != nil; change {
-			Logger.Warn("failed to retrieve Session",
+			log.Logger.Warn("failed to retrieve Session",
 				zap.Uint64(sessionIdName, sessionId),
 				zap.Error(err),
 			)
@@ -101,7 +106,7 @@ func manageSession(c *gin.Context) {
 		if sw := GetSession(c); sw.change {
 			err = sessionclient.UpdateInfo(sessionId, sw.session)
 			if err != nil {
-				Logger.Warn("failed to save Session",
+				log.Logger.Warn("failed to save Session",
 					zap.Uint64(sessionIdName, sessionId),
 					zap.Error(err),
 				)
@@ -119,7 +124,7 @@ func GetSession(c *gin.Context) *SessionWrapper {
 	if ok {
 		swptTyped = swpt.(*SessionWrapper)
 	} else {
-		Logger.Warn("there is no Session in Context")
+		log.Logger.Warn("there is no Session in Context")
 		swptTyped = &SessionWrapper{session: map[string]string{}, change: true}
 		c.Set(sessionName, swptTyped)
 	}

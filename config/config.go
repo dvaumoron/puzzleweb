@@ -34,7 +34,8 @@ var LogConfig []byte
 var SessionTimeOut int
 
 var StaticPath string
-var TemplatePath string
+var LocalesPath string
+var TemplatesPath string
 
 const defaultServiceAddr = "localhost:50051"
 
@@ -81,9 +82,14 @@ func init() {
 		StaticPath = "static"
 	}
 
-	TemplatePath = os.Getenv("TEMPLATE_PATH")
-	if TemplatePath == "" {
-		TemplatePath = "templates"
+	LocalesPath = os.Getenv("LOCALES_PATH")
+	if LocalesPath == "" {
+		LocalesPath = "locales"
+	}
+
+	TemplatesPath = os.Getenv("TEMPLATES_PATH")
+	if TemplatesPath == "" {
+		TemplatesPath = "templates"
 	}
 
 	SessionServiceAddr = os.Getenv("SESSION_SERVICE_ADDR")

@@ -22,7 +22,9 @@ import (
 	"net/http"
 
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/text/language"
 )
 
 type Widget interface {
@@ -32,18 +34,19 @@ type Widget interface {
 type InitDataFunc func(c *gin.Context) gin.H
 
 type Site struct {
-	engine     *gin.Engine
-	root       *Page
-	Page404Url string
-	InitData   InitDataFunc
+	engine             *gin.Engine
+	root               *Page
+	Page404Url         string
+	InitData           InitDataFunc
+	availableLanguages []language.Tag
 }
 
 const siteName = "site"
 
-func CreateSite() *Site {
+func CreateSite(defaultLang language.Tag) *Site {
 	engine := gin.Default()
 
-	engine.LoadHTMLGlob(config.TemplatePath + "/*.html")
+	engine.LoadHTMLGlob(config.TemplatesPath + "/**/*.html")
 
 	engine.Static("/static", config.StaticPath)
 	const favicon = "/favicon.ico"
@@ -52,10 +55,11 @@ func CreateSite() *Site {
 	engine.Use(manageSession)
 
 	site := &Site{
-		engine:     engine,
-		root:       NewStaticPage("root", "index.html"),
-		Page404Url: "/",
-		InitData:   initData,
+		engine:             engine,
+		root:               NewStaticPage("root", "index.html"),
+		Page404Url:         "/",
+		InitData:           initData,
+		availableLanguages: []language.Tag{defaultLang},
 	}
 
 	engine.Use(func(c *gin.Context) {
@@ -69,10 +73,15 @@ func (site *Site) AddPage(page *Page) {
 	site.root.AddSubPage(page)
 }
 
+func (site *Site) AddAvailableLanguage(lang language.Tag) {
+	site.availableLanguages = append(site.availableLanguages, lang)
+}
+
 func (site *Site) Run() error {
 	engine := site.engine
 	site.root.Widget.LoadInto(engine)
 	engine.NoRoute(Found(site.Page404Url))
+	locale.InitAvailableLanguages(site.availableLanguages)
 	return engine.Run(":" + config.Port)
 }
 

@@ -23,6 +23,7 @@ import (
 	"net/url"
 
 	"github.com/dvaumoron/puzzleweb"
+	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/login/client"
 	"github.com/gin-gonic/gin"
 )
@@ -67,7 +68,7 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 		if err != nil {
 			errorMsg = err.Error()
 		} else if !success {
-			errorMsg = "" // TODO
+			errorMsg = locale.GetText("wrong.login", c)
 		}
 
 		var target string

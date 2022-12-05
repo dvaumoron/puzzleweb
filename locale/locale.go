@@ -17,3 +17,37 @@
  */
 
 package locale
+
+import (
+	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/text/language"
+)
+
+const langName = "lang"
+
+var matcher language.Matcher
+
+func InitAvailableLanguages(availableLanguages []language.Tag) {
+	matcher = language.NewMatcher(availableLanguages)
+}
+
+func GetText(key string, c *gin.Context) string {
+	lang, err := c.Cookie(langName)
+	if err != nil {
+		tag, _ := language.MatchStrings(matcher, c.GetHeader("Accept-Language"))
+		SetLangCookie(c, tag.String())
+	}
+	return getText(key, lang)
+}
+
+func SetLangCookie(c *gin.Context, lang string) {
+	c.SetCookie(
+		langName, lang, config.SessionTimeOut,
+		"/", config.Domain, false, false,
+	)
+}
+
+func getText(key, lang string) string {
+	return "" // TODO
+}

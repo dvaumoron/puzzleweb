@@ -1,4 +1,4 @@
-# puzzleweb
+# Puzzleweb
 
 <img src="https://github.com/dvaumoron/puzzleweb/raw/main/static/logo/puzzlelogo.jpg" width="100">
 

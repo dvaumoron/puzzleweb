@@ -21,6 +21,7 @@ package log
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/dvaumoron/puzzleweb/config"
 	"go.uber.org/zap"
@@ -33,7 +34,8 @@ func init() {
 		var err error
 		Logger, err = zap.NewProduction()
 		if err != nil {
-			fmt.Println("failed to init logging with default config :", err)
+			fmt.Println("Failed to init logging with default config :", err)
+			os.Exit(1)
 		}
 	}
 
@@ -47,11 +49,11 @@ func init() {
 	if err == nil {
 		Logger, err = cfg.Build()
 		if err != nil {
-			fmt.Println("failed to init logging with config file :", err)
+			fmt.Println("Failed to init logging with config file :", err)
 			defaultLogConfig()
 		}
 	} else {
-		fmt.Println("failed to parse logging config file :", err)
+		fmt.Println("Failed to parse logging config file :", err)
 		defaultLogConfig()
 	}
 

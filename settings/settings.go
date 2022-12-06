@@ -16,34 +16,30 @@
  *
  */
 
-package puzzleweb
+package settings
 
 import (
-	"strings"
-
+	"github.com/dvaumoron/puzzleweb/locale"
+	"github.com/dvaumoron/puzzleweb/session/client"
 	"github.com/gin-gonic/gin"
 )
 
-type PageDesc struct {
-	Name string
-	Url  string
+const UserLangName = "userLang"
+
+type InitSettingsFunc func(*gin.Context) map[string]string
+
+var InitSettings InitSettingsFunc = initSettings
+
+func initSettings(c *gin.Context) map[string]string {
+	return map[string]string{
+		UserLangName: locale.GetLang(c),
+	}
 }
 
-func extractAriane(splittedPath []string) []PageDesc {
-	pageDescs := make([]PageDesc, 0, len(splittedPath))
-	var urlBuilder strings.Builder
-	for _, name := range splittedPath {
-		urlBuilder.WriteString("/")
-		urlBuilder.WriteString(name)
-		pageDescs = append(pageDescs, PageDesc{Name: name, Url: urlBuilder.String()})
-	}
-	return pageDescs
+func Get(id uint64) (map[string]string, error) {
+	return client.GetSettings(id)
 }
 
-func initData(c *gin.Context) gin.H {
-	page, path := getSite(c).root.extractPageAndPath(c.Request.URL.Path)
-	return gin.H{
-		"ariane":   extractAriane(path),
-		"subPages": page.extractSubPageNames(),
-	}
+func Update(id uint64, settings map[string]string) error {
+	return client.UpdateSettings(id, settings)
 }

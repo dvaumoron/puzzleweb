@@ -16,7 +16,7 @@
  *
  */
 
-package puzzleweb
+package session
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/log"
-	"github.com/dvaumoron/puzzleweb/sessionclient"
+	"github.com/dvaumoron/puzzleweb/session/client"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -47,7 +47,7 @@ func getSessionId(c *gin.Context) (uint64, error) {
 }
 
 func generateSessionCookie(c *gin.Context) (uint64, error) {
-	sessionId, err := sessionclient.Generate()
+	sessionId, err := client.Generate()
 	if err == nil {
 		c.SetCookie(
 			cookieName, fmt.Sprint(sessionId),
@@ -85,15 +85,15 @@ func (sw *SessionWrapper) Delete(key string) {
 
 const sessionName = "session"
 
-func manageSession(c *gin.Context) {
+func Manage(c *gin.Context) {
 	const sessionIdName = "sessionId"
 
 	sessionId, err := getSessionId(c)
 	if err == nil {
-		session, err := sessionclient.GetInfo(sessionId)
+		session, err := client.GetInfo(sessionId)
 		var change bool
 		if change = err != nil; change {
-			log.Logger.Warn("failed to retrieve Session",
+			log.Logger.Warn("Failed to retrieve session.",
 				zap.Uint64(sessionIdName, sessionId),
 				zap.Error(err),
 			)
@@ -103,10 +103,10 @@ func manageSession(c *gin.Context) {
 		c.Set(sessionName, &SessionWrapper{session: session, change: change})
 		c.Next()
 
-		if sw := GetSession(c); sw.change {
-			err = sessionclient.UpdateInfo(sessionId, sw.session)
+		if sw := Get(c); sw.change {
+			err = client.UpdateInfo(sessionId, sw.session)
 			if err != nil {
-				log.Logger.Warn("failed to save Session",
+				log.Logger.Warn("Failed to save session.",
 					zap.Uint64(sessionIdName, sessionId),
 					zap.Error(err),
 				)
@@ -118,13 +118,13 @@ func manageSession(c *gin.Context) {
 	}
 }
 
-func GetSession(c *gin.Context) *SessionWrapper {
+func Get(c *gin.Context) *SessionWrapper {
 	var swptTyped *SessionWrapper
 	swpt, ok := c.Get(sessionName)
 	if ok {
 		swptTyped = swpt.(*SessionWrapper)
 	} else {
-		log.Logger.Warn("there is no Session in Context")
+		log.Logger.Warn("There is no session in context.")
 		swptTyped = &SessionWrapper{session: map[string]string{}, change: true}
 		c.Set(sessionName, swptTyped)
 	}

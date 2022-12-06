@@ -24,8 +24,12 @@ import (
 
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/locale"
+	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/login/client"
+	"github.com/dvaumoron/puzzleweb/session"
+	"github.com/dvaumoron/puzzleweb/settings"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type loginWidget struct {
@@ -63,7 +67,7 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 		password := c.PostForm("password")
 		register := c.PostForm("register") == "true"
 
-		id, success, err := client.VerifyOrRegister(login, password, register)
+		userId, success, err := client.VerifyOrRegister(login, password, register)
 		var errorMsg string
 		if err != nil {
 			errorMsg = err.Error()
@@ -73,9 +77,30 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 
 		var target string
 		if errorMsg == "" {
-			session := puzzleweb.GetSession(c)
+			session := session.Get(c)
 			session.Store(LoginName, login)
-			session.Store(UserIdName, fmt.Sprint(id))
+			session.Store(UserIdName, fmt.Sprint(userId))
+
+			userSettings, err := settings.Get(userId)
+			if err == nil {
+				if len(userSettings) == 0 {
+					userSettings = settings.InitSettings(c)
+					err = settings.Update(userId, userSettings)
+					if err != nil {
+						log.Logger.Warn("Failed to create user settings.",
+							zap.Error(err),
+						)
+					}
+				}
+			} else {
+				log.Logger.Warn("Failed to retrieve user settings.",
+					zap.Error(err),
+				)
+				userSettings = settings.InitSettings(c)
+			}
+
+			locale.SetLangCookie(c, userSettings[settings.UserLangName])
+
 			target = c.PostForm(redirectName)
 		} else {
 			target = c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
@@ -83,7 +108,7 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 		return target
 	}))
 	router.GET("/logout", puzzleweb.CreateRedirectHandler(func(c *gin.Context) string {
-		session := puzzleweb.GetSession(c)
+		session := session.Get(c)
 		session.Delete(LoginName)
 		session.Delete(UserIdName)
 		target := c.Query(redirectName)
@@ -98,7 +123,7 @@ func wrapInitData(loginUrl string, logoutUrl string, idf puzzleweb.InitDataFunc)
 	return func(c *gin.Context) gin.H {
 		data := idf(c)
 		escapedUrl := url.QueryEscape(c.Request.URL.Path)
-		if login := puzzleweb.GetSession(c).Load(LoginName); login == "" {
+		if login := session.Get(c).Load(LoginName); login == "" {
 			data["loginUrl"] = loginUrl + escapedUrl
 		} else {
 			data[LoginName] = login

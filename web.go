@@ -23,8 +23,11 @@ import (
 
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
+	"github.com/dvaumoron/puzzleweb/log"
+	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/text/language"
+	"github.com/gin-gonic/gin/render"
+	"golang.org/x/sync/errgroup"
 )
 
 type Widget interface {
@@ -33,33 +36,50 @@ type Widget interface {
 
 type InitDataFunc func(c *gin.Context) gin.H
 
+var puzzleRender render.HTMLRender
+
 type Site struct {
-	engine             *gin.Engine
-	root               *Page
-	Page404Url         string
-	InitData           InitDataFunc
-	availableLanguages []language.Tag
+	engine      *gin.Engine
+	root        *Page
+	Page404Url  string
+	InitData    InitDataFunc
+	initialized bool
 }
 
 const siteName = "site"
 
-func CreateSite(defaultLang language.Tag) *Site {
+func CreateSite(args ...string) *Site {
+	var rootTmpl string
+	if size := len(args); size == 0 {
+		rootTmpl = "index.html"
+	} else {
+		rootTmpl = args[0]
+		if size > 1 {
+			log.Logger.Info("CreateSite should be called with 0 or 1 argument.")
+		}
+	}
+
 	engine := gin.Default()
 
-	engine.LoadHTMLGlob(config.TemplatesPath + "/**/*.html")
+	if puzzleRender == nil {
+		engine.LoadHTMLGlob(config.TemplatesPath + "/**/*.html")
+		puzzleRender = engine.HTMLRender
+	} else {
+		engine.HTMLRender = puzzleRender
+	}
 
 	engine.Static("/static", config.StaticPath)
 	const favicon = "/favicon.ico"
 	engine.StaticFile(favicon, config.StaticPath+favicon)
 
-	engine.Use(manageSession)
+	engine.Use(session.Manage)
 
 	site := &Site{
-		engine:             engine,
-		root:               NewStaticPage("root", "index.html"),
-		Page404Url:         "/",
-		InitData:           initData,
-		availableLanguages: []language.Tag{defaultLang},
+		engine:      engine,
+		root:        NewStaticPage("root", rootTmpl),
+		Page404Url:  "/",
+		InitData:    initData,
+		initialized: false,
 	}
 
 	engine.Use(func(c *gin.Context) {
@@ -73,29 +93,54 @@ func (site *Site) AddPage(page *Page) {
 	site.root.AddSubPage(page)
 }
 
-func (site *Site) AddAvailableLanguage(lang language.Tag) {
-	site.availableLanguages = append(site.availableLanguages, lang)
+func (site *Site) initEngine() *gin.Engine {
+	engine := site.engine
+	if !site.initialized {
+		site.root.Widget.LoadInto(engine)
+		engine.NoRoute(Found(site.Page404Url))
+		site.initialized = true
+	}
+	return engine
+}
+
+func checkPort(port string) string {
+	if port[0] != ':' {
+		port = ":" + port
+	}
+	return port
 }
 
 func (site *Site) Run() error {
-	engine := site.engine
-	site.root.Widget.LoadInto(engine)
-	engine.NoRoute(Found(site.Page404Url))
-	locale.InitAvailableLanguages(site.availableLanguages)
-	return engine.Run(":" + config.Port)
+	locale.InitMessages()
+	return site.initEngine().Run(checkPort(config.Port))
+}
+
+type SiteConfig struct {
+	site *Site
+	port string
+}
+
+func MakeSiteConfig(site *Site, port string) SiteConfig {
+	return SiteConfig{site: site, port: checkPort(port)}
+}
+
+func Run(sites ...SiteConfig) error {
+	locale.InitMessages()
+	var g errgroup.Group
+	for _, siteConfig := range sites {
+		port := siteConfig.port
+		handler := siteConfig.site.initEngine().Handler()
+		g.Go(func() error {
+			server := &http.Server{Addr: port, Handler: handler}
+			return server.ListenAndServe()
+		})
+	}
+	return g.Wait()
 }
 
 func getSite(c *gin.Context) *Site {
 	siteAny, _ := c.Get(siteName)
 	return siteAny.(*Site)
-}
-
-func initData(c *gin.Context) gin.H {
-	page, path := getSite(c).root.extractPageAndPath(c.Request.URL.Path)
-	return gin.H{
-		"ariane":   extractAriane(path),
-		"subPages": page.extractSubPageNames(),
-	}
 }
 
 type InfoAdder func(gin.H, *gin.Context)

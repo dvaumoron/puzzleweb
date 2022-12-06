@@ -41,6 +41,7 @@ const defaultServiceAddr = "localhost:50051"
 
 var SessionServiceAddr string
 var LoginServiceAddr string
+var SettingsServiceAddr string
 var MarkdownServiceAddr string
 
 func init() {
@@ -61,7 +62,7 @@ func init() {
 		var err error
 		LogConfig, err = os.ReadFile(fileLogConfigPath)
 		if err != nil {
-			fmt.Println("failed to read logging config file :", err)
+			fmt.Println("Failed to read logging config file :", err)
 			LogConfig = make([]byte, 0)
 		}
 	}
@@ -100,6 +101,11 @@ func init() {
 	LoginServiceAddr = os.Getenv("LOGIN_SERVICE_ADDR")
 	if LoginServiceAddr == "" {
 		LoginServiceAddr = defaultServiceAddr
+	}
+
+	SettingsServiceAddr = os.Getenv("SETTINGS_SERVICE_ADDR")
+	if SettingsServiceAddr == "" {
+		SettingsServiceAddr = defaultServiceAddr
 	}
 
 	MarkdownServiceAddr = os.Getenv("MARKDOWN_SERVICE_ADDR")

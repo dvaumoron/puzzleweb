@@ -16,7 +16,7 @@
  *
  */
 
-package sessionclient
+package client
 
 import (
 	"context"
@@ -29,17 +29,16 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func createClient() (*grpc.ClientConn, pb.SessionClient, error) {
-	conn, err := grpc.Dial(config.SessionServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func createClient(addr string) (*grpc.ClientConn, pb.SessionClient, error) {
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, nil, err
 	}
-
 	return conn, pb.NewSessionClient(conn), nil
 }
 
 func Generate() (uint64, error) {
-	conn, client, err := createClient()
+	conn, client, err := createClient(config.SessionServiceAddr)
 	if err != nil {
 		return 0, err
 	}
@@ -55,7 +54,15 @@ func Generate() (uint64, error) {
 }
 
 func GetInfo(id uint64) (map[string]string, error) {
-	conn, client, err := createClient()
+	return get(config.SessionServiceAddr, id)
+}
+
+func GetSettings(id uint64) (map[string]string, error) {
+	return get(config.SettingsServiceAddr, id)
+}
+
+func get(addr string, id uint64) (map[string]string, error) {
+	conn, client, err := createClient(addr)
 	if err != nil {
 		return map[string]string{}, err
 	}
@@ -71,7 +78,15 @@ func GetInfo(id uint64) (map[string]string, error) {
 }
 
 func UpdateInfo(id uint64, info map[string]string) error {
-	conn, client, err := createClient()
+	return update(config.SessionServiceAddr, id, info)
+}
+
+func UpdateSettings(id uint64, info map[string]string) error {
+	return update(config.SettingsServiceAddr, id, info)
+}
+
+func update(addr string, id uint64, info map[string]string) error {
+	conn, client, err := createClient(addr)
 	if err != nil {
 		return err
 	}
@@ -79,7 +94,12 @@ func UpdateInfo(id uint64, info map[string]string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	strErr, err := client.UpdateSessionInfo(ctx, &pb.SessionUpdate{Id: &pb.SessionId{Id: id}, Info: &pb.SessionInfo{Info: info}})
+	strErr, err := client.UpdateSessionInfo(ctx,
+		&pb.SessionUpdate{
+			Id:   &pb.SessionId{Id: id},
+			Info: &pb.SessionInfo{Info: info},
+		},
+	)
 	if err != nil {
 		return err
 	}

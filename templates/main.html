@@ -1,0 +1,25 @@
+<html>
+  <head>
+    <title>{{.Title}}</title>
+  </head>
+  <body>
+    <h1>{{.Title}}</h1>
+    {{if .LoginUrl}}
+      <p>
+        {{with .Login}}{{.}}&nbsp;{{end}}
+        <a href="{{.LoginUrl}}">{{.LoginLinkName}}</a>
+      </p>
+    {{end}}
+    <p>
+      {{range .Ariane}}
+        /&nbsp;<a href="{{.Url}}">{{.Name}}</a>&nbsp;
+      {{end}}
+    </p>
+    <ul>
+      {{range .SubPages}}
+        <li><a href="{{.}}">{{.}}</a></li>
+      {{end}}
+    </ul>
+    <div>{{.Body}}</div>
+  </body>
+</html>

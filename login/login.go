@@ -33,7 +33,7 @@ type loginWidget struct {
 	tmplName string
 }
 
-const LoginName = "login"
+const LoginName = "Login"
 const UserIdName = "userId"
 
 func (w *loginWidget) LoadInto(router gin.IRouter) {
@@ -90,16 +90,18 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 }
 
 func wrapInitData(loginUrl string, logoutUrl string, idf puzzleweb.InitDataFunc) puzzleweb.InitDataFunc {
+	const loginLinkName = "LoginLinkName"
+	const loginUrlName = "LogintUrl"
 	return func(c *gin.Context) gin.H {
 		data := idf(c)
 		escapedUrl := url.QueryEscape(c.Request.URL.Path)
-		session := session.Get(c)
-		if login := session.Load(LoginName); login == "" {
-			data["loginUrl"] = loginUrl + escapedUrl
+		if login := session.Get(c).Load(LoginName); login == "" {
+			data[loginLinkName] = locale.GetText("login.link.name", c)
+			data[loginUrlName] = loginUrl + escapedUrl
 		} else {
 			data[LoginName] = login
-			data[UserIdName] = session.Load(UserIdName)
-			data["logoutUrl"] = logoutUrl + escapedUrl
+			data[loginLinkName] = locale.GetText("logout.link.name", c)
+			data[loginUrlName] = logoutUrl + escapedUrl
 		}
 		return data
 	}

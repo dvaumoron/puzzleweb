@@ -43,6 +43,7 @@ type Site struct {
 	Page404Url  string
 	InitData    InitDataFunc
 	initialized bool
+	FaviconPath string
 }
 
 const siteName = "site"
@@ -62,15 +63,13 @@ func CreateSite(args ...string) *Site {
 	engine := gin.Default()
 
 	if puzzleRender == nil {
-		engine.LoadHTMLGlob(config.TemplatesPath + "/**/*.html")
+		engine.LoadHTMLGlob(config.TemplatesPath + "/*")
 		puzzleRender = engine.HTMLRender
 	} else {
 		engine.HTMLRender = puzzleRender
 	}
 
 	engine.Static("/static", config.StaticPath)
-	const favicon = "/favicon.ico"
-	engine.StaticFile(favicon, config.StaticPath+favicon)
 
 	engine.Use(session.Manage)
 
@@ -96,12 +95,18 @@ func (site *Site) AddPage(page *Page) {
 func (site *Site) initEngine() *gin.Engine {
 	engine := site.engine
 	if !site.initialized {
+		const favicon = "/favicon.ico"
+		faviconPath := site.FaviconPath
+		if faviconPath == "" {
+			faviconPath = favicon
+		}
+		engine.StaticFile(favicon, config.StaticPath+faviconPath)
 		site.root.Widget.LoadInto(engine)
 		engine.GET("/changeLang", CreateRedirectHandler(func(c *gin.Context) string {
 			locale.SetLangCookie(c, c.Query(locale.LangName))
 			return c.Query(RedirectName)
 		}))
-		engine.NoRoute(Found(site.Page404Url))
+		engine.NoRoute(Found(checkTarget(site.Page404Url)))
 		site.initialized = true
 	}
 	return engine

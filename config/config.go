@@ -80,16 +80,22 @@ func init() {
 	StaticPath = os.Getenv("STATIC_PATH")
 	if StaticPath == "" {
 		StaticPath = "static"
+	} else {
+		StaticPath = checkPath(StaticPath)
 	}
 
 	LocalesPath = os.Getenv("LOCALES_PATH")
 	if LocalesPath == "" {
 		LocalesPath = "locales"
+	} else {
+		LocalesPath = checkPath(LocalesPath)
 	}
 
 	TemplatesPath = os.Getenv("TEMPLATES_PATH")
 	if TemplatesPath == "" {
 		TemplatesPath = "templates"
+	} else {
+		TemplatesPath = checkPath(TemplatesPath)
 	}
 
 	SessionServiceAddr = os.Getenv("SESSION_SERVICE_ADDR")
@@ -111,4 +117,13 @@ func init() {
 	if MarkdownServiceAddr == "" {
 		MarkdownServiceAddr = defaultServiceAddr
 	}
+}
+
+func checkPath(path string) string {
+	if last := len(path) - 1; last != -1 {
+		if path[last] == '/' {
+			path = path[:last]
+		}
+	}
+	return path
 }

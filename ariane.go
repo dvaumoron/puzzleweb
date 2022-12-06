@@ -20,6 +20,7 @@ package puzzleweb
 import (
 	"strings"
 
+	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,7 +43,8 @@ func extractAriane(splittedPath []string) []PageDesc {
 func initData(c *gin.Context) gin.H {
 	page, path := getSite(c).root.extractPageAndPath(c.Request.URL.Path)
 	return gin.H{
-		"ariane":   extractAriane(path),
-		"subPages": page.extractSubPageNames(),
+		"Title":    locale.GetText("page.title."+page.name, c),
+		"Ariane":   extractAriane(path),
+		"SubPages": page.extractSubPageNames(),
 	}
 }

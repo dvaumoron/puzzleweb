@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package markdownclient
 
 import (
@@ -29,24 +28,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func createClient() (*grpc.ClientConn, pb.MarkdownClient, error) {
-	conn, err := grpc.Dial(config.MarkdownServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return conn, pb.NewMarkdownClient(conn), nil
-}
-
 func Apply(text string) (template.HTML, error) {
-	conn, client, err := createClient()
+	conn, err := grpc.Dial(config.MarkdownServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return "", err
 	}
 	defer conn.Close()
+	client := pb.NewMarkdownClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	markdownHtml, err := client.Apply(ctx, &pb.MarkdownText{Text: text})
 	if err != nil {
 		return "", err

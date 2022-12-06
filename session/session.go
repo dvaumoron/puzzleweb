@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package session
 
 import (
@@ -38,6 +37,9 @@ func getSessionId(c *gin.Context) (uint64, error) {
 	if err == nil {
 		sessionId, err = strconv.ParseUint(cookie, 10, 0)
 		if err != nil {
+			log.Logger.Info("Failed to parse session cookie.",
+				zap.Error(err),
+			)
 			sessionId, err = generateSessionCookie(c)
 		}
 	} else {
@@ -58,75 +60,77 @@ func generateSessionCookie(c *gin.Context) (uint64, error) {
 	return sessionId, err
 }
 
-type SessionWrapper struct {
+type Session struct {
 	session map[string]string
 	change  bool
 }
 
-func (sw *SessionWrapper) Load(key string) string {
-	return sw.session[key]
+func (s *Session) Load(key string) string {
+	return s.session[key]
 }
 
-func (sw *SessionWrapper) Store(key, value string) {
-	oldValue := sw.session[key]
+func (s *Session) Store(key, value string) {
+	oldValue := s.session[key]
 	if oldValue != value {
-		sw.session[key] = value
-		sw.change = true
+		s.session[key] = value
+		s.change = true
 	}
 }
 
-func (sw *SessionWrapper) Delete(key string) {
-	_, present := sw.session[key]
+func (s *Session) Delete(key string) {
+	_, present := s.session[key]
 	if present {
-		delete(sw.session, key)
-		sw.change = true
+		delete(s.session, key)
+		s.change = true
 	}
 }
 
 const sessionName = "session"
 
 func Manage(c *gin.Context) {
-	const sessionIdName = "sessionId"
-
 	sessionId, err := getSessionId(c)
 	if err == nil {
-		session, err := client.GetInfo(sessionId)
-		var change bool
-		if change = err != nil; change {
-			log.Logger.Warn("Failed to retrieve session.",
-				zap.Uint64(sessionIdName, sessionId),
-				zap.Error(err),
-			)
-			session = map[string]string{}
+		session, err := client.GetSession(sessionId)
+		if err != nil {
+			logSessionError(c, "Failed to retrieve session.", sessionId, err)
+			return
 		}
 
-		c.Set(sessionName, &SessionWrapper{session: session, change: change})
+		c.Set(sessionName, &Session{session: session, change: false})
 		c.Next()
 
-		if sw := Get(c); sw.change {
-			err = client.UpdateInfo(sessionId, sw.session)
+		if s := Get(c); s.change {
+			err = client.UpdateSession(sessionId, s.session)
 			if err != nil {
-				log.Logger.Warn("Failed to save session.",
-					zap.Uint64(sessionIdName, sessionId),
-					zap.Error(err),
-				)
-
+				logSessionError(c, "Failed to save session.", sessionId, err)
+				return
 			}
 		}
 	} else {
+		log.Logger.Error("Failed to generate sessionId.",
+			zap.Error(err),
+		)
 		c.AbortWithError(http.StatusInternalServerError, err)
 	}
 }
 
-func Get(c *gin.Context) *SessionWrapper {
-	var swptTyped *SessionWrapper
-	swpt, ok := c.Get(sessionName)
+func logSessionError(c *gin.Context, msg string, sessionId uint64, err error) {
+	log.Logger.Error(msg,
+		zap.Uint64("sessionId", sessionId),
+		zap.Error(err),
+	)
+	c.AbortWithError(http.StatusInternalServerError, err)
+}
+
+func Get(c *gin.Context) *Session {
+	var typed *Session
+	s, ok := c.Get(sessionName)
 	if ok {
-		swptTyped = swpt.(*SessionWrapper)
+		typed = s.(*Session)
 	} else {
-		log.Logger.Warn("There is no session in context.")
-		swptTyped = &SessionWrapper{session: map[string]string{}, change: true}
-		c.Set(sessionName, swptTyped)
+		log.Logger.Error("There is no session in context.")
+		typed = &Session{session: map[string]string{}, change: true}
+		c.Set(sessionName, typed)
 	}
-	return swptTyped
+	return typed
 }

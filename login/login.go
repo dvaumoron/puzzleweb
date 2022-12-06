@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package login
 
 import (
@@ -24,12 +23,10 @@ import (
 
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/login/client"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/dvaumoron/puzzleweb/settings"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 type loginWidget struct {
@@ -40,18 +37,13 @@ const LoginName = "login"
 const UserIdName = "userId"
 
 func (w *loginWidget) LoadInto(router gin.IRouter) {
-	const redirectName = "redirect"
 	const prevUrlWithErrorName = "prevUrlWithError"
 	router.GET("/", puzzleweb.CreateTemplateHandler(w.tmplName, func(data gin.H, c *gin.Context) {
 		if errorMsg := c.Query("error"); errorMsg != "" {
 			data["errorMsg"] = errorMsg
 		}
 
-		redirectUrl := c.Query(redirectName)
-		if redirectUrl == "" {
-			redirectUrl = "/"
-		}
-		data[redirectName] = redirectUrl
+		data[puzzleweb.RedirectName] = c.Query(puzzleweb.RedirectName)
 
 		currentUrl := c.Request.URL
 		var errorKey string
@@ -81,27 +73,9 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 			session.Store(LoginName, login)
 			session.Store(UserIdName, fmt.Sprint(userId))
 
-			userSettings, err := settings.Get(userId)
-			if err == nil {
-				if len(userSettings) == 0 {
-					userSettings = settings.InitSettings(c)
-					err = settings.Update(userId, userSettings)
-					if err != nil {
-						log.Logger.Warn("Failed to create user settings.",
-							zap.Error(err),
-						)
-					}
-				}
-			} else {
-				log.Logger.Warn("Failed to retrieve user settings.",
-					zap.Error(err),
-				)
-				userSettings = settings.InitSettings(c)
-			}
+			locale.SetLangCookie(c, settings.Get(userId, c)[locale.LangName])
 
-			locale.SetLangCookie(c, userSettings[settings.UserLangName])
-
-			target = c.PostForm(redirectName)
+			target = c.PostForm(puzzleweb.RedirectName)
 		} else {
 			target = c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
 		}
@@ -111,11 +85,7 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 		session := session.Get(c)
 		session.Delete(LoginName)
 		session.Delete(UserIdName)
-		target := c.Query(redirectName)
-		if target == "" {
-			target = "/"
-		}
-		return target
+		return c.Query(puzzleweb.RedirectName)
 	}))
 }
 
@@ -123,10 +93,12 @@ func wrapInitData(loginUrl string, logoutUrl string, idf puzzleweb.InitDataFunc)
 	return func(c *gin.Context) gin.H {
 		data := idf(c)
 		escapedUrl := url.QueryEscape(c.Request.URL.Path)
-		if login := session.Get(c).Load(LoginName); login == "" {
+		session := session.Get(c)
+		if login := session.Load(LoginName); login == "" {
 			data["loginUrl"] = loginUrl + escapedUrl
 		} else {
 			data[LoginName] = login
+			data[UserIdName] = session.Load(UserIdName)
 			data["logoutUrl"] = logoutUrl + escapedUrl
 		}
 		return data

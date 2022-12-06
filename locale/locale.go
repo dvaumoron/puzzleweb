@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package locale
 
 import (
@@ -30,7 +29,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-const langName = "lang"
+const LangName = "lang"
 
 var matcher language.Matcher
 var allLang []string
@@ -111,7 +110,7 @@ func GetText(key string, c *gin.Context) string {
 }
 
 func GetLang(c *gin.Context) string {
-	lang, err := c.Cookie(langName)
+	lang, err := c.Cookie(LangName)
 	if err == nil {
 		lang = checkLang(lang)
 	} else {
@@ -135,14 +134,14 @@ func checkLang(lang string) string {
 
 func setLangCookie(c *gin.Context, lang string) string {
 	c.SetCookie(
-		langName, lang, config.SessionTimeOut,
+		LangName, lang, config.SessionTimeOut,
 		"/", config.Domain, false, false,
 	)
 	return lang
 }
 
-func SetLangCookie(c *gin.Context, lang string) string {
-	return setLangCookie(c, checkLang(lang))
+func SetLangCookie(c *gin.Context, lang string) {
+	setLangCookie(c, checkLang(lang))
 }
 
 func getText(key, lang string) string {
@@ -150,6 +149,7 @@ func getText(key, lang string) string {
 	if text == "" {
 		if lang == defaultLang {
 			warnMissingDefault(key, defaultLang)
+			text = key
 		} else {
 			log.Logger.Warn("Missing key, falling to default locale.",
 				zap.String("key", key),
@@ -158,6 +158,7 @@ func getText(key, lang string) string {
 			text = messages[defaultLang][key]
 			if text == "" {
 				warnMissingDefault(key, defaultLang)
+				text = key
 			}
 		}
 	}

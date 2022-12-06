@@ -15,16 +15,15 @@
  * limitations under the License.
  *
  */
-
 package settings
 
 import (
 	"github.com/dvaumoron/puzzleweb/locale"
+	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/session/client"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
-
-const UserLangName = "userLang"
 
 type InitSettingsFunc func(*gin.Context) map[string]string
 
@@ -32,12 +31,35 @@ var InitSettings InitSettingsFunc = initSettings
 
 func initSettings(c *gin.Context) map[string]string {
 	return map[string]string{
-		UserLangName: locale.GetLang(c),
+		locale.LangName: locale.GetLang(c),
 	}
 }
 
-func Get(id uint64) (map[string]string, error) {
-	return client.GetSettings(id)
+func Get(userId uint64, c *gin.Context) map[string]string {
+	const settingsName = "settings"
+	userSettings := c.GetStringMapString(settingsName)
+	if len(userSettings) == 0 {
+		var err error
+		userSettings, err = client.GetSettings(userId)
+		if err == nil {
+			if len(userSettings) == 0 {
+				userSettings = InitSettings(c)
+				err = Update(userId, userSettings)
+				if err != nil {
+					log.Logger.Warn("Failed to create user settings.",
+						zap.Error(err),
+					)
+				}
+			}
+		} else {
+			log.Logger.Warn("Failed to retrieve user settings.",
+				zap.Error(err),
+			)
+			userSettings = InitSettings(c)
+		}
+		c.Set(settingsName, userSettings)
+	}
+	return userSettings
 }
 
 func Update(id uint64, settings map[string]string) error {

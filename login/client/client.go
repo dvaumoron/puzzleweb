@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package client
 
 import (
@@ -30,15 +29,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func createClient() (*grpc.ClientConn, pb.LoginClient, error) {
-	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return conn, pb.NewLoginClient(conn), nil
-}
-
 func salt(password string) string {
 	// TODO improve the security
 	sha512Hasher := sha512.New()
@@ -47,11 +37,12 @@ func salt(password string) string {
 }
 
 func VerifyOrRegister(login string, password string, register bool) (uint64, bool, error) {
-	conn, client, err := createClient()
+	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return 0, false, err
 	}
 	defer conn.Close()
+	client := pb.NewLoginClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

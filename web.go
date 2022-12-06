@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  */
-
 package puzzleweb
 
 import (
@@ -47,6 +46,7 @@ type Site struct {
 }
 
 const siteName = "site"
+const RedirectName = "redirect"
 
 func CreateSite(args ...string) *Site {
 	var rootTmpl string
@@ -97,6 +97,10 @@ func (site *Site) initEngine() *gin.Engine {
 	engine := site.engine
 	if !site.initialized {
 		site.root.Widget.LoadInto(engine)
+		engine.GET("/changeLang", CreateRedirectHandler(func(c *gin.Context) string {
+			locale.SetLangCookie(c, c.Query(locale.LangName))
+			return c.Query(RedirectName)
+		}))
 		engine.NoRoute(Found(site.Page404Url))
 		site.initialized = true
 	}
@@ -157,14 +161,21 @@ func AddNothing(data gin.H, c *gin.Context) {}
 
 type Redirecter func(*gin.Context) string
 
+func checkTarget(target string) string {
+	if target == "" {
+		target = "/"
+	}
+	return target
+}
+
 func CreateRedirectHandler(redirecter Redirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Redirect(http.StatusFound, redirecter(c))
+		c.Redirect(http.StatusFound, checkTarget(redirecter(c)))
 	}
 }
 
 func Found(target string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Redirect(http.StatusFound, target)
+		c.Redirect(http.StatusFound, checkTarget(target))
 	}
 }

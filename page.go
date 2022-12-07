@@ -20,6 +20,7 @@ package puzzleweb
 import (
 	"strings"
 
+	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
 )
 
@@ -47,11 +48,28 @@ func (w *staticWidget) addSubPage(page *Page) {
 }
 
 func (w *staticWidget) LoadInto(router gin.IRouter) {
-	router.GET("/", CreateTemplateHandler(w.tmplName, AddNothing))
+	router.GET("/", CreateTemplate(LocalizedTmpl(w.tmplName, AddNothing)))
 	for _, page := range w.subPages {
 		page.Widget.LoadInto(router.Group("/" + page.name))
 	}
 }
+
+func LocalizedTmpl(tmplName string, adder DataAdder) DataRedirecter {
+	return func(data gin.H, c *gin.Context) string {
+		adder(data, c)
+		lang := locale.GetLang(c)
+		if lang != locale.DefaultLang {
+			var builder strings.Builder
+			builder.WriteString(lang)
+			builder.WriteString("/")
+			builder.WriteString(tmplName)
+			tmplName = builder.String()
+		}
+		return tmplName
+	}
+}
+
+func AddNothing(data gin.H, c *gin.Context) {}
 
 func newStaticWidget(tmplName string) Widget {
 	return &staticWidget{tmplName: tmplName, subPages: make([]*Page, 0)}
@@ -89,7 +107,7 @@ func (p *Page) getSubPage(name string) *Page {
 }
 
 func (current *Page) extractPageAndPath(path string) (*Page, []string) {
-	splitted := strings.Split(path, "/")
+	splitted := strings.Split(path, "/")[1:]
 	names := make([]string, 0, len(splitted))
 	for _, name := range splitted {
 		subPage := current.getSubPage(name)

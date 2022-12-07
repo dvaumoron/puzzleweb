@@ -38,7 +38,7 @@ const UserIdName = "userId"
 
 func (w *loginWidget) LoadInto(router gin.IRouter) {
 	const prevUrlWithErrorName = "prevUrlWithError"
-	router.GET("/", puzzleweb.CreateTemplateHandler(w.tmplName, func(data gin.H, c *gin.Context) {
+	router.GET("/", puzzleweb.CreateDirectTemplate(w.tmplName, func(data gin.H, c *gin.Context) {
 		if errorMsg := c.Query("error"); errorMsg != "" {
 			data["errorMsg"] = errorMsg
 		}
@@ -54,7 +54,7 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 		}
 		data[prevUrlWithErrorName] = currentUrl.String() + errorKey
 	}))
-	router.POST("/submit", puzzleweb.CreateRedirectHandler(func(c *gin.Context) string {
+	router.POST("/submit", puzzleweb.CreateRedirect(func(c *gin.Context) string {
 		login := c.PostForm(LoginName)
 		password := c.PostForm("password")
 		register := c.PostForm("register") == "true"
@@ -81,7 +81,7 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 		}
 		return target
 	}))
-	router.GET("/logout", puzzleweb.CreateRedirectHandler(func(c *gin.Context) string {
+	router.GET("/logout", puzzleweb.CreateRedirect(func(c *gin.Context) string {
 		session := session.Get(c)
 		session.Delete(LoginName)
 		session.Delete(UserIdName)
@@ -89,11 +89,10 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 	}))
 }
 
-func wrapInitData(loginUrl string, logoutUrl string, idf puzzleweb.InitDataFunc) puzzleweb.InitDataFunc {
+func loginData(loginUrl string, logoutUrl string) puzzleweb.DataAdder {
 	const loginLinkName = "LoginLinkName"
 	const loginUrlName = "LogintUrl"
-	return func(c *gin.Context) gin.H {
-		data := idf(c)
+	return func(data gin.H, c *gin.Context) {
 		escapedUrl := url.QueryEscape(c.Request.URL.Path)
 		if login := session.Get(c).Load(LoginName); login == "" {
 			data[loginLinkName] = locale.GetText("login.link.name", c)
@@ -103,7 +102,6 @@ func wrapInitData(loginUrl string, logoutUrl string, idf puzzleweb.InitDataFunc)
 			data[loginLinkName] = locale.GetText("logout.link.name", c)
 			data[loginUrlName] = logoutUrl + escapedUrl
 		}
-		return data
 	}
 }
 
@@ -114,7 +112,7 @@ func AddLoginPage(site *puzzleweb.Site, name string, tmplName string) {
 	baseUrl := "/" + name
 	loginUrl := baseUrl + "?redirect="
 	logoutUrl := baseUrl + "/logout?redirect="
-	site.InitData = wrapInitData(loginUrl, logoutUrl, site.InitData)
+	site.AddDefaultData(loginData(loginUrl, logoutUrl))
 
 	site.AddPage(p)
 }

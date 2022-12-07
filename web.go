@@ -25,7 +25,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/render"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -33,15 +32,11 @@ type Widget interface {
 	LoadInto(gin.IRouter)
 }
 
-type InitDataFunc func(c *gin.Context) gin.H
-
-var puzzleRender render.HTMLRender
-
 type Site struct {
 	engine      *gin.Engine
 	root        *Page
 	Page404Url  string
-	InitData    InitDataFunc
+	adders      []DataAdder
 	initialized bool
 	FaviconPath string
 }
@@ -62,12 +57,7 @@ func CreateSite(args ...string) *Site {
 
 	engine := gin.Default()
 
-	if puzzleRender == nil {
-		engine.LoadHTMLGlob(config.TemplatesPath + "/*")
-		puzzleRender = engine.HTMLRender
-	} else {
-		engine.HTMLRender = puzzleRender
-	}
+	engine.SetHTMLTemplate(templates)
 
 	engine.Static("/static", config.StaticPath)
 
@@ -77,7 +67,7 @@ func CreateSite(args ...string) *Site {
 		engine:      engine,
 		root:        NewStaticPage("root", rootTmpl),
 		Page404Url:  "/",
-		InitData:    initData,
+		adders:      make([]DataAdder, 0),
 		initialized: false,
 	}
 
@@ -92,6 +82,10 @@ func (site *Site) AddPage(page *Page) {
 	site.root.AddSubPage(page)
 }
 
+func (site *Site) AddDefaultData(adder DataAdder) {
+	site.adders = append(site.adders, adder)
+}
+
 func (site *Site) initEngine() *gin.Engine {
 	engine := site.engine
 	if !site.initialized {
@@ -102,11 +96,11 @@ func (site *Site) initEngine() *gin.Engine {
 		}
 		engine.StaticFile(favicon, config.StaticPath+faviconPath)
 		site.root.Widget.LoadInto(engine)
-		engine.GET("/changeLang", CreateRedirectHandler(func(c *gin.Context) string {
+		engine.GET("/changeLang", CreateRedirect(func(c *gin.Context) string {
 			locale.SetLangCookie(c, c.Query(locale.LangName))
 			return c.Query(RedirectName)
 		}))
-		engine.NoRoute(Found(checkTarget(site.Page404Url)))
+		engine.NoRoute(CreateRedirectString(site.Page404Url))
 		site.initialized = true
 	}
 	return engine
@@ -147,22 +141,24 @@ func Run(sites ...SiteConfig) error {
 	return g.Wait()
 }
 
-func getSite(c *gin.Context) *Site {
-	siteAny, _ := c.Get(siteName)
-	return siteAny.(*Site)
-}
+type DataAdder func(gin.H, *gin.Context)
 
-type InfoAdder func(gin.H, *gin.Context)
-
-func CreateTemplateHandler(tmplName string, adder InfoAdder) gin.HandlerFunc {
+func CreateDirectTemplate(tmplName string, adder DataAdder) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		data := getSite(c).InitData(c)
+		data := initData(c)
 		adder(data, c)
 		c.HTML(http.StatusOK, tmplName, data)
 	}
 }
 
-func AddNothing(data gin.H, c *gin.Context) {}
+type DataRedirecter func(gin.H, *gin.Context) string
+
+func CreateTemplate(redirecter DataRedirecter) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		data := initData(c)
+		c.HTML(http.StatusOK, redirecter(data, c), data)
+	}
+}
 
 type Redirecter func(*gin.Context) string
 
@@ -173,14 +169,15 @@ func checkTarget(target string) string {
 	return target
 }
 
-func CreateRedirectHandler(redirecter Redirecter) gin.HandlerFunc {
+func CreateRedirect(redirecter Redirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Redirect(http.StatusFound, checkTarget(redirecter(c)))
 	}
 }
 
-func Found(target string) gin.HandlerFunc {
+func CreateRedirectString(target string) gin.HandlerFunc {
+	target = checkTarget(target)
 	return func(c *gin.Context) {
-		c.Redirect(http.StatusFound, checkTarget(target))
+		c.Redirect(http.StatusFound, target)
 	}
 }

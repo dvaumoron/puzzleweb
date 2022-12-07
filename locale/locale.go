@@ -33,7 +33,7 @@ const LangName = "lang"
 
 var matcher language.Matcher
 var allLang []string
-var defaultLang string
+var DefaultLang string
 var messages map[string]map[string]string
 
 type Tags struct {
@@ -44,11 +44,7 @@ func (a *Tags) Add(lang language.Tag) {
 	a.list = append(a.list, lang)
 }
 
-var Availables Tags
-
-func init() {
-	Availables = Tags{list: make([]language.Tag, 0, 1)}
-}
+var Availables Tags = Tags{list: make([]language.Tag, 0, 1)}
 
 func InitMessages() {
 	const pathName = "path"
@@ -62,7 +58,7 @@ func InitMessages() {
 		for _, langTag := range list {
 			allLang = append(allLang, langTag.String())
 		}
-		defaultLang = allLang[0]
+		DefaultLang = allLang[0]
 		matcher = language.NewMatcher(list)
 		messages = make(map[string]map[string]string)
 		for _, lang := range allLang {
@@ -129,7 +125,7 @@ func checkLang(lang string) string {
 	log.Logger.Info("Asked not declared locale.",
 		zap.String("askedLocale", lang),
 	)
-	return defaultLang
+	return DefaultLang
 }
 
 func setLangCookie(c *gin.Context, lang string) string {
@@ -147,17 +143,17 @@ func SetLangCookie(c *gin.Context, lang string) {
 func getText(key, lang string) string {
 	text := messages[lang][key]
 	if text == "" {
-		if lang == defaultLang {
-			warnMissingDefault(key, defaultLang)
+		if lang == DefaultLang {
+			warnMissingDefault(key, DefaultLang)
 			text = key
 		} else {
 			log.Logger.Warn("Missing key, falling to default locale.",
 				zap.String("key", key),
 				zap.String("currentLocale", lang),
 			)
-			text = messages[defaultLang][key]
+			text = messages[DefaultLang][key]
 			if text == "" {
-				warnMissingDefault(key, defaultLang)
+				warnMissingDefault(key, DefaultLang)
 				text = key
 			}
 		}

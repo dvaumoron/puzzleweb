@@ -40,11 +40,21 @@ func extractAriane(splittedPath []string) []PageDesc {
 	return pageDescs
 }
 
+func getSite(c *gin.Context) *Site {
+	siteAny, _ := c.Get(siteName)
+	return siteAny.(*Site)
+}
+
 func initData(c *gin.Context) gin.H {
-	page, path := getSite(c).root.extractPageAndPath(c.Request.URL.Path)
-	return gin.H{
-		"Title":    locale.GetText("page.title."+page.name, c),
-		"Ariane":   extractAriane(path),
-		"SubPages": page.extractSubPageNames(),
+	site := getSite(c)
+	page, path := site.root.extractPageAndPath(c.Request.URL.Path)
+	data := gin.H{
+		"PageTitle": locale.GetText("page.title."+page.name, c),
+		"Ariane":    extractAriane(path),
+		"SubPages":  page.extractSubPageNames(),
 	}
+	for _, adder := range site.adders {
+		adder(data, c)
+	}
+	return data
 }

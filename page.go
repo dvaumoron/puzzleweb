@@ -24,6 +24,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Widget interface {
+	LoadInto(gin.IRouter)
+}
+
 type Page struct {
 	name    string
 	visible bool

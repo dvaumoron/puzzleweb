@@ -28,10 +28,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type Widget interface {
-	LoadInto(gin.IRouter)
-}
-
 type Site struct {
 	engine      *gin.Engine
 	root        *Page
@@ -57,21 +53,17 @@ func CreateSite(args ...string) *Site {
 
 	engine := gin.Default()
 
-	engine.SetHTMLTemplate(templates)
+	engine.HTMLRender = templatesRender
 
 	engine.Static("/static", config.StaticPath)
 
-	engine.Use(session.Manage)
-
 	site := &Site{
-		engine:      engine,
-		root:        NewStaticPage("root", rootTmpl),
-		Page404Url:  "/",
-		adders:      make([]DataAdder, 0),
-		initialized: false,
+		engine: engine,
+		root:   NewStaticPage("root", rootTmpl),
+		adders: make([]DataAdder, 0),
 	}
 
-	engine.Use(func(c *gin.Context) {
+	engine.Use(session.Manage, func(c *gin.Context) {
 		c.Set(siteName, site)
 	})
 
@@ -89,7 +81,7 @@ func (site *Site) AddDefaultData(adder DataAdder) {
 func (site *Site) initEngine() *gin.Engine {
 	engine := site.engine
 	if !site.initialized {
-		const favicon = "/favicon.ico"
+		favicon := "/favicon.ico"
 		faviconPath := site.FaviconPath
 		if faviconPath == "" {
 			faviconPath = favicon
@@ -119,45 +111,22 @@ func (site *Site) Run() error {
 }
 
 type SiteConfig struct {
-	site *Site
-	port string
-}
-
-func MakeSiteConfig(site *Site, port string) SiteConfig {
-	return SiteConfig{site: site, port: checkPort(port)}
+	Site *Site
+	Port string
 }
 
 func Run(sites ...SiteConfig) error {
 	locale.InitMessages()
 	var g errgroup.Group
 	for _, siteConfig := range sites {
-		port := siteConfig.port
-		handler := siteConfig.site.initEngine().Handler()
+		port := checkPort(siteConfig.Port)
+		handler := siteConfig.Site.initEngine().Handler()
 		g.Go(func() error {
 			server := &http.Server{Addr: port, Handler: handler}
 			return server.ListenAndServe()
 		})
 	}
 	return g.Wait()
-}
-
-type DataAdder func(gin.H, *gin.Context)
-
-func CreateDirectTemplate(tmplName string, adder DataAdder) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		data := initData(c)
-		adder(data, c)
-		c.HTML(http.StatusOK, tmplName, data)
-	}
-}
-
-type DataRedirecter func(gin.H, *gin.Context) string
-
-func CreateTemplate(redirecter DataRedirecter) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		data := initData(c)
-		c.HTML(http.StatusOK, redirecter(data, c), data)
-	}
 }
 
 type Redirecter func(*gin.Context) string

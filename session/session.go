@@ -85,7 +85,7 @@ func (s *Session) Delete(key string) {
 	}
 }
 
-const sessionName = "session"
+const sessionName = "Session"
 
 func Manage(c *gin.Context) {
 	sessionId, err := getSessionId(c)

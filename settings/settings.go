@@ -36,7 +36,7 @@ func initSettings(c *gin.Context) map[string]string {
 }
 
 func Get(userId uint64, c *gin.Context) map[string]string {
-	const settingsName = "settings"
+	const settingsName = "Settings"
 	userSettings := c.GetStringMapString(settingsName)
 	if len(userSettings) == 0 {
 		var err error

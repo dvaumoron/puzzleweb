@@ -5,19 +5,20 @@ Js:
     login2.js
 Body:
 
-{{with .errorMsg}}
+{{with .ErrorMsg}}
     <div class="error">{{.}}</div>
 {{end}}
 
 <form action="submit" method="POST">
-    <div><label for="login">{{.loginLabel}}</label></div>
-    <div><input type="text" name="login"/></div>
-    <div><label for="password">{{.passwordLabel}}</label></div>
-    <div><input type="password" name="password"/></div>
+    <div><label for="Login">{{.LoginLabel}}</label></div>
+    <div><input type="text" name="Login"/></div>
+    <div><label for="Password">{{.PasswordLabel}}</label></div>
+    <div><input type="password" name="Password"/></div>
     <div class="hidden">
-        <input type="text" name="register"/>
-        <input type="text" name="redirect" value="{{.redirect}}"/>
-        <input type="text" name="prevUrlWithError" value="{{.prevUrlWithError}}"/>
+        <input type="text" name="Register"/>
+        <input type="text" name="Redirect" value="{{.Redirect}}"/>
+        <input type="text" name="PrevUrlWithError" value="{{.PrevUrlWithError}}"/>
     </div>
     <div><input type="submit" value="{{.LoginLinkName}}"/></div>
+    <div><a href="todo">{{.RegisterLinkName}}"</a></div>
 </form>

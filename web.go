@@ -37,8 +37,8 @@ type Site struct {
 	FaviconPath string
 }
 
-const siteName = "site"
-const RedirectName = "redirect"
+const siteName = "Site"
+const RedirectName = "Redirect"
 
 func CreateSite(args ...string) *Site {
 	var rootTmpl string

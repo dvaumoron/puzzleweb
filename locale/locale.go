@@ -29,7 +29,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-const LangName = "lang"
+const LangName = "Lang"
 
 var matcher language.Matcher
 var allLang []string
@@ -47,7 +47,7 @@ func (a *Tags) Add(lang language.Tag) {
 var Availables Tags = Tags{list: make([]language.Tag, 0, 1)}
 
 func InitMessages() {
-	const pathName = "path"
+	const pathName = "Path"
 	if matcher == nil {
 		list := Availables.list
 		size := len(list)

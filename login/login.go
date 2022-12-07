@@ -34,13 +34,13 @@ type loginWidget struct {
 }
 
 const LoginName = "Login"
-const UserIdName = "userId"
+const UserIdName = "UserId"
 
 func (w *loginWidget) LoadInto(router gin.IRouter) {
-	const prevUrlWithErrorName = "prevUrlWithError"
+	const prevUrlWithErrorName = "PrevUrlWithError"
 	router.GET("/", puzzleweb.CreateDirectTemplate(w.tmplName, func(data gin.H, c *gin.Context) {
 		if errorMsg := c.Query("error"); errorMsg != "" {
-			data["errorMsg"] = errorMsg
+			data["ErrorMsg"] = errorMsg
 		}
 
 		data[puzzleweb.RedirectName] = c.Query(puzzleweb.RedirectName)
@@ -54,13 +54,13 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 		}
 		data[prevUrlWithErrorName] = currentUrl.String() + errorKey
 
-		data["loginLabel"] = locale.GetText("login.label", c)
-		data["passwordLabel"] = locale.GetText("password.label", c)
+		data["LoginLabel"] = locale.GetText("login.label", c)
+		data["PasswordLabel"] = locale.GetText("password.label", c)
 	}))
 	router.POST("/submit", puzzleweb.CreateRedirect(func(c *gin.Context) string {
 		login := c.PostForm(LoginName)
-		password := c.PostForm("password")
-		register := c.PostForm("register") == "true"
+		password := c.PostForm("Password")
+		register := c.PostForm("Register") == "true"
 
 		userId, success, err := client.VerifyOrRegister(login, password, register)
 		var errorMsg string

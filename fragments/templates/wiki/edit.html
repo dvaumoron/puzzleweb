@@ -1,0 +1,10 @@
+Css:
+    wiki.css
+Body:
+
+<h2>{{.EditTitle}} {{.WikiTitle}} [<a href="../view/{{.WikiTitle}}">{{.CancelLinkName}}</a>]</h1>
+
+<form action="../save/{{.WikiTitle}}" method="POST">
+  <div><textarea name="content" rows="20" cols="80">{{.WikiContent}}</textarea></div>
+  <div><input type="submit" value="{{.SaveLinkName}}"></div>
+</form>

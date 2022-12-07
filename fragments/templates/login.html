@@ -1,0 +1,23 @@
+Css:
+    login.css
+Js:
+    login.js
+    login2.js
+Body:
+
+{{with .errorMsg}}
+    <div class="error">{{.}}</div>
+{{end}}
+
+<form action="submit" method="POST">
+    <div><label for="login">{{.loginLabel}}</label></div>
+    <div><input type="text" name="login"/></div>
+    <div><label for="password">{{.passwordLabel}}</label></div>
+    <div><input type="password" name="password"/></div>
+    <div class="hidden">
+        <input type="text" name="register"/>
+        <input type="text" name="redirect" value="{{.redirect}}"/>
+        <input type="text" name="prevUrlWithError" value="{{.prevUrlWithError}}"/>
+    </div>
+    <div><input type="submit" value="{{.LoginLinkName}}"/></div>
+</form>

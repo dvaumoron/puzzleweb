@@ -81,13 +81,11 @@ func InitMessages() {
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
 				line := scanner.Text()
-				if equal := strings.Index(line, "="); equal >= 0 {
-					if key := strings.TrimSpace(line[:equal]); len(key) > 0 {
-						value := ""
-						if len(line) > equal {
-							value = strings.TrimSpace(line[equal+1:])
+				if equal := strings.Index(line, "="); equal > 0 {
+					if key := strings.TrimSpace(line[:equal]); key != "" {
+						if value := strings.TrimSpace(line[equal+1:]); value != "" {
+							messagesLang[key] = value
 						}
-						messagesLang[key] = value
 					}
 				}
 			}

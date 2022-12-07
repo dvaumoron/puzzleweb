@@ -53,6 +53,9 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 			errorKey = "&error="
 		}
 		data[prevUrlWithErrorName] = currentUrl.String() + errorKey
+
+		data["loginLabel"] = locale.GetText("login.label", c)
+		data["passwordLabel"] = locale.GetText("password.label", c)
 	}))
 	router.POST("/submit", puzzleweb.CreateRedirect(func(c *gin.Context) string {
 		login := c.PostForm(LoginName)

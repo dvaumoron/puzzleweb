@@ -1,9 +1,12 @@
 <html>
   <head>
-    <title>{{.Title}}</title>
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="/static/{{.Css}}"/>
+    <script type="text/javascript" src="/static/lib.js"/>
+    {{.Js}}
   </head>
   <body>
-    <h1>{{.Title}}</h1>
+    <h1>Title</h1>
     {{if .LoginUrl}}
       <p>
         {{with .Login}}{{.}}&nbsp;{{end}}
@@ -20,6 +23,8 @@
         <li><a href="{{.}}">{{.}}</a></li>
       {{end}}
     </ul>
-    <div>{{.Body}}</div>
+    <div>
+      {{.Body}}
+    </div>
   </body>
 </html>

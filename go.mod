@@ -5,11 +5,13 @@ go 1.19
 require (
 	github.com/dvaumoron/puzzleloginservice v1.0.1
 	github.com/dvaumoron/puzzlemarkdownservice v1.0.1
+	github.com/dvaumoron/puzzlerightservice v1.2.0
 	github.com/dvaumoron/puzzlesessionservice v1.0.0
+	github.com/dvaumoron/puzzlewikiservice v1.0.0
 	github.com/gin-gonic/gin v1.8.1
 	go.uber.org/zap v1.24.0
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/text v0.4.0
+	golang.org/x/sync v0.1.0
+	golang.org/x/text v0.5.0
 	google.golang.org/grpc v1.51.0
 )
 
@@ -30,9 +32,9 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
+	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
+	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

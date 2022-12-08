@@ -18,6 +18,7 @@
 package wiki
 
 import (
+	"html/template"
 	"net/url"
 	"strings"
 
@@ -56,24 +57,33 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 		redirect := ""
 		if lang == askedLang {
 			userId := uint64(0) // TODO
-			content, err := client.LoadContent(w.wikiId, userId, lang, title)
+			version := c.Query(client.VersionName)
+			content, err := client.LoadContent(w.wikiId, userId, lang, title, version)
 			if err == nil {
 				if content == nil {
-					base := puzzleweb.GetCurrentUrl(c) + "../../../"
-					redirect = urlBuilder(base, lang, editMode, title).String()
+					redirect = urlBuilder(getBase(c), lang, editMode, title).String()
 				} else {
-					data[wikiTitleName] = title
-					data["EditLinkName"] = locale.GetText("edit.link.name", c)
-					data[wikiContentName] = content.Body
+					var body template.HTML
+					body, err = content.GetBody()
+					if err == nil {
+						data[wikiTitleName] = title
+						data["EditLinkName"] = locale.GetText("edit.link.name", c)
+						data[wikiContentName] = body
+					} else {
+						redirect = puzzleweb.DefaultErrorRedirect(
+							locale.GetText(err.Error(), c),
+						)
+					}
 				}
 			} else {
-				redirect = puzzleweb.DefaultErrorRedirect(err.Error())
+				redirect = puzzleweb.DefaultErrorRedirect(
+					locale.GetText(err.Error(), c),
+				)
 			}
 		} else {
-			base := puzzleweb.GetCurrentUrl(c) + "../../../"
-			targetBuilder := urlBuilder(base, lang, viewMode, title)
+			targetBuilder := urlBuilder(getBase(c), lang, viewMode, title)
 			targetBuilder.WriteString(puzzleweb.QueryError)
-			targetBuilder.WriteString(url.QueryEscape(locale.GetText("wrong.lang", c)))
+			targetBuilder.WriteString(url.QueryEscape(locale.GetText(wrongLang, c)))
 			redirect = targetBuilder.String()
 		}
 		return w.viewTmpl, redirect
@@ -88,7 +98,8 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 		redirect := ""
 		if lang == askedLang {
 			userId := uint64(0) // TODO
-			content, err := client.LoadContent(w.wikiId, userId, lang, title)
+			version := c.Query(client.VersionName)
+			content, err := client.LoadContent(w.wikiId, userId, lang, title, version)
 			if err == nil {
 				data["EditTitle"] = locale.GetText("edit.title", c)
 				data[wikiTitleName] = title
@@ -101,11 +112,12 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 				}
 				data["SaveLinkName"] = locale.GetText("save.link.name", c)
 			} else {
-				redirect = puzzleweb.DefaultErrorRedirect(err.Error())
+				redirect = puzzleweb.DefaultErrorRedirect(
+					locale.GetText(err.Error(), c),
+				)
 			}
 		} else {
-			base := puzzleweb.GetCurrentUrl(c) + "../../../"
-			targetBuilder := urlBuilder(base, lang, editMode, title)
+			targetBuilder := urlBuilder(getBase(c), lang, editMode, title)
 			targetBuilder.WriteString(puzzleweb.QueryError)
 			targetBuilder.WriteString(url.QueryEscape(locale.GetText(wrongLang, c)))
 			redirect = targetBuilder.String()
@@ -120,16 +132,17 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 		redirect := ""
 		if lang == askedLang {
 			content := c.PostForm("content")
-			version := c.PostForm("version")
+			version := c.PostForm(client.VersionName)
 
 			userId := uint64(0) // TODO
 			err := client.StoreContent(w.wikiId, userId, lang, title, version, content)
 
-			base := puzzleweb.GetCurrentUrl(c) + "../../../"
-			targetBuilder := urlBuilder(base, lang, viewMode, title)
+			targetBuilder := urlBuilder(getBase(c), lang, viewMode, title)
 			if err != nil {
 				targetBuilder.WriteString(puzzleweb.QueryError)
-				targetBuilder.WriteString(url.QueryEscape(err.Error()))
+				targetBuilder.WriteString(url.QueryEscape(
+					locale.GetText(err.Error(), c),
+				))
 			}
 			redirect = targetBuilder.String()
 		} else {
@@ -146,4 +159,8 @@ func urlBuilder(base, lang, mode, title string) *strings.Builder {
 	targetBuilder.WriteString(mode)
 	targetBuilder.WriteString(title)
 	return &targetBuilder
+}
+
+func getBase(c *gin.Context) string {
+	return puzzleweb.GetCurrentUrl(c) + "../../../"
 }

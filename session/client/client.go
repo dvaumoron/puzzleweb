@@ -39,11 +39,11 @@ func Generate() (uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	sessionId, err := client.Generate(ctx, &pb.SessionInfo{Info: map[string]string{}})
+	response, err := client.Generate(ctx, &pb.SessionInfo{Info: map[string]string{}})
 	if err != nil {
 		return 0, err
 	}
-	return sessionId.Id, nil
+	return response.Id, nil
 }
 
 func GetSession(id uint64) (map[string]string, error) {
@@ -65,11 +65,11 @@ func get(addr string, id uint64) (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	info, err := client.GetSessionInfo(ctx, &pb.SessionId{Id: id})
+	response, err := client.GetSessionInfo(ctx, &pb.SessionId{Id: id})
 	if err != nil {
 		return map[string]string{}, err
 	}
-	return info.Info, nil
+	return response.Info, nil
 }
 
 func UpdateSession(id uint64, session map[string]string) error {

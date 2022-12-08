@@ -40,7 +40,9 @@ const defaultServiceAddr = "localhost:50051"
 
 var SessionServiceAddr string
 var LoginServiceAddr string
+var RightServiceAddr string
 var SettingsServiceAddr string
+var WikiServiceAddr string
 var MarkdownServiceAddr string
 
 func init() {
@@ -108,9 +110,19 @@ func init() {
 		LoginServiceAddr = defaultServiceAddr
 	}
 
+	RightServiceAddr = os.Getenv("RIGHT_SERVICE_ADDR")
+	if RightServiceAddr == "" {
+		RightServiceAddr = defaultServiceAddr
+	}
+
 	SettingsServiceAddr = os.Getenv("SETTINGS_SERVICE_ADDR")
 	if SettingsServiceAddr == "" {
 		SettingsServiceAddr = defaultServiceAddr
+	}
+
+	WikiServiceAddr = os.Getenv("WIKI_SERVICE_ADDR")
+	if WikiServiceAddr == "" {
+		WikiServiceAddr = defaultServiceAddr
 	}
 
 	MarkdownServiceAddr = os.Getenv("MARKDOWN_SERVICE_ADDR")

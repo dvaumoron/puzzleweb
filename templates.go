@@ -21,6 +21,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -28,6 +29,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 )
+
+const QueryError = "?error="
 
 var templatesRender puzzleHTMLRender = loadTemplates()
 
@@ -66,21 +69,23 @@ func loadTemplates() puzzleHTMLRender {
 	return puzzleHTMLRender{templates: tmpl}
 }
 
-type DataAdder func(gin.H, *gin.Context)
+type TemplateRedirecter func(gin.H, *gin.Context) (string, string)
 
-func CreateDirectTemplate(tmplName string, adder DataAdder) gin.HandlerFunc {
+func CreateTemplate(redirecter TemplateRedirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		data := initData(c)
-		adder(data, c)
-		c.HTML(http.StatusOK, tmplName, data)
+		tmpl, redirect := redirecter(data, c)
+		if redirect == "" {
+			if tmpl == "" {
+				tmpl = "main.html"
+			}
+			c.HTML(http.StatusOK, tmpl, data)
+		} else {
+			c.Redirect(http.StatusFound, redirect)
+		}
 	}
 }
 
-type DataRedirecter func(gin.H, *gin.Context) string
-
-func CreateTemplate(redirecter DataRedirecter) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		data := initData(c)
-		c.HTML(http.StatusOK, redirecter(data, c), data)
-	}
+func DefaultErrorRedirect(errMsg string) string {
+	return "/?error=" + url.QueryEscape(errMsg)
 }

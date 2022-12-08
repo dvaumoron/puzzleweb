@@ -23,6 +23,7 @@ import (
 
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/locale"
+	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/login/client"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/dvaumoron/puzzleweb/settings"
@@ -30,25 +31,22 @@ import (
 )
 
 type loginWidget struct {
-	tmplName string
+	tmpl string
 }
 
 const LoginName = "Login"
 const UserIdName = "UserId"
+const loginUrlName = "LogintUrl"
 
 func (w *loginWidget) LoadInto(router gin.IRouter) {
 	const prevUrlWithErrorName = "PrevUrlWithError"
-	router.GET("/", puzzleweb.CreateDirectTemplate(w.tmplName, func(data gin.H, c *gin.Context) {
-		if errorMsg := c.Query("error"); errorMsg != "" {
-			data["ErrorMsg"] = errorMsg
-		}
-
+	router.GET("/", puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 		data[puzzleweb.RedirectName] = c.Query(puzzleweb.RedirectName)
 
 		currentUrl := c.Request.URL
 		var errorKey string
 		if len(currentUrl.Query()) == 0 {
-			errorKey = "?error="
+			errorKey = puzzleweb.QueryError
 		} else {
 			errorKey = "&error="
 		}
@@ -56,6 +54,12 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 
 		data["LoginLabel"] = locale.GetText("login.label", c)
 		data["PasswordLabel"] = locale.GetText("password.label", c)
+		data["RegisterLinkName"] = locale.GetText("register.link.name", c)
+
+		// To hide the connection link
+		delete(data, loginUrlName)
+
+		return w.tmpl, ""
 	}))
 	router.POST("/submit", puzzleweb.CreateRedirect(func(c *gin.Context) string {
 		login := c.PostForm(LoginName)
@@ -63,14 +67,14 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 		register := c.PostForm("Register") == "true"
 
 		userId, success, err := client.VerifyOrRegister(login, password, register)
-		var errorMsg string
+		errorMsg := ""
 		if err != nil {
 			errorMsg = err.Error()
 		} else if !success {
 			errorMsg = locale.GetText("wrong.login", c)
 		}
 
-		var target string
+		target := ""
 		if errorMsg == "" {
 			session := session.Get(c)
 			session.Store(LoginName, login)
@@ -94,13 +98,13 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 
 func loginData(loginUrl string, logoutUrl string) puzzleweb.DataAdder {
 	const loginLinkName = "LoginLinkName"
-	const loginUrlName = "LogintUrl"
 	return func(data gin.H, c *gin.Context) {
 		escapedUrl := url.QueryEscape(c.Request.URL.Path)
 		if login := session.Get(c).Load(LoginName); login == "" {
 			data[loginLinkName] = locale.GetText("login.link.name", c)
 			data[loginUrlName] = loginUrl + escapedUrl
 		} else {
+			data["Welcome"] = locale.GetText("welcome", c)
 			data[LoginName] = login
 			data[loginLinkName] = locale.GetText("logout.link.name", c)
 			data[loginUrlName] = logoutUrl + escapedUrl
@@ -108,9 +112,21 @@ func loginData(loginUrl string, logoutUrl string) puzzleweb.DataAdder {
 	}
 }
 
-func AddLoginPage(site *puzzleweb.Site, name string, tmplName string) {
+func AddLoginPage(site *puzzleweb.Site, name string, args ...string) {
+	tmpl := ""
+	if size := len(args); size == 0 {
+		tmpl = "login.html"
+	} else {
+		if tmpl = args[0]; tmpl == "" {
+			tmpl = "login.html"
+		}
+		if size > 1 {
+			log.Logger.Info("AddLoginPage should be called with 2 or 3 arguments.")
+		}
+	}
+
 	p := puzzleweb.NewHiddenPage(name)
-	p.Widget = &loginWidget{tmplName: tmplName}
+	p.Widget = &loginWidget{tmpl: tmpl}
 
 	baseUrl := "/" + name
 	loginUrl := baseUrl + "?redirect="

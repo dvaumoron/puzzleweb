@@ -28,6 +28,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type DataAdder func(gin.H, *gin.Context)
+
 type Site struct {
 	engine      *gin.Engine
 	root        *Page
@@ -41,11 +43,13 @@ const siteName = "Site"
 const RedirectName = "Redirect"
 
 func CreateSite(args ...string) *Site {
-	var rootTmpl string
+	rootTmpl := ""
 	if size := len(args); size == 0 {
 		rootTmpl = "index.html"
 	} else {
-		rootTmpl = args[0]
+		if rootTmpl = args[0]; rootTmpl == "" {
+			rootTmpl = "index.html"
+		}
 		if size > 1 {
 			log.Logger.Info("CreateSite should be called with 0 or 1 argument.")
 		}

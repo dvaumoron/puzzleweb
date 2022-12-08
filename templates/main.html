@@ -9,9 +9,12 @@
     <h1>Title</h1>
     {{if .LoginUrl}}
       <p>
-        {{with .Login}}{{.}}&nbsp;{{end}}
+        {{with .Login}}{{.Welcome}}&nbsp;{{.}}&nbsp;{{end}}
         <a href="{{.LoginUrl}}">{{.LoginLinkName}}</a>
       </p>
+    {{end}}
+    {{with .ErrorMsg}}
+      <div class="error">{{.}}</div>
     {{end}}
     <p>
       {{range .Ariane}}
@@ -20,7 +23,7 @@
     </p>
     <ul>
       {{range .SubPages}}
-        <li><a href="{{.}}">{{.}}</a></li>
+        <li><a href="{{.CurrentUrl}}{{.Url}}">{{.Name}}</a></li>
       {{end}}
     </ul>
     <div>

@@ -43,7 +43,7 @@ func NewHiddenPage(name string) *Page {
 }
 
 type staticWidget struct {
-	tmplName string
+	tmpl     string
 	subPages []*Page
 }
 
@@ -52,42 +52,38 @@ func (w *staticWidget) addSubPage(page *Page) {
 }
 
 func (w *staticWidget) LoadInto(router gin.IRouter) {
-	router.GET("/", CreateTemplate(LocalizedTmpl(w.tmplName, AddNothing)))
+	router.GET("/", CreateTemplate(localizedTmpl(w.tmpl)))
 	for _, page := range w.subPages {
 		page.Widget.LoadInto(router.Group("/" + page.name))
 	}
 }
 
-func LocalizedTmpl(tmplName string, adder DataAdder) DataRedirecter {
-	return func(data gin.H, c *gin.Context) string {
-		adder(data, c)
-		lang := locale.GetLang(c)
-		if lang != locale.DefaultLang {
+func localizedTmpl(tmpl string) TemplateRedirecter {
+	return func(data gin.H, c *gin.Context) (string, string) {
+		if lang := locale.GetLang(c); lang != locale.DefaultLang {
 			var builder strings.Builder
 			builder.WriteString(lang)
 			builder.WriteString("/")
-			builder.WriteString(tmplName)
-			tmplName = builder.String()
+			builder.WriteString(tmpl)
+			tmpl = builder.String()
 		}
-		return tmplName
+		return tmpl, ""
 	}
 }
 
-func AddNothing(data gin.H, c *gin.Context) {}
-
-func newStaticWidget(tmplName string) Widget {
-	return &staticWidget{tmplName: tmplName, subPages: make([]*Page, 0)}
+func newStaticWidget(tmpl string) Widget {
+	return &staticWidget{tmpl: tmpl, subPages: make([]*Page, 0)}
 }
 
-func NewStaticPage(name, tmplName string) *Page {
+func NewStaticPage(name, tmpl string) *Page {
 	p := NewPage(name)
-	p.Widget = newStaticWidget(tmplName)
+	p.Widget = newStaticWidget(tmpl)
 	return p
 }
 
-func NewHiddenStaticPage(name, tmplName string) *Page {
+func NewHiddenStaticPage(name, tmpl string) *Page {
 	p := NewHiddenPage(name)
-	p.Widget = newStaticWidget(tmplName)
+	p.Widget = newStaticWidget(tmpl)
 	return p
 }
 
@@ -124,23 +120,28 @@ func (current *Page) extractPageAndPath(path string) (*Page, []string) {
 	return current, names
 }
 
-func (p *Page) extractSubPageNames() []string {
-	var names []string
+func (p *Page) extractSubPageNames(c *gin.Context) []PageDesc {
+	var pageDescs []PageDesc
 	sw, ok := p.Widget.(*staticWidget)
 	if ok {
 		pages := sw.subPages
 		if size := len(pages); size == 0 {
-			names = make([]string, 0)
+			pageDescs = make([]PageDesc, 0)
 		} else {
-			names = make([]string, 0, size)
+			pageDescs = make([]PageDesc, 0, size)
 			for _, page := range pages {
 				if page.visible {
-					names = append(names, page.name)
+					pageDescs = append(pageDescs,
+						PageDesc{
+							Name: getPageTitle(page.name, c),
+							Url:  page.name,
+						},
+					)
 				}
 			}
 		}
 	} else {
-		names = make([]string, 0)
+		pageDescs = make([]PageDesc, 0)
 	}
-	return names
+	return pageDescs
 }

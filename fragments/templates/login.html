@@ -2,14 +2,9 @@ Css:
     login.css
 Js:
     login.js
-    login2.js
 Body:
 
-{{with .ErrorMsg}}
-    <div class="error">{{.}}</div>
-{{end}}
-
-<form action="submit" method="POST">
+<form action="{{.CurrentUrl}}submit" method="POST">
     <div><label for="Login">{{.LoginLabel}}</label></div>
     <div><input type="text" name="Login"/></div>
     <div><label for="Password">{{.PasswordLabel}}</label></div>

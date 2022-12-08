@@ -32,7 +32,7 @@ import (
 const LangName = "Lang"
 
 var matcher language.Matcher
-var allLang []string
+var AllLang []string
 var DefaultLang string
 var messages map[string]map[string]string
 
@@ -54,14 +54,14 @@ func InitMessages() {
 		if size == 0 {
 			log.Logger.Fatal("No locales declared.")
 		}
-		allLang = make([]string, 0, size)
+		AllLang = make([]string, 0, size)
 		for _, langTag := range list {
-			allLang = append(allLang, langTag.String())
+			AllLang = append(AllLang, langTag.String())
 		}
-		DefaultLang = allLang[0]
+		DefaultLang = AllLang[0]
 		matcher = language.NewMatcher(list)
 		messages = make(map[string]map[string]string)
-		for _, lang := range allLang {
+		for _, lang := range AllLang {
 			messagesLang := make(map[string]string)
 			messages[lang] = messagesLang
 
@@ -106,7 +106,7 @@ func GetText(key string, c *gin.Context) string {
 func GetLang(c *gin.Context) string {
 	lang, err := c.Cookie(LangName)
 	if err == nil {
-		lang = checkLang(lang)
+		lang = CheckLang(lang)
 	} else {
 		tag, _ := language.MatchStrings(matcher, c.GetHeader("Accept-Language"))
 		lang = setLangCookie(c, tag.String())
@@ -114,8 +114,8 @@ func GetLang(c *gin.Context) string {
 	return lang
 }
 
-func checkLang(lang string) string {
-	for _, l := range allLang {
+func CheckLang(lang string) string {
+	for _, l := range AllLang {
 		if lang == l {
 			return lang
 		}
@@ -135,7 +135,7 @@ func setLangCookie(c *gin.Context, lang string) string {
 }
 
 func SetLangCookie(c *gin.Context, lang string) {
-	setLangCookie(c, checkLang(lang))
+	setLangCookie(c, CheckLang(lang))
 }
 
 func getText(key, lang string) string {

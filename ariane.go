@@ -29,13 +29,30 @@ type PageDesc struct {
 	Url  string
 }
 
-func extractAriane(splittedPath []string) []PageDesc {
+func getPageTitle(name string, c *gin.Context) string {
+	return locale.GetText("page.title."+name, c)
+}
+
+func GetCurrentUrl(c *gin.Context) string {
+	path := c.Request.URL.Path
+	if path[len(path)-1] != '/' {
+		path += "/"
+	}
+	return path
+}
+
+func extractAriane(splittedPath []string, c *gin.Context) []PageDesc {
 	pageDescs := make([]PageDesc, 0, len(splittedPath))
 	var urlBuilder strings.Builder
 	for _, name := range splittedPath {
 		urlBuilder.WriteString("/")
 		urlBuilder.WriteString(name)
-		pageDescs = append(pageDescs, PageDesc{Name: name, Url: urlBuilder.String()})
+		pageDescs = append(pageDescs,
+			PageDesc{
+				Name: getPageTitle(name, c),
+				Url:  urlBuilder.String(),
+			},
+		)
 	}
 	return pageDescs
 }
@@ -49,9 +66,13 @@ func initData(c *gin.Context) gin.H {
 	site := getSite(c)
 	page, path := site.root.extractPageAndPath(c.Request.URL.Path)
 	data := gin.H{
-		"PageTitle": locale.GetText("page.title."+page.name, c),
-		"Ariane":    extractAriane(path),
-		"SubPages":  page.extractSubPageNames(),
+		"PageTitle":  getPageTitle(page.name, c),
+		"CurrentUrl": GetCurrentUrl(c),
+		"Ariane":     extractAriane(path, c),
+		"SubPages":   page.extractSubPageNames(c),
+	}
+	if errorMsg := c.Query("error"); errorMsg != "" {
+		data["ErrorMsg"] = errorMsg
 	}
 	for _, adder := range site.adders {
 		adder(data, c)

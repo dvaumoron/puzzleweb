@@ -35,7 +35,7 @@ func getSessionId(c *gin.Context) (uint64, error) {
 	var sessionId uint64
 	cookie, err := c.Cookie(cookieName)
 	if err == nil {
-		sessionId, err = strconv.ParseUint(cookie, 10, 0)
+		sessionId, err = strconv.ParseUint(cookie, 10, 64)
 		if err != nil {
 			log.Logger.Info("Failed to parse session cookie.",
 				zap.Error(err),

@@ -42,18 +42,28 @@ func GetCurrentUrl(c *gin.Context) string {
 	return path
 }
 
+func GetBaseUrl(levelToErase uint8, c *gin.Context) string {
+	res := GetCurrentUrl(c)
+	i := len(res) - 2
+	count := uint8(0)
+	for count < levelToErase {
+		if res[i] == '/' {
+			count++
+		}
+		i--
+	}
+	return res[:i+1]
+}
+
 func extractAriane(splittedPath []string, c *gin.Context) []PageDesc {
 	pageDescs := make([]PageDesc, 0, len(splittedPath))
 	var urlBuilder strings.Builder
 	for _, name := range splittedPath {
 		urlBuilder.WriteString("/")
 		urlBuilder.WriteString(name)
-		pageDescs = append(pageDescs,
-			PageDesc{
-				Name: getPageTitle(name, c),
-				Url:  urlBuilder.String(),
-			},
-		)
+		pageDescs = append(pageDescs, PageDesc{
+			Name: getPageTitle(name, c), Url: urlBuilder.String(),
+		})
 	}
 	return pageDescs
 }

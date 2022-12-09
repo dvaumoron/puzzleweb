@@ -44,17 +44,13 @@ func Get(userId uint64, c *gin.Context) map[string]string {
 		if err == nil {
 			if len(userSettings) == 0 {
 				userSettings = InitSettings(c)
-				err = Update(userId, userSettings)
+				err = client.UpdateSettings(userId, userSettings)
 				if err != nil {
-					log.Logger.Warn("Failed to create user settings.",
-						zap.Error(err),
-					)
+					log.Logger.Warn("Failed to create user settings.", zap.Error(err))
 				}
 			}
 		} else {
-			log.Logger.Warn("Failed to retrieve user settings.",
-				zap.Error(err),
-			)
+			log.Logger.Warn("Failed to retrieve user settings.", zap.Error(err))
 			userSettings = InitSettings(c)
 		}
 		c.Set(settingsName, userSettings)
@@ -62,6 +58,6 @@ func Get(userId uint64, c *gin.Context) map[string]string {
 	return userSettings
 }
 
-func Update(id uint64, settings map[string]string) error {
-	return client.UpdateSettings(id, settings)
+func Update(userId uint64, userSettings map[string]string) error {
+	return client.UpdateSettings(userId, userSettings)
 }

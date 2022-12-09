@@ -2,9 +2,9 @@ Css:
     wiki.css
 Body:
 
-<h2>{{.EditTitle}}&nbsp;{{.WikiTitle}} [<a href="{{.CurrentUrl}}../../view/{{.WikiTitle}}">{{.CancelLinkName}}</a>]</h2>
+<h2>{{.EditTitle}}&nbsp;{{.WikiTitle}} [<a href="{{.WikiBasetUrl}}view/{{.WikiTitle}}">{{.CancelLinkName}}</a>]</h2>
 
-<form action="{{.CurrentUrl}}../../save/{{.WikiTitle}}" method="POST">
+<form action="{{.WikiBasetUrl}}save/{{.WikiTitle}}" method="POST">
     <div><textarea name="content" rows="20" cols="80">{{.WikiContent}}</textarea></div>
     <div class="hidden">
         <input type="text" name="version" value="{{.WikiVersion}}"/>

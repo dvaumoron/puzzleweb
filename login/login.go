@@ -39,7 +39,7 @@ type loginWidget struct {
 
 const LoginName = "Login"
 const userIdName = "UserId"
-const loginUrlName = "LogintUrl"
+const loginUrlName = "LoginUrl"
 
 func (w *loginWidget) LoadInto(router gin.IRouter) {
 	const prevUrlWithErrorName = "PrevUrlWithError"
@@ -103,9 +103,7 @@ func GetUserId(c *gin.Context) uint64 {
 	userIdStr := session.Get(c).Load(userIdName)
 	userId, err := strconv.ParseUint(userIdStr, 10, 64)
 	if err != nil {
-		log.Logger.Info("Failed to parse userId.",
-			zap.Error(err),
-		)
+		log.Logger.Info("Failed to parse userId.", zap.Error(err))
 		userId = 0
 	}
 	return userId
@@ -128,16 +126,13 @@ func loginData(loginUrl string, logoutUrl string) puzzleweb.DataAdder {
 }
 
 func AddLoginPage(site *puzzleweb.Site, name string, args ...string) {
-	tmpl := ""
-	if size := len(args); size == 0 {
-		tmpl = "login.html"
-	} else {
-		if tmpl = args[0]; tmpl == "" {
-			tmpl = "login.html"
-		}
-		if size > 1 {
-			log.Logger.Info("AddLoginPage should be called with 2 or 3 arguments.")
-		}
+	size := len(args)
+	tmpl := "login.html"
+	if size != 0 && args[0] != "" {
+		tmpl = args[0]
+	}
+	if size > 1 {
+		log.Logger.Info("AddLoginPage should be called with 2 or 3 arguments.")
 	}
 
 	p := puzzleweb.NewHiddenPage(name)

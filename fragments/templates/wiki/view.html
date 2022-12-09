@@ -4,8 +4,11 @@ Body:
 
 <h2>{{.WikiTitle}}&nbsp;
     {{if .EditLinkName}}
-        [<a href="{{.CurrentUrl}}../../edit/{{.WikiTitle}}">{{.EditLinkName}}</a>]
+        [<a href="{{.WikiBaseUrl}}edit/{{.WikiTitle}}">{{.EditLinkName}}</a>]
+    {{else}}
+        ({{.WikiVersion}})
     {{end}}
+    &nbsp;<a href="{{.WikiBaseUrl}}list/{{.WikiTitle}}">{{.ListLinkName}}</a>
 </h2>
 
 <div>

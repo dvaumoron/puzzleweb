@@ -1,33 +1,33 @@
 <html>
-  <head>
-    <title>Title</title>
-    <link rel="stylesheet" type="text/css" href="/static/{{.Css}}"/>
-    <script type="text/javascript" src="/static/lib.js"/>
-    {{.Js}}
-  </head>
-  <body>
-    <h1>Title</h1>
-    {{if .LoginUrl}}
-      <p>
-        {{if .Login}}{{.Welcome}}&nbsp;{{.Login}}&nbsp;{{end}}
-        <a href="{{.LoginUrl}}">{{.LoginLinkName}}</a>
-      </p>
-    {{end}}
-    {{with .ErrorMsg}}
-      <div class="error">{{.}}</div>
-    {{end}}
-    <p>
-      {{range .Ariane}}
-        /&nbsp;<a href="{{.Url}}">{{.Name}}</a>&nbsp;
-      {{end}}
-    </p>
-    <ul>
-      {{range .SubPages}}
-        <li><a href="{{.CurrentUrl}}{{.Url}}">{{.Name}}</a></li>
-      {{end}}
-    </ul>
-    <div>
-      {{.Body}}
-    </div>
-  </body>
+    <head>
+        <title>Title</title>
+        <link rel="stylesheet" type="text/css" href="/static/{{.Css}}"/>
+        <script type="text/javascript" src="/static/lib.js"/>
+        {{.Js}}
+    </head>
+    <body>
+        <h1>Title</h1>
+        {{if .LoginUrl}}
+            <p>
+                {{if .Login}}{{.Welcome}}&nbsp;{{.Login}}&nbsp;{{end}}
+                <a href="{{.LoginUrl}}">{{.LoginLinkName}}</a>
+            </p>
+        {{end}}
+        {{with .ErrorMsg}}
+            <div class="error">{{.}}</div>
+        {{end}}
+        <p>
+            {{range .Ariane}}
+                /&nbsp;<a href="{{.Url}}">{{.Name}}</a>&nbsp;
+            {{end}}
+        </p>
+        <ul>
+            {{range .SubPages}}
+                <li><a href="{{.Url}}">{{.Name}}</a></li>
+            {{end}}
+        </ul>
+        <div>
+            {{.Body}}
+        </div>
+    </body>
 </html>

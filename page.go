@@ -128,13 +128,14 @@ func (p *Page) extractSubPageNames(c *gin.Context) []PageDesc {
 		if size := len(pages); size == 0 {
 			pageDescs = make([]PageDesc, 0)
 		} else {
+			url := GetCurrentUrl(c)
 			pageDescs = make([]PageDesc, 0, size)
 			for _, page := range pages {
 				if page.visible {
 					pageDescs = append(pageDescs,
 						PageDesc{
 							Name: getPageTitle(page.name, c),
-							Url:  page.name,
+							Url:  url + page.name,
 						},
 					)
 				}

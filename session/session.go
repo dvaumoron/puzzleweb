@@ -37,9 +37,7 @@ func getSessionId(c *gin.Context) (uint64, error) {
 	if err == nil {
 		sessionId, err = strconv.ParseUint(cookie, 10, 64)
 		if err != nil {
-			log.Logger.Info("Failed to parse session cookie.",
-				zap.Error(err),
-			)
+			log.Logger.Info("Failed to parse session cookie.", zap.Error(err))
 			sessionId, err = generateSessionCookie(c)
 		}
 	} else {
@@ -107,18 +105,13 @@ func Manage(c *gin.Context) {
 			}
 		}
 	} else {
-		log.Logger.Error("Failed to generate sessionId.",
-			zap.Error(err),
-		)
+		log.Logger.Error("Failed to generate sessionId.", zap.Error(err))
 		c.AbortWithError(http.StatusInternalServerError, err)
 	}
 }
 
 func logSessionError(c *gin.Context, msg string, sessionId uint64, err error) {
-	log.Logger.Error(msg,
-		zap.Uint64("sessionId", sessionId),
-		zap.Error(err),
-	)
+	log.Logger.Error(msg, zap.Uint64("sessionId", sessionId), zap.Error(err))
 	c.AbortWithError(http.StatusInternalServerError, err)
 }
 

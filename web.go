@@ -43,16 +43,13 @@ const siteName = "Site"
 const RedirectName = "Redirect"
 
 func CreateSite(args ...string) *Site {
-	rootTmpl := ""
-	if size := len(args); size == 0 {
-		rootTmpl = "index.html"
-	} else {
-		if rootTmpl = args[0]; rootTmpl == "" {
-			rootTmpl = "index.html"
-		}
-		if size > 1 {
-			log.Logger.Info("CreateSite should be called with 0 or 1 argument.")
-		}
+	size := len(args)
+	rootTmpl := "index.html"
+	if size != 0 && args[0] != "" {
+		rootTmpl = args[0]
+	}
+	if size > 1 {
+		log.Logger.Info("CreateSite should be called with 0 or 1 argument.")
 	}
 
 	engine := gin.Default()

@@ -19,7 +19,6 @@ package client
 
 import (
 	"context"
-	"html/template"
 	"strconv"
 	"strings"
 	"time"
@@ -27,8 +26,8 @@ import (
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/errors"
 	"github.com/dvaumoron/puzzleweb/log"
-	"github.com/dvaumoron/puzzleweb/markdownclient"
 	"github.com/dvaumoron/puzzleweb/rightclient"
+	"github.com/dvaumoron/puzzleweb/wiki/client/cache"
 	pb "github.com/dvaumoron/puzzlewikiservice"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -37,31 +36,9 @@ import (
 
 const VersionName = "version"
 
-type WikiContent struct {
-	Version  uint64
-	Markdown string
-	body     template.HTML
-}
-
-// Lazy loading of Body.
-func (content *WikiContent) GetBody() (template.HTML, error) {
-	// TODO sync apply call
-	var err error
-	body := content.body
-	if body == "" {
-		if markdown := content.Markdown; markdown != "" {
-			body, err = markdownclient.Apply(markdown)
-		}
-	}
-	return body, err
-}
-
-// TODO sync cache
-var wikisCache map[uint64]map[string]*WikiContent = make(map[uint64]map[string]*WikiContent)
-
-func LoadContent(wikiId uint64, userId uint64, lang string, title string, versionStr string) (*WikiContent, error) {
+func LoadContent(wikiId uint64, userId uint64, lang string, title string, versionStr string) (*cache.WikiContent, error) {
 	authorized, err := rightclient.AuthQuery(userId, wikiId, rightclient.ActionAccess)
-	var content *WikiContent
+	var content *cache.WikiContent
 	if err == nil {
 		if authorized {
 			version := uint64(0)
@@ -143,9 +120,9 @@ func buildRef(lang, title string) string {
 	return refBuilder.String()
 }
 
-func loadContent(wikiId uint64, wikiRef string, version uint64) (*WikiContent, error) {
+func loadContent(wikiId uint64, wikiRef string, version uint64) (*cache.WikiContent, error) {
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var content *WikiContent
+	var content *cache.WikiContent
 	if err == nil {
 		defer conn.Close()
 
@@ -161,7 +138,7 @@ func loadContent(wikiId uint64, wikiRef string, version uint64) (*WikiContent, e
 			if err == nil {
 				lastVersion := max(versions.List)
 
-				content = loadCacheContent(wikiId, wikiRef)
+				content = cache.Load(wikiId, wikiRef)
 				if content == nil || lastVersion != content.Version {
 					content, err = innerLoadContent(ctx, client, wikiId, wikiRef, 0)
 				}
@@ -175,17 +152,17 @@ func loadContent(wikiId uint64, wikiRef string, version uint64) (*WikiContent, e
 	return content, err
 }
 
-func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, wikiRef string, version uint64) (*WikiContent, error) {
+func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, wikiRef string, version uint64) (*cache.WikiContent, error) {
 	response, err := client.Load(ctx, &pb.WikiRequest{
 		WikiId: wikiId, WikiRef: wikiRef, Version: version,
 	})
-	var content *WikiContent
+	var content *cache.WikiContent
 	if err == nil {
-		content = &WikiContent{
-			Version: response.Version, Markdown: response.Text, body: "",
+		content = &cache.WikiContent{
+			Version: response.Version, Markdown: response.Text,
 		}
 		if version == 0 {
-			storeCacheContent(wikiId, wikiRef, content)
+			cache.Store(wikiId, wikiRef, content)
 		}
 	} else {
 		err = errors.ErrorTechnical
@@ -207,8 +184,8 @@ func storeContent(wikiId uint64, wikiRef string, last uint64, markdown string) e
 		})
 		if err == nil {
 			if response.Success {
-				storeCacheContent(wikiId, wikiRef, &WikiContent{
-					Version: response.Version, Markdown: markdown, body: "",
+				cache.Store(wikiId, wikiRef, &cache.WikiContent{
+					Version: response.Version, Markdown: markdown,
 				})
 			} else {
 				err = errors.ErrorUpdate
@@ -236,7 +213,7 @@ func getVersions(wikiId uint64, wikiRef string) ([]uint64, error) {
 			WikiId: wikiId, WikiRef: wikiRef,
 		})
 		if err == nil {
-			versions = response.List
+			versions = sort(response.List)
 		} else {
 			err = errors.ErrorTechnical
 		}
@@ -260,9 +237,9 @@ func deleteContent(wikiId uint64, wikiRef string, version uint64) error {
 		})
 		if err == nil {
 			if response.Success {
-				content := loadCacheContent(wikiId, wikiRef)
+				content := cache.Load(wikiId, wikiRef)
 				if content != nil && version == content.Version {
-					storeCacheContent(wikiId, wikiRef, nil)
+					cache.Store(wikiId, wikiRef, nil)
 				}
 			} else {
 				err = errors.ErrorUpdate
@@ -286,26 +263,16 @@ func max(list []uint64) uint64 {
 	return res
 }
 
-func loadCacheContent(wikiId uint64, wikiRef string) *WikiContent {
-	var content *WikiContent
-	wikiCache := wikisCache[wikiId]
-	if wikiCache != nil {
-		content = wikiCache[wikiRef]
+func sort(list []uint64) []uint64 {
+	valueSet := make([]bool, max(list))
+	for _, value := range list {
+		valueSet[value] = true
 	}
-	return content
-}
-
-func storeCacheContent(wikiId uint64, wikiRef string, content *WikiContent) {
-	wikiCache := wikisCache[wikiId]
-	if content == nil {
-		if wikiCache != nil {
-			delete(wikiCache, wikiRef)
+	list = list[:0]
+	for index, b := range valueSet {
+		if b {
+			list = append(list, uint64(index))
 		}
-	} else {
-		if wikiCache == nil {
-			wikiCache = make(map[string]*WikiContent)
-			wikisCache[wikiId] = wikiCache
-		}
-		wikiCache[wikiRef] = content
 	}
+	return list
 }

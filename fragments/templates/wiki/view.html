@@ -2,7 +2,11 @@ Css:
     wiki.css
 Body:
 
-<h2>{{.WikiTitle}} [<a href="{{.CurrentUrl}}../../edit/{{.WikiTitle}}">{{.EditLinkName}}</a>]</h2>
+<h2>{{.WikiTitle}}&nbsp;
+    {{if .EditLinkName}}
+        [<a href="{{.CurrentUrl}}../../edit/{{.WikiTitle}}">{{.EditLinkName}}</a>]
+    {{end}}
+</h2>
 
 <div>
     {{.WikiContent}}

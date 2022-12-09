@@ -20,6 +20,7 @@ package puzzleweb
 import (
 	"strings"
 
+	"github.com/dvaumoron/puzzleweb/errors"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
 )
@@ -72,7 +73,7 @@ func initData(c *gin.Context) gin.H {
 		"SubPages":   page.extractSubPageNames(c),
 	}
 	if errorMsg := c.Query("error"); errorMsg != "" {
-		data["ErrorMsg"] = errorMsg
+		data[errors.Msg] = errorMsg
 	}
 	for _, adder := range site.adders {
 		adder(data, c)

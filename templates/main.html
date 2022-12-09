@@ -9,7 +9,7 @@
     <h1>Title</h1>
     {{if .LoginUrl}}
       <p>
-        {{with .Login}}{{.Welcome}}&nbsp;{{.}}&nbsp;{{end}}
+        {{if .Login}}{{.Welcome}}&nbsp;{{.Login}}&nbsp;{{end}}
         <a href="{{.LoginUrl}}">{{.LoginLinkName}}</a>
       </p>
     {{end}}

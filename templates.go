@@ -21,7 +21,6 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 
@@ -82,8 +81,4 @@ func CreateTemplate(redirecter TemplateRedirecter) gin.HandlerFunc {
 			c.Redirect(http.StatusFound, redirect)
 		}
 	}
-}
-
-func DefaultErrorRedirect(errMsg string) string {
-	return "/?error=" + url.QueryEscape(errMsg)
 }

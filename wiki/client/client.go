@@ -40,14 +40,14 @@ const VersionName = "version"
 type WikiContent struct {
 	Version  uint64
 	Markdown string
-	Body     template.HTML
+	body     template.HTML
 }
 
 // Lazy loading of Body.
 func (content *WikiContent) GetBody() (template.HTML, error) {
 	// TODO sync apply call
 	var err error
-	body := content.Body
+	body := content.body
 	if body == "" {
 		if markdown := content.Markdown; markdown != "" {
 			body, err = markdownclient.Apply(markdown)
@@ -59,23 +59,23 @@ func (content *WikiContent) GetBody() (template.HTML, error) {
 // TODO sync cache
 var wikisCache map[uint64]map[string]*WikiContent = make(map[uint64]map[string]*WikiContent)
 
-func LoadContent(wikiId uint64, userId uint64, lang string, title string, version string) (*WikiContent, error) {
+func LoadContent(wikiId uint64, userId uint64, lang string, title string, versionStr string) (*WikiContent, error) {
 	authorized, err := rightclient.AuthQuery(userId, wikiId, rightclient.ActionAccess)
 	var content *WikiContent
 	if err == nil {
 		if authorized {
-			ver := uint64(0)
-			if version != "" {
-				ver, err = strconv.ParseUint(version, 10, 64)
+			version := uint64(0)
+			if versionStr != "" {
+				version, err = strconv.ParseUint(versionStr, 10, 64)
 				if err != nil {
 					log.Logger.Info("Failed to parse wiki version, falling to last.",
-						zap.String(VersionName, version),
+						zap.String(VersionName, versionStr),
 					)
-					ver = 0
+					version = 0
 				}
 			}
 
-			content, err = loadContent(wikiId, buildRef(lang, title), ver)
+			content, err = loadContent(wikiId, buildRef(lang, title), version)
 		} else {
 			err = errors.ErrorNotAuthorized
 		}
@@ -87,10 +87,15 @@ func StoreContent(wikiId uint64, userId uint64, lang string, title string, last 
 	authorized, err := rightclient.AuthQuery(userId, wikiId, rightclient.ActionCreate)
 	if err == nil {
 		if authorized {
-			ver := uint64(0)
-			ver, err = strconv.ParseUint(last, 10, 64)
+			version := uint64(0)
+			version, err = strconv.ParseUint(last, 10, 64)
 			if err == nil {
-				err = storeContent(wikiId, buildRef(lang, title), ver, markdown)
+				err = storeContent(wikiId, buildRef(lang, title), version, markdown)
+			} else {
+				log.Logger.Warn("Failed to parse wiki version.",
+					zap.String(VersionName, last),
+				)
+				err = errors.ErrorTechnical
 			}
 		} else {
 			err = errors.ErrorNotAuthorized
@@ -112,14 +117,16 @@ func GetVersions(wikiId uint64, userId uint64, lang string, title string) ([]uin
 	return versions, err
 }
 
-func DeleteContent(wikiId uint64, userId uint64, lang string, title string, version string) error {
+func DeleteContent(wikiId uint64, userId uint64, lang string, title string, versionStr string) error {
 	authorized, err := rightclient.AuthQuery(userId, wikiId, rightclient.ActionDelete)
 	if err == nil {
 		if authorized {
-			ver := uint64(0)
-			ver, err = strconv.ParseUint(version, 10, 64)
+			version := uint64(0)
+			version, err = strconv.ParseUint(versionStr, 10, 64)
 			if err == nil {
-				err = deleteContent(wikiId, buildRef(lang, title), ver)
+				err = deleteContent(wikiId, buildRef(lang, title), version)
+			} else {
+				err = errors.ErrorTechnical
 			}
 		} else {
 			err = errors.ErrorNotAuthorized
@@ -152,7 +159,7 @@ func loadContent(wikiId uint64, wikiRef string, version uint64) (*WikiContent, e
 				WikiId: wikiId, WikiRef: wikiRef,
 			})
 			if err == nil {
-				lastVersion := getLastVersion(versions.List)
+				lastVersion := max(versions.List)
 
 				content = loadCacheContent(wikiId, wikiRef)
 				if content == nil || lastVersion != content.Version {
@@ -162,6 +169,8 @@ func loadContent(wikiId uint64, wikiRef string, version uint64) (*WikiContent, e
 		} else {
 			content, err = innerLoadContent(ctx, client, wikiId, wikiRef, version)
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return content, err
 }
@@ -172,17 +181,14 @@ func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, 
 	})
 	var content *WikiContent
 	if err == nil {
-		var html template.HTML
-		text := response.Text
-		html, err = markdownclient.Apply(text)
-		if err == nil {
-			content = &WikiContent{
-				Version: response.Version, Markdown: text, Body: html,
-			}
-			if version == 0 {
-				storeCacheContent(wikiId, wikiRef, content)
-			}
+		content = &WikiContent{
+			Version: response.Version, Markdown: response.Text, body: "",
 		}
+		if version == 0 {
+			storeCacheContent(wikiId, wikiRef, content)
+		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return content, err
 }
@@ -202,12 +208,16 @@ func storeContent(wikiId uint64, wikiRef string, last uint64, markdown string) e
 		if err == nil {
 			if response.Success {
 				storeCacheContent(wikiId, wikiRef, &WikiContent{
-					Version: last, Markdown: markdown, Body: "",
+					Version: response.Version, Markdown: markdown, body: "",
 				})
 			} else {
 				err = errors.ErrorUpdate
 			}
+		} else {
+			err = errors.ErrorTechnical
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return err
 }
@@ -227,7 +237,11 @@ func getVersions(wikiId uint64, wikiRef string) ([]uint64, error) {
 		})
 		if err == nil {
 			versions = response.List
+		} else {
+			err = errors.ErrorTechnical
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return versions, err
 }
@@ -253,19 +267,23 @@ func deleteContent(wikiId uint64, wikiRef string, version uint64) error {
 			} else {
 				err = errors.ErrorUpdate
 			}
+		} else {
+			err = errors.ErrorTechnical
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return err
 }
 
-func getLastVersion(versions []uint64) uint64 {
-	version := uint64(0)
-	for _, current := range versions {
-		if current > version {
-			current = version
+func max(list []uint64) uint64 {
+	res := uint64(0)
+	for _, current := range list {
+		if current > res {
+			res = current
 		}
 	}
-	return version
+	return res
 }
 
 func loadCacheContent(wikiId uint64, wikiRef string) *WikiContent {

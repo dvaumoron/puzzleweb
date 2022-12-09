@@ -1,0 +1,17 @@
+Css:
+    wiki.css
+Body:
+
+<h2>{{.WikiTitle}}</h2>
+
+<ul>
+    {{range .Versions}}
+        <li>
+            <ul>
+                <li>{{.Number}}</li>
+                <li><a href="{{.BaseUrl}}{{.Lang}}/view/{{.Title}}?version={{.Number}}">{{.ViewLinkName}}</a></li>
+                <li><a href="{{.BaseUrl}}{{.Lang}}/delete/{{.Title}}?version={{.Number}}">{{.DeleteLinkName}}</a></li>
+            </ul>
+        <li>
+    {{end}}
+</ul>

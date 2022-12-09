@@ -29,7 +29,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-const LangName = "Lang"
+const LangName = "lang"
 
 var matcher language.Matcher
 var AllLang []string

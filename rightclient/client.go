@@ -19,11 +19,11 @@ package rightclient
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	pb "github.com/dvaumoron/puzzlerightservice"
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -35,8 +35,6 @@ const (
 	ActionDelete = pb.RightAction_DELETE
 )
 
-const NotAuthorized = "not.authorized"
-const UpdateError = "update.error"
 const roleAdminObjectId = 1 // ObjectId corresponding to role administration
 
 type Role struct {
@@ -60,7 +58,11 @@ func AuthQuery(userId uint64, objectId uint64, action pb.RightAction) (bool, err
 		})
 		if err == nil {
 			b = response.Authorized
+		} else {
+			err = errors.ErrorTechnical
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return b, err
 }
@@ -92,11 +94,17 @@ func GetRoles(adminId uint64, objectIds []uint64) ([]*Role, error) {
 							Actions: role.List.List,
 						})
 					}
+				} else {
+					err = errors.ErrorTechnical
 				}
 			} else {
-				err = errors.New(NotAuthorized)
+				err = errors.ErrorNotAuthorized
 			}
+		} else {
+			err = errors.ErrorTechnical
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return roleList, err
 }
@@ -121,11 +129,17 @@ func GetActions(adminId uint64, roleName string, objectId uint64) ([]pb.RightAct
 				actions, err = client.RoleRight(ctx, &pb.RoleRequest{Name: roleName, ObjectId: objectId})
 				if err == nil {
 					list = actions.List
+				} else {
+					err = errors.ErrorTechnical
 				}
 			} else {
-				err = errors.New(NotAuthorized)
+				err = errors.ErrorNotAuthorized
 			}
+		} else {
+			err = errors.ErrorTechnical
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return list, err
 }
@@ -155,13 +169,21 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 				response, err = client.UpdateUser(ctx, &pb.UserRight{
 					UserId: userId, List: converted,
 				})
-				if err == nil && !response.Authorized {
-					err = errors.New(UpdateError)
+				if err == nil {
+					if !response.Authorized {
+						err = errors.ErrorUpdate
+					}
+				} else {
+					err = errors.ErrorTechnical
 				}
 			} else {
-				err = errors.New(NotAuthorized)
+				err = errors.ErrorNotAuthorized
 			}
+		} else {
+			err = errors.ErrorTechnical
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return err
 }
@@ -185,13 +207,21 @@ func UpdateRole(adminId uint64, role Role) error {
 					Name: role.Name, ObjectId: role.ObjectId,
 					List: &pb.Actions{List: role.Actions},
 				})
-				if err == nil && !response.Authorized {
-					err = errors.New(UpdateError)
+				if err == nil {
+					if !response.Authorized {
+						err = errors.ErrorUpdate
+					}
+				} else {
+					err = errors.ErrorTechnical
 				}
 			} else {
-				err = errors.New(NotAuthorized)
+				err = errors.ErrorNotAuthorized
 			}
+		} else {
+			err = errors.ErrorTechnical
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return err
 }
@@ -223,11 +253,17 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 							Actions: role.List.List,
 						})
 					}
+				} else {
+					err = errors.ErrorTechnical
 				}
 			} else {
-				err = errors.New(NotAuthorized)
+				err = errors.ErrorNotAuthorized
 			}
+		} else {
+			err = errors.ErrorTechnical
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return roleList, err
 }

@@ -19,13 +19,13 @@ package client
 
 import (
 	"context"
-	"errors"
 	"html/template"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/errors"
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/markdownclient"
 	"github.com/dvaumoron/puzzleweb/rightclient"
@@ -77,7 +77,7 @@ func LoadContent(wikiId uint64, userId uint64, lang string, title string, versio
 
 			content, err = loadContent(wikiId, buildRef(lang, title), ver)
 		} else {
-			err = errors.New(rightclient.NotAuthorized)
+			err = errors.ErrorNotAuthorized
 		}
 	}
 	return content, err
@@ -93,7 +93,7 @@ func StoreContent(wikiId uint64, userId uint64, lang string, title string, last 
 				err = storeContent(wikiId, buildRef(lang, title), ver, markdown)
 			}
 		} else {
-			err = errors.New(rightclient.NotAuthorized)
+			err = errors.ErrorNotAuthorized
 		}
 	}
 	return err
@@ -106,7 +106,7 @@ func GetVersions(wikiId uint64, userId uint64, lang string, title string) ([]uin
 		if authorized {
 			versions, err = getVersions(wikiId, buildRef(lang, title))
 		} else {
-			err = errors.New(rightclient.NotAuthorized)
+			err = errors.ErrorNotAuthorized
 		}
 	}
 	return versions, err
@@ -122,7 +122,7 @@ func DeleteContent(wikiId uint64, userId uint64, lang string, title string, vers
 				err = deleteContent(wikiId, buildRef(lang, title), ver)
 			}
 		} else {
-			err = errors.New(rightclient.NotAuthorized)
+			err = errors.ErrorNotAuthorized
 		}
 	}
 	return err
@@ -201,19 +201,11 @@ func storeContent(wikiId uint64, wikiRef string, last uint64, markdown string) e
 		})
 		if err == nil {
 			if response.Success {
-				html, err := markdownclient.Apply(markdown)
-				if err == nil {
-					storeCacheContent(wikiId, wikiRef, &WikiContent{
-						Version: last, Markdown: markdown, Body: html,
-					})
-				} else {
-					storeCacheContent(wikiId, wikiRef, nil)
-					log.Logger.Info("Failed to apply markdown.",
-						zap.Error(err),
-					)
-				}
+				storeCacheContent(wikiId, wikiRef, &WikiContent{
+					Version: last, Markdown: markdown, Body: "",
+				})
 			} else {
-				err = errors.New(rightclient.UpdateError)
+				err = errors.ErrorUpdate
 			}
 		}
 	}
@@ -259,7 +251,7 @@ func deleteContent(wikiId uint64, wikiRef string, version uint64) error {
 					storeCacheContent(wikiId, wikiRef, nil)
 				}
 			} else {
-				err = errors.New(rightclient.UpdateError)
+				err = errors.ErrorUpdate
 			}
 		}
 	}

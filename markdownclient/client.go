@@ -24,6 +24,7 @@ import (
 
 	pb "github.com/dvaumoron/puzzlemarkdownservice"
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -37,12 +38,17 @@ func Apply(text string) (template.HTML, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		markdownHtml, err := pb.NewMarkdownClient(conn).Apply(ctx,
+		var markdownHtml *pb.MarkdownHtml
+		markdownHtml, err = pb.NewMarkdownClient(conn).Apply(ctx,
 			&pb.MarkdownText{Text: text},
 		)
 		if err == nil {
 			html = template.HTML(markdownHtml.Html)
+		} else {
+			err = errors.ErrorTechnical
 		}
+	} else {
+		err = errors.ErrorTechnical
 	}
 	return html, err
 }

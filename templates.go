@@ -30,8 +30,6 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-const QueryError = "?error="
-
 var templatesRender puzzleHTMLRender = loadTemplates()
 
 type puzzleHTMLRender struct {

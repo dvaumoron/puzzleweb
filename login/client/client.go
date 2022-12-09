@@ -25,6 +25,7 @@ import (
 
 	pb "github.com/dvaumoron/puzzleloginservice"
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -38,25 +39,31 @@ func salt(password string) string {
 
 func VerifyOrRegister(login string, password string, register bool) (uint64, bool, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return 0, false, err
-	}
-	defer conn.Close()
-	client := pb.NewLoginClient(conn)
+	id := uint64(0)
+	success := false
+	if err == nil {
+		defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
 
-	request := &pb.LoginRequest{Login: login, Salted: salt(password)}
-	var response *pb.LoginResponse
-	if register {
-		response, err = client.Register(ctx, request)
+		var response *pb.LoginResponse
+		client := pb.NewLoginClient(conn)
+		request := &pb.LoginRequest{Login: login, Salted: salt(password)}
+		if register {
+			response, err = client.Register(ctx, request)
+		} else {
+			response, err = client.Verify(ctx, request)
+		}
+
+		if err == nil {
+			id = response.Id
+			success = response.Success
+		} else {
+			err = errors.ErrorTechnical
+		}
 	} else {
-		response, err = client.Verify(ctx, request)
+		err = errors.ErrorTechnical
 	}
-
-	if err != nil {
-		return 0, false, err
-	}
-	return response.Id, response.Success, nil
+	return id, success, err
 }

@@ -20,14 +20,17 @@ package login
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/dvaumoron/puzzleweb"
+	"github.com/dvaumoron/puzzleweb/errors"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/login/client"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/dvaumoron/puzzleweb/settings"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type loginWidget struct {
@@ -35,7 +38,7 @@ type loginWidget struct {
 }
 
 const LoginName = "Login"
-const UserIdName = "UserId"
+const userIdName = "UserId"
 const loginUrlName = "LogintUrl"
 
 func (w *loginWidget) LoadInto(router gin.IRouter) {
@@ -46,7 +49,7 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 		currentUrl := c.Request.URL
 		var errorKey string
 		if len(currentUrl.Query()) == 0 {
-			errorKey = puzzleweb.QueryError
+			errorKey = errors.QueryError
 		} else {
 			errorKey = "&error="
 		}
@@ -78,7 +81,7 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 		if errorMsg == "" {
 			session := session.Get(c)
 			session.Store(LoginName, login)
-			session.Store(UserIdName, fmt.Sprint(userId))
+			session.Store(userIdName, fmt.Sprint(userId))
 
 			locale.SetLangCookie(c, settings.Get(userId, c)[locale.LangName])
 
@@ -91,9 +94,21 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 	router.GET("/logout", puzzleweb.CreateRedirect(func(c *gin.Context) string {
 		session := session.Get(c)
 		session.Delete(LoginName)
-		session.Delete(UserIdName)
+		session.Delete(userIdName)
 		return c.Query(puzzleweb.RedirectName)
 	}))
+}
+
+func GetUserId(c *gin.Context) uint64 {
+	userIdStr := session.Get(c).Load(userIdName)
+	userId, err := strconv.ParseUint(userIdStr, 10, 64)
+	if err != nil {
+		log.Logger.Info("Failed to parse userId.",
+			zap.Error(err),
+		)
+		userId = 0
+	}
+	return userId
 }
 
 func loginData(loginUrl string, logoutUrl string) puzzleweb.DataAdder {

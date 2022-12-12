@@ -37,6 +37,9 @@ func (content *WikiContent) GetBody() (template.HTML, error) {
 	if body == "" {
 		if markdown := content.Markdown; markdown != "" {
 			body, err = markdownclient.Apply(markdown)
+			if err == nil {
+				content.body = body
+			}
 		}
 	}
 	return body, err

@@ -36,6 +36,7 @@ import (
 type VersionDisplay struct {
 	Title          string
 	Number         string
+	Creator        string
 	BaseUrl        string
 	ViewLinkName   string
 	DeleteLinkName string
@@ -185,7 +186,8 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 					converted := make([]*VersionDisplay, 0, size)
 					for _, version := range versions {
 						converted = append(converted, &VersionDisplay{
-							Title: title, Number: fmt.Sprint(version), BaseUrl: baseUrl,
+							Title: title, Number: fmt.Sprint(version.Number),
+							Creator: version.UserLogin, BaseUrl: baseUrl,
 							ViewLinkName: viewLinkName, DeleteLinkName: deleteLinkName,
 						})
 					}

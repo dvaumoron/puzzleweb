@@ -26,6 +26,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/errors"
 	"github.com/dvaumoron/puzzleweb/log"
+	"github.com/dvaumoron/puzzleweb/login/client"
 	"github.com/dvaumoron/puzzleweb/rightclient"
 	"github.com/dvaumoron/puzzleweb/wiki/client/cache"
 	pb "github.com/dvaumoron/puzzlewikiservice"
@@ -35,6 +36,11 @@ import (
 )
 
 const VersionName = "version"
+
+type Version struct {
+	Number    uint64
+	UserLogin string
+}
 
 func LoadContent(wikiId uint64, userId uint64, lang string, title string, versionStr string) (*cache.WikiContent, error) {
 	authorized, err := rightclient.AuthQuery(userId, wikiId, rightclient.ActionAccess)
@@ -69,7 +75,7 @@ func StoreContent(wikiId uint64, userId uint64, lang string, title string, last 
 			if err == nil {
 				err = storeContent(wikiId, buildRef(lang, title), version, markdown)
 			} else {
-				log.Logger.Warn("Failed to parse wiki version.",
+				log.Logger.Warn("Failed to parse wiki last version.",
 					zap.String(VersionName, last),
 				)
 				err = errors.ErrorTechnical
@@ -81,9 +87,9 @@ func StoreContent(wikiId uint64, userId uint64, lang string, title string, last 
 	return err
 }
 
-func GetVersions(wikiId uint64, userId uint64, lang string, title string) ([]uint64, error) {
+func GetVersions(wikiId uint64, userId uint64, lang string, title string) ([]Version, error) {
 	authorized, err := rightclient.AuthQuery(userId, wikiId, rightclient.ActionAccess)
-	var versions []uint64
+	var versions []Version
 	if err == nil {
 		if authorized {
 			versions, err = getVersions(wikiId, buildRef(lang, title))
@@ -136,11 +142,14 @@ func loadContent(wikiId uint64, wikiRef string, version uint64) (*cache.WikiCont
 				WikiId: wikiId, WikiRef: wikiRef,
 			})
 			if err == nil {
-				lastVersion := max(versions.List)
-
-				content = cache.Load(wikiId, wikiRef)
-				if content == nil || lastVersion != content.Version {
+				lastVersion := maxVersion(versions.List)
+				if lastVersion == nil {
 					content, err = innerLoadContent(ctx, client, wikiId, wikiRef, 0)
+				} else {
+					content = cache.Load(wikiId, wikiRef)
+					if content == nil || lastVersion.Number != content.Version {
+						content, err = innerLoadContent(ctx, client, wikiId, wikiRef, 0)
+					}
 				}
 			}
 		} else {
@@ -199,9 +208,9 @@ func storeContent(wikiId uint64, wikiRef string, last uint64, markdown string) e
 	return err
 }
 
-func getVersions(wikiId uint64, wikiRef string) ([]uint64, error) {
+func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var versions []uint64
+	var versions []Version
 	if err == nil {
 		defer conn.Close()
 
@@ -213,7 +222,10 @@ func getVersions(wikiId uint64, wikiRef string) ([]uint64, error) {
 			WikiId: wikiId, WikiRef: wikiRef,
 		})
 		if err == nil {
-			versions = sort(response.List)
+			list := response.List
+			if len(list) != 0 {
+				versions = sortConvertVersion(response.List)
+			}
 		} else {
 			err = errors.ErrorTechnical
 		}
@@ -253,26 +265,33 @@ func deleteContent(wikiId uint64, wikiRef string, version uint64) error {
 	return err
 }
 
-func max(list []uint64) uint64 {
-	res := uint64(0)
+func maxVersion(list []*pb.Version) *pb.Version {
+	var res *pb.Version
+	if len(list) != 0 {
+		res = list[0]
+	}
 	for _, current := range list {
-		if current > res {
+		if current.Number > res.Number {
 			res = current
 		}
 	}
 	return res
 }
 
-func sort(list []uint64) []uint64 {
-	valueSet := make([]bool, max(list))
+func sortConvertVersion(list []*pb.Version) []Version {
+	size := len(list)
+	valueSet := make([]*pb.Version, maxVersion(list).Number)
+	ids := make([]uint64, 0, size)
 	for _, value := range list {
-		valueSet[value] = true
+		valueSet[value.Number] = value
+		ids = append(ids, value.UserId)
 	}
-	list = list[:0]
-	for index, b := range valueSet {
-		if b {
-			list = append(list, uint64(index))
+	logins, _ := client.GetLogins(ids)
+	newList := make([]Version, 0, size)
+	for _, value := range valueSet {
+		if value != nil {
+			newList = append(newList, Version{Number: value.Number, UserLogin: logins[value.UserId]})
 		}
 	}
-	return list
+	return newList
 }

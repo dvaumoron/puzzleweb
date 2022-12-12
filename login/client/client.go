@@ -67,3 +67,29 @@ func VerifyOrRegister(login string, password string, register bool) (uint64, boo
 	}
 	return id, success, err
 }
+
+func GetLogins(ids []uint64) (map[uint64]string, error) {
+	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	var logins map[uint64]string
+	if err == nil {
+		defer conn.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		var response *pb.Logins
+		response, err = pb.NewLoginClient(conn).ListLogins(ctx, &pb.UserIds{Ids: ids})
+
+		if err == nil {
+			logins = make(map[uint64]string)
+			for index, value := range response.List {
+				logins[ids[index]] = value
+			}
+		} else {
+			err = errors.ErrorTechnical
+		}
+	} else {
+		err = errors.ErrorTechnical
+	}
+	return logins, err
+}

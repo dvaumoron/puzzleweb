@@ -19,11 +19,12 @@ package rightclient
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	pb "github.com/dvaumoron/puzzlerightservice"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/errors"
+	puzzleerrors "github.com/dvaumoron/puzzleweb/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -36,6 +37,17 @@ const (
 )
 
 const roleAdminObjectId = 1 // ObjectId corresponding to role administration
+
+var usedObjectIds = []uint64{roleAdminObjectId}
+
+func CheckAvailableObjectId(objectId uint64) {
+	for _, usedId := range usedObjectIds {
+		if objectId == usedId {
+			panic(errors.New("Duplicate ObjectId."))
+		}
+	}
+	usedObjectIds = append(usedObjectIds, objectId)
+}
 
 type Role struct {
 	Name     string
@@ -59,12 +71,12 @@ func AuthQuery(userId uint64, objectId uint64, action pb.RightAction) (bool, err
 		if err == nil {
 			b = response.Authorized
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			puzzleerrors.LogOriginalError(err)
+			err = puzzleerrors.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		puzzleerrors.LogOriginalError(err)
+		err = puzzleerrors.ErrorTechnical
 	}
 	return b, err
 }
@@ -97,19 +109,19 @@ func GetRoles(adminId uint64, objectIds []uint64) ([]*Role, error) {
 						})
 					}
 				} else {
-					errors.LogOriginalError(err)
-					err = errors.ErrorTechnical
+					puzzleerrors.LogOriginalError(err)
+					err = puzzleerrors.ErrorTechnical
 				}
 			} else {
-				err = errors.ErrorNotAuthorized
+				err = puzzleerrors.ErrorNotAuthorized
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			puzzleerrors.LogOriginalError(err)
+			err = puzzleerrors.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		puzzleerrors.LogOriginalError(err)
+		err = puzzleerrors.ErrorTechnical
 	}
 	return roleList, err
 }
@@ -135,19 +147,19 @@ func GetActions(adminId uint64, roleName string, objectId uint64) ([]pb.RightAct
 				if err == nil {
 					list = actions.List
 				} else {
-					errors.LogOriginalError(err)
-					err = errors.ErrorTechnical
+					puzzleerrors.LogOriginalError(err)
+					err = puzzleerrors.ErrorTechnical
 				}
 			} else {
-				err = errors.ErrorNotAuthorized
+				err = puzzleerrors.ErrorNotAuthorized
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			puzzleerrors.LogOriginalError(err)
+			err = puzzleerrors.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		puzzleerrors.LogOriginalError(err)
+		err = puzzleerrors.ErrorTechnical
 	}
 	return list, err
 }
@@ -179,22 +191,22 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 				})
 				if err == nil {
 					if !response.Authorized {
-						err = errors.ErrorUpdate
+						err = puzzleerrors.ErrorUpdate
 					}
 				} else {
-					errors.LogOriginalError(err)
-					err = errors.ErrorTechnical
+					puzzleerrors.LogOriginalError(err)
+					err = puzzleerrors.ErrorTechnical
 				}
 			} else {
-				err = errors.ErrorNotAuthorized
+				err = puzzleerrors.ErrorNotAuthorized
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			puzzleerrors.LogOriginalError(err)
+			err = puzzleerrors.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		puzzleerrors.LogOriginalError(err)
+		err = puzzleerrors.ErrorTechnical
 	}
 	return err
 }
@@ -220,22 +232,22 @@ func UpdateRole(adminId uint64, role Role) error {
 				})
 				if err == nil {
 					if !response.Authorized {
-						err = errors.ErrorUpdate
+						err = puzzleerrors.ErrorUpdate
 					}
 				} else {
-					errors.LogOriginalError(err)
-					err = errors.ErrorTechnical
+					puzzleerrors.LogOriginalError(err)
+					err = puzzleerrors.ErrorTechnical
 				}
 			} else {
-				err = errors.ErrorNotAuthorized
+				err = puzzleerrors.ErrorNotAuthorized
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			puzzleerrors.LogOriginalError(err)
+			err = puzzleerrors.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		puzzleerrors.LogOriginalError(err)
+		err = puzzleerrors.ErrorTechnical
 	}
 	return err
 }
@@ -268,19 +280,19 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 						})
 					}
 				} else {
-					errors.LogOriginalError(err)
-					err = errors.ErrorTechnical
+					puzzleerrors.LogOriginalError(err)
+					err = puzzleerrors.ErrorTechnical
 				}
 			} else {
-				err = errors.ErrorNotAuthorized
+				err = puzzleerrors.ErrorNotAuthorized
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			puzzleerrors.LogOriginalError(err)
+			err = puzzleerrors.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		puzzleerrors.LogOriginalError(err)
+		err = puzzleerrors.ErrorTechnical
 	}
 	return roleList, err
 }

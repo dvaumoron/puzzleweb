@@ -33,70 +33,54 @@ import (
 	"go.uber.org/zap"
 )
 
-type loginWidget struct {
-	tmpl string
-}
-
 const LoginName = "Login"
 const userIdName = "UserId"
 const loginUrlName = "LoginUrl"
+const prevUrlWithErrorName = "PrevUrlWithError"
+
+type loginWidget struct {
+	displayHanler gin.HandlerFunc
+}
+
+var submitHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
+	login := c.PostForm(LoginName)
+	password := c.PostForm("Password")
+	register := c.PostForm("Register") == "true"
+
+	userId, success, err := client.VerifyOrRegister(login, password, register)
+	errorMsg := ""
+	if err != nil {
+		errorMsg = err.Error()
+	} else if !success {
+		errorMsg = locale.GetText("wrong.login", c)
+	}
+
+	target := ""
+	if errorMsg == "" {
+		session := session.Get(c)
+		session.Store(LoginName, login)
+		session.Store(userIdName, fmt.Sprint(userId))
+
+		locale.SetLangCookie(c, settings.Get(userId, c)[locale.LangName])
+
+		target = c.PostForm(puzzleweb.RedirectName)
+	} else {
+		target = c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
+	}
+	return target
+})
+
+var logoutHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
+	session := session.Get(c)
+	session.Delete(LoginName)
+	session.Delete(userIdName)
+	return c.Query(puzzleweb.RedirectName)
+})
 
 func (w *loginWidget) LoadInto(router gin.IRouter) {
-	const prevUrlWithErrorName = "PrevUrlWithError"
-	router.GET("/", puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-		data[puzzleweb.RedirectName] = c.Query(puzzleweb.RedirectName)
-
-		currentUrl := c.Request.URL
-		var errorKey string
-		if len(currentUrl.Query()) == 0 {
-			errorKey = errors.QueryError
-		} else {
-			errorKey = "&error="
-		}
-		data[prevUrlWithErrorName] = currentUrl.String() + errorKey
-
-		data["LoginLabel"] = locale.GetText("login.label", c)
-		data["PasswordLabel"] = locale.GetText("password.label", c)
-		data["RegisterLinkName"] = locale.GetText("register.link.name", c)
-
-		// To hide the connection link
-		delete(data, loginUrlName)
-
-		return w.tmpl, ""
-	}))
-	router.POST("/submit", puzzleweb.CreateRedirect(func(c *gin.Context) string {
-		login := c.PostForm(LoginName)
-		password := c.PostForm("Password")
-		register := c.PostForm("Register") == "true"
-
-		userId, success, err := client.VerifyOrRegister(login, password, register)
-		errorMsg := ""
-		if err != nil {
-			errorMsg = err.Error()
-		} else if !success {
-			errorMsg = locale.GetText("wrong.login", c)
-		}
-
-		target := ""
-		if errorMsg == "" {
-			session := session.Get(c)
-			session.Store(LoginName, login)
-			session.Store(userIdName, fmt.Sprint(userId))
-
-			locale.SetLangCookie(c, settings.Get(userId, c)[locale.LangName])
-
-			target = c.PostForm(puzzleweb.RedirectName)
-		} else {
-			target = c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
-		}
-		return target
-	}))
-	router.GET("/logout", puzzleweb.CreateRedirect(func(c *gin.Context) string {
-		session := session.Get(c)
-		session.Delete(LoginName)
-		session.Delete(userIdName)
-		return c.Query(puzzleweb.RedirectName)
-	}))
+	router.GET("/", w.displayHanler)
+	router.POST("/submit", submitHandler)
+	router.GET("/logout", logoutHandler)
 }
 
 func GetUserId(c *gin.Context) uint64 {
@@ -136,7 +120,29 @@ func AddLoginPage(site *puzzleweb.Site, name string, args ...string) {
 	}
 
 	p := puzzleweb.NewHiddenPage(name)
-	p.Widget = &loginWidget{tmpl: tmpl}
+	p.Widget = &loginWidget{
+		displayHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+			data[puzzleweb.RedirectName] = c.Query(puzzleweb.RedirectName)
+
+			currentUrl := c.Request.URL
+			var errorKey string
+			if len(currentUrl.Query()) == 0 {
+				errorKey = errors.QueryError
+			} else {
+				errorKey = "&error="
+			}
+			data[prevUrlWithErrorName] = currentUrl.String() + errorKey
+
+			data["LoginLabel"] = locale.GetText("login.label", c)
+			data["PasswordLabel"] = locale.GetText("password.label", c)
+			data["RegisterLinkName"] = locale.GetText("register.link.name", c)
+
+			// To hide the connection link
+			delete(data, loginUrlName)
+
+			return tmpl, ""
+		}),
+	}
 
 	baseUrl := "/" + name
 	loginUrl := baseUrl + "?redirect="

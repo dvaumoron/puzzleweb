@@ -30,6 +30,10 @@ type PageDesc struct {
 	Url  string
 }
 
+func makePageDesc(name string, url string, c *gin.Context) PageDesc {
+	return PageDesc{Name: getPageTitle(name, c), Url: url}
+}
+
 func getPageTitle(name string, c *gin.Context) string {
 	return locale.GetText("page.title."+name, c)
 }
@@ -61,9 +65,7 @@ func extractAriane(splittedPath []string, c *gin.Context) []PageDesc {
 	for _, name := range splittedPath {
 		urlBuilder.WriteString("/")
 		urlBuilder.WriteString(name)
-		pageDescs = append(pageDescs, PageDesc{
-			Name: getPageTitle(name, c), Url: urlBuilder.String(),
-		})
+		pageDescs = append(pageDescs, makePageDesc(name, urlBuilder.String(), c))
 	}
 	return pageDescs
 }

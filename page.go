@@ -43,8 +43,8 @@ func NewHiddenPage(name string) *Page {
 }
 
 type staticWidget struct {
-	tmpl     string
-	subPages []*Page
+	displayHandler gin.HandlerFunc
+	subPages       []*Page
 }
 
 func (w *staticWidget) addSubPage(page *Page) {
@@ -52,7 +52,7 @@ func (w *staticWidget) addSubPage(page *Page) {
 }
 
 func (w *staticWidget) LoadInto(router gin.IRouter) {
-	router.GET("/", CreateTemplate(localizedTmpl(w.tmpl)))
+	router.GET("/", w.displayHandler)
 	for _, page := range w.subPages {
 		page.Widget.LoadInto(router.Group("/" + page.name))
 	}
@@ -72,7 +72,7 @@ func localizedTmpl(tmpl string) TemplateRedirecter {
 }
 
 func newStaticWidget(tmpl string) Widget {
-	return &staticWidget{tmpl: tmpl, subPages: make([]*Page, 0)}
+	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(tmpl))}
 }
 
 func NewStaticPage(name, tmpl string) *Page {
@@ -125,24 +125,15 @@ func (p *Page) extractSubPageNames(c *gin.Context) []PageDesc {
 	sw, ok := p.Widget.(*staticWidget)
 	if ok {
 		pages := sw.subPages
-		if size := len(pages); size == 0 {
-			pageDescs = make([]PageDesc, 0)
-		} else {
+		if size := len(pages); size != 0 {
 			url := GetCurrentUrl(c)
 			pageDescs = make([]PageDesc, 0, size)
 			for _, page := range pages {
 				if page.visible {
-					pageDescs = append(pageDescs,
-						PageDesc{
-							Name: getPageTitle(page.name, c),
-							Url:  url + page.name,
-						},
-					)
+					pageDescs = append(pageDescs, makePageDesc(page.name, url+page.name, c))
 				}
 			}
 		}
-	} else {
-		pageDescs = make([]PageDesc, 0)
 	}
 	return pageDescs
 }

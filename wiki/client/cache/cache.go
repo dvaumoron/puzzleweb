@@ -52,33 +52,45 @@ func (content *WikiContent) GetBody() (template.HTML, error) {
 	return body, err
 }
 
-var wikiCacheMutex sync.RWMutex
-var wikisCache map[uint64]map[string]*WikiContent = make(map[uint64]map[string]*WikiContent)
+type wikiCache struct {
+	mutex sync.RWMutex
+	cache map[string]*WikiContent
+}
 
-func Load(wikiId uint64, wikiRef string) *WikiContent {
-	var content *WikiContent
-	wikiCacheMutex.RLock()
-	wikiCache := wikisCache[wikiId]
-	if wikiCache != nil {
-		content = wikiCache[wikiRef]
-	}
-	wikiCacheMutex.RUnlock()
+func (wiki *wikiCache) load(wikiRef string) *WikiContent {
+	wiki.mutex.RLock()
+	content := wiki.cache[wikiRef]
+	wiki.mutex.RUnlock()
 	return content
 }
 
+func (wiki *wikiCache) store(wikiRef string, content *WikiContent) {
+	wiki.mutex.Lock()
+	wiki.cache[wikiRef] = content
+	wiki.mutex.Unlock()
+}
+
+func (wiki *wikiCache) delete(wikiRef string) {
+	wiki.mutex.Lock()
+	delete(wiki.cache, wikiRef)
+	wiki.mutex.Unlock()
+}
+
+var wikisCache map[uint64]*wikiCache = make(map[uint64]*wikiCache)
+
+func InitWikiId(wikiId uint64) {
+	wikisCache[wikiId] = &wikiCache{cache: make(map[string]*WikiContent)}
+}
+
+func Load(wikiId uint64, wikiRef string) *WikiContent {
+	return wikisCache[wikiId].load(wikiRef)
+}
+
 func Store(wikiId uint64, wikiRef string, content *WikiContent) {
-	wikiCacheMutex.Lock()
 	wikiCache := wikisCache[wikiId]
 	if content == nil {
-		if wikiCache != nil {
-			delete(wikiCache, wikiRef)
-		}
+		wikiCache.delete(wikiRef)
 	} else {
-		if wikiCache == nil {
-			wikiCache = make(map[string]*WikiContent)
-			wikisCache[wikiId] = wikiCache
-		}
-		wikiCache[wikiRef] = content
+		wikiCache.store(wikiRef, content)
 	}
-	wikiCacheMutex.Unlock()
 }

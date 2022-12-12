@@ -22,7 +22,9 @@ import (
 	"net/url"
 
 	"github.com/dvaumoron/puzzleweb/locale"
+	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 const Msg = "ErrorMsg"
@@ -33,6 +35,10 @@ const NoElement = "no.element"
 var ErrorNotAuthorized = errors.New("error.not.authorized")
 var ErrorTechnical = errors.New("error.technical.problem")
 var ErrorUpdate = errors.New("error.update")
+
+func LogOriginalError(err error) {
+	log.Logger.Warn("Original technical error.", zap.Error(err))
+}
 
 func DefaultErrorRedirect(errMsg string, c *gin.Context) string {
 	return "/?error=" + url.QueryEscape(locale.GetText(errMsg, c))

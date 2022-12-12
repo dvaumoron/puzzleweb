@@ -45,9 +45,11 @@ func Apply(text string) (template.HTML, error) {
 		if err == nil {
 			html = template.HTML(markdownHtml.Html)
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return html, err

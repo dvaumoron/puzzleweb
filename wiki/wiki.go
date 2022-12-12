@@ -30,7 +30,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/login"
 	"github.com/dvaumoron/puzzleweb/wiki/client"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 type VersionDisplay struct {
@@ -51,6 +50,7 @@ type wikiWidget struct {
 }
 
 func (w *wikiWidget) LoadInto(router gin.IRouter) {
+	const versionName = "version"
 	const viewMode = "/view/"
 	const listMode = "/list/"
 	const titleName = "title"
@@ -72,13 +72,16 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 		redirect := ""
 		if lang == askedLang {
 			userId := login.GetUserId(c)
-			version := c.Query(client.VersionName)
+			version := c.Query(versionName)
 			content, err := client.LoadContent(w.wikiId, userId, lang, title, version)
 			if err == nil {
 				if content == nil {
-					redirect = wikiUrlBuilder(
-						puzzleweb.GetBaseUrl(3, c), lang, "/edit/", title,
-					).String()
+					base := puzzleweb.GetBaseUrl(3, c)
+					if version == "" {
+						redirect = wikiUrlBuilder(base, lang, "/edit/", title).String()
+					} else {
+						redirect = wikiUrlBuilder(base, lang, viewMode, title).String()
+					}
 				} else {
 					var body template.HTML
 					body, err = content.GetBody()
@@ -94,7 +97,6 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 						data[wikiBaseUrlName] = puzzleweb.GetBaseUrl(2, c)
 						data[wikiContentName] = body
 					} else {
-						log.Logger.Info("Failed to apply markdown.", zap.Error(err))
 						redirect = errors.DefaultErrorRedirect(err.Error(), c)
 					}
 				}
@@ -149,7 +151,7 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 		targetBuilder := wikiUrlBuilder(puzzleweb.GetBaseUrl(3, c), lang, viewMode, title)
 		if lang == askedLang {
 			content := c.PostForm("content")
-			last := c.PostForm(client.VersionName)
+			last := c.PostForm(versionName)
 
 			userId := login.GetUserId(c)
 			err := client.StoreContent(w.wikiId, userId, lang, title, last, content)
@@ -217,7 +219,7 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 		targetBuilder := wikiUrlBuilder(puzzleweb.GetBaseUrl(3, c), lang, listMode, title)
 		if lang == askedLang {
 			userId := login.GetUserId(c)
-			version := c.Query(client.VersionName)
+			version := c.Query(versionName)
 			err := client.DeleteContent(w.wikiId, userId, lang, title, version)
 			if err != nil {
 				writeError(targetBuilder, err.Error(), c)
@@ -244,12 +246,11 @@ func writeError(urlBuilder *strings.Builder, errMsg string, c *gin.Context) {
 }
 
 func NewWikiPage(name string, wikiId uint64, args ...string) *puzzleweb.Page {
-	size := len(args)
 	defaultPage := "Welcome"
 	viewTmpl := "wiki/view.html"
 	editTmpl := "wiki/edit.html"
 	listTmpl := "wiki/list.html"
-	switch size {
+	switch len(args) {
 	default:
 		log.Logger.Info("NewWikiPage should be called with 2 to 6 arguments.")
 		fallthrough

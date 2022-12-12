@@ -35,8 +35,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const VersionName = "version"
-
 type Version struct {
 	Number    uint64
 	UserLogin string
@@ -52,7 +50,7 @@ func LoadContent(wikiId uint64, userId uint64, lang string, title string, versio
 				version, err = strconv.ParseUint(versionStr, 10, 64)
 				if err != nil {
 					log.Logger.Info("Failed to parse wiki version, falling to last.",
-						zap.String(VersionName, versionStr),
+						zap.Error(err),
 					)
 					version = 0
 				}
@@ -76,7 +74,7 @@ func StoreContent(wikiId uint64, userId uint64, lang string, title string, last 
 				err = storeContent(wikiId, buildRef(lang, title), version, markdown)
 			} else {
 				log.Logger.Warn("Failed to parse wiki last version.",
-					zap.String(VersionName, last),
+					zap.Error(err),
 				)
 				err = errors.ErrorTechnical
 			}
@@ -109,6 +107,9 @@ func DeleteContent(wikiId uint64, userId uint64, lang string, title string, vers
 			if err == nil {
 				err = deleteContent(wikiId, buildRef(lang, title), version)
 			} else {
+				log.Logger.Warn("Failed to parse wiki version to delete.",
+					zap.Error(err),
+				)
 				err = errors.ErrorTechnical
 			}
 		} else {
@@ -151,11 +152,15 @@ func loadContent(wikiId uint64, wikiRef string, version uint64) (*cache.WikiCont
 						content, err = innerLoadContent(ctx, client, wikiId, wikiRef, 0)
 					}
 				}
+			} else {
+				errors.LogOriginalError(err)
+				err = errors.ErrorTechnical
 			}
 		} else {
 			content, err = innerLoadContent(ctx, client, wikiId, wikiRef, version)
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return content, err
@@ -174,6 +179,7 @@ func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, 
 			cache.Store(wikiId, wikiRef, content)
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return content, err
@@ -200,9 +206,11 @@ func storeContent(wikiId uint64, wikiRef string, last uint64, markdown string) e
 				err = errors.ErrorUpdate
 			}
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return err
@@ -224,12 +232,14 @@ func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {
 		if err == nil {
 			list := response.List
 			if len(list) != 0 {
-				versions = sortConvertVersion(response.List)
+				versions = sortConvertVersion(list)
 			}
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return versions, err
@@ -257,9 +267,11 @@ func deleteContent(wikiId uint64, wikiRef string, version uint64) error {
 				err = errors.ErrorUpdate
 			}
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return err
@@ -286,7 +298,10 @@ func sortConvertVersion(list []*pb.Version) []Version {
 		valueSet[value.Number] = value
 		ids = append(ids, value.UserId)
 	}
-	logins, _ := client.GetLogins(ids)
+	logins, err := client.GetLogins(ids)
+	if err != nil {
+		errors.LogOriginalError(err)
+	}
 	newList := make([]Version, 0, size)
 	for _, value := range valueSet {
 		if value != nil {

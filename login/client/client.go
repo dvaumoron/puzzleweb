@@ -60,9 +60,11 @@ func VerifyOrRegister(login string, password string, register bool) (uint64, boo
 			id = response.Id
 			success = response.Success
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return id, success, err
@@ -86,9 +88,11 @@ func GetLogins(ids []uint64) (map[uint64]string, error) {
 				logins[ids[index]] = value
 			}
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return logins, err

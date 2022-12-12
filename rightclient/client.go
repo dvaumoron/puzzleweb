@@ -59,9 +59,11 @@ func AuthQuery(userId uint64, objectId uint64, action pb.RightAction) (bool, err
 		if err == nil {
 			b = response.Authorized
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return b, err
@@ -95,15 +97,18 @@ func GetRoles(adminId uint64, objectIds []uint64) ([]*Role, error) {
 						})
 					}
 				} else {
+					errors.LogOriginalError(err)
 					err = errors.ErrorTechnical
 				}
 			} else {
 				err = errors.ErrorNotAuthorized
 			}
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return roleList, err
@@ -130,15 +135,18 @@ func GetActions(adminId uint64, roleName string, objectId uint64) ([]pb.RightAct
 				if err == nil {
 					list = actions.List
 				} else {
+					errors.LogOriginalError(err)
 					err = errors.ErrorTechnical
 				}
 			} else {
 				err = errors.ErrorNotAuthorized
 			}
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return list, err
@@ -174,15 +182,18 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 						err = errors.ErrorUpdate
 					}
 				} else {
+					errors.LogOriginalError(err)
 					err = errors.ErrorTechnical
 				}
 			} else {
 				err = errors.ErrorNotAuthorized
 			}
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return err
@@ -212,15 +223,18 @@ func UpdateRole(adminId uint64, role Role) error {
 						err = errors.ErrorUpdate
 					}
 				} else {
+					errors.LogOriginalError(err)
 					err = errors.ErrorTechnical
 				}
 			} else {
 				err = errors.ErrorNotAuthorized
 			}
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return err
@@ -254,15 +268,18 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 						})
 					}
 				} else {
+					errors.LogOriginalError(err)
 					err = errors.ErrorTechnical
 				}
 			} else {
 				err = errors.ErrorNotAuthorized
 			}
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return roleList, err

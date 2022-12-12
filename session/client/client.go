@@ -44,9 +44,11 @@ func Generate() (uint64, error) {
 		if err == nil {
 			id = response.Id
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return id, err
@@ -76,9 +78,11 @@ func get(addr string, id uint64) (map[string]string, error) {
 		if err == nil {
 			info = response.Info
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return info, err
@@ -111,12 +115,15 @@ func update(addr string, id uint64, info map[string]string) error {
 
 		if err == nil {
 			if strErr.Err != "" {
+				errors.LogOriginalError(err)
 				err = errors.ErrorTechnical
 			}
 		} else {
+			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
 	} else {
+		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical
 	}
 	return err

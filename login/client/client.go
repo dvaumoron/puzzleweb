@@ -79,6 +79,8 @@ func GetLogins(ids []uint64) (map[uint64]string, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
+		ids = removeDuplicateId(ids)
+
 		var response *pb.Logins
 		response, err = pb.NewLoginClient(conn).ListLogins(ctx, &pb.UserIds{Ids: ids})
 
@@ -96,4 +98,17 @@ func GetLogins(ids []uint64) (map[uint64]string, error) {
 		err = errors.ErrorTechnical
 	}
 	return logins, err
+}
+
+func removeDuplicateId(ids []uint64) []uint64 {
+	type empty struct{}
+	idSet := make(map[uint64]empty)
+	for _, id := range ids {
+		idSet[id] = empty{}
+	}
+	cleanned := make([]uint64, 0, len(ids))
+	for id := range idSet {
+		cleanned = append(cleanned, id)
+	}
+	return cleanned
 }

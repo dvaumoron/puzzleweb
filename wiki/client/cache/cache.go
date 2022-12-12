@@ -19,45 +19,55 @@ package cache
 
 import (
 	"html/template"
+	"sync"
 
 	"github.com/dvaumoron/puzzleweb/markdownclient"
 )
 
 type WikiContent struct {
-	Version  uint64
-	Markdown string
-	body     template.HTML
+	Version   uint64
+	Markdown  string
+	bodyMutex sync.RWMutex
+	body      template.HTML
 }
 
-// Lazy loading of Body.
+// Lazy loading for markdown application on body.
 func (content *WikiContent) GetBody() (template.HTML, error) {
-	// TODO sync apply call
 	var err error
+	content.bodyMutex.RLock()
 	body := content.body
+	content.bodyMutex.RUnlock()
 	if body == "" {
 		if markdown := content.Markdown; markdown != "" {
-			body, err = markdownclient.Apply(markdown)
-			if err == nil {
-				content.body = body
+			content.bodyMutex.Lock()
+			if body = content.body; body == "" {
+				body, err = markdownclient.Apply(markdown)
+				if err == nil {
+					content.body = body
+				}
 			}
+			content.bodyMutex.Unlock()
 		}
 	}
 	return body, err
 }
 
-// TODO sync cache
+var wikiCacheMutex sync.RWMutex
 var wikisCache map[uint64]map[string]*WikiContent = make(map[uint64]map[string]*WikiContent)
 
 func Load(wikiId uint64, wikiRef string) *WikiContent {
 	var content *WikiContent
+	wikiCacheMutex.RLock()
 	wikiCache := wikisCache[wikiId]
 	if wikiCache != nil {
 		content = wikiCache[wikiRef]
 	}
+	wikiCacheMutex.RUnlock()
 	return content
 }
 
 func Store(wikiId uint64, wikiRef string, content *WikiContent) {
+	wikiCacheMutex.Lock()
 	wikiCache := wikisCache[wikiId]
 	if content == nil {
 		if wikiCache != nil {
@@ -70,4 +80,5 @@ func Store(wikiId uint64, wikiRef string, content *WikiContent) {
 		}
 		wikiCache[wikiRef] = content
 	}
+	wikiCacheMutex.Unlock()
 }

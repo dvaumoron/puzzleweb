@@ -23,12 +23,12 @@ import (
 	"strings"
 	"time"
 
+	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/errors"
 	"github.com/dvaumoron/puzzleweb/log"
-	"github.com/dvaumoron/puzzleweb/login/client"
-	"github.com/dvaumoron/puzzleweb/rightclient"
-	"github.com/dvaumoron/puzzleweb/wiki/client/cache"
+	loginclient "github.com/dvaumoron/puzzleweb/login/client"
+	"github.com/dvaumoron/puzzleweb/wiki/cache"
 	pb "github.com/dvaumoron/puzzlewikiservice"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -298,7 +298,7 @@ func sortConvertVersion(list []*pb.Version) []Version {
 		valueSet[value.Number] = value
 		ids = append(ids, value.UserId)
 	}
-	logins, err := client.GetLogins(ids)
+	logins, err := loginclient.GetLogins(ids)
 	if err != nil {
 		errors.LogOriginalError(err)
 	}

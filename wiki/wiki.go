@@ -24,13 +24,13 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb"
+	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/errors"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/login"
-	"github.com/dvaumoron/puzzleweb/rightclient"
+	"github.com/dvaumoron/puzzleweb/wiki/cache"
 	"github.com/dvaumoron/puzzleweb/wiki/client"
-	"github.com/dvaumoron/puzzleweb/wiki/client/cache"
 	"github.com/gin-gonic/gin"
 )
 
@@ -71,8 +71,8 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 	router.GET("/:lang/delete/:title", w.deleteHandler)
 }
 
-func NewWikiPage(name string, wikiId uint64, args ...string) *puzzleweb.Page {
-	rightclient.CheckAvailableObjectId(wikiId)
+func NewWikiPage(wikiName string, wikiId uint64, args ...string) *puzzleweb.Page {
+	rightclient.RegisterObject(wikiId, wikiName)
 	cache.InitWikiId(wikiId)
 
 	defaultPage := "Welcome"
@@ -105,7 +105,7 @@ func NewWikiPage(name string, wikiId uint64, args ...string) *puzzleweb.Page {
 	case 0:
 	}
 
-	p := puzzleweb.NewPage(name)
+	p := puzzleweb.NewPage(wikiName)
 	p.Widget = &wikiWidget{
 		defaultHandler: puzzleweb.CreateRedirect(func(c *gin.Context) string {
 			return wikiUrlBuilder(

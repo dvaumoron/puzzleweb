@@ -66,7 +66,7 @@ func StoreContent(wikiId uint64, groupId uint64, userId uint64, lang string, tit
 		version := uint64(0)
 		version, err = strconv.ParseUint(last, 10, 64)
 		if err == nil {
-			err = storeContent(wikiId, buildRef(lang, title), version, markdown)
+			err = storeContent(wikiId, userId, buildRef(lang, title), version, markdown)
 		} else {
 			log.Logger.Warn("Failed to parse wiki last version.",
 				zap.Error(err),
@@ -169,7 +169,7 @@ func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, 
 	return content, err
 }
 
-func storeContent(wikiId uint64, wikiRef string, last uint64, markdown string) error {
+func storeContent(wikiId uint64, userId uint64, wikiRef string, last uint64, markdown string) error {
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err == nil {
 		defer conn.Close()
@@ -179,7 +179,7 @@ func storeContent(wikiId uint64, wikiRef string, last uint64, markdown string) e
 
 		var response *pb.Confirm
 		response, err = pb.NewWikiClient(conn).Store(ctx, &pb.ContentRequest{
-			WikiId: wikiId, WikiRef: wikiRef, Last: last, Text: markdown,
+			WikiId: wikiId, WikiRef: wikiRef, Last: last, Text: markdown, UserId: userId,
 		})
 		if err == nil {
 			if response.Success {

@@ -3,10 +3,10 @@ module github.com/dvaumoron/puzzleweb
 go 1.19
 
 require (
-	github.com/dvaumoron/puzzleloginservice v1.1.0
+	github.com/dvaumoron/puzzleloginservice v1.2.0
 	github.com/dvaumoron/puzzlemarkdownservice v1.0.1
-	github.com/dvaumoron/puzzlerightservice v1.2.0
-	github.com/dvaumoron/puzzlesessionservice v1.0.0
+	github.com/dvaumoron/puzzlerightservice v1.3.0
+	github.com/dvaumoron/puzzlesessionservice v1.1.0
 	github.com/dvaumoron/puzzlewikiservice v1.1.0
 	github.com/gin-gonic/gin v1.8.1
 	go.uber.org/zap v1.24.0

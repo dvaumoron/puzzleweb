@@ -31,6 +31,7 @@ import (
 
 var templatesRender puzzleHTMLRender = loadTemplates()
 
+// As HTMLProduction from gin, but without unused Delims.
 type puzzleHTMLRender struct {
 	templates *template.Template
 }

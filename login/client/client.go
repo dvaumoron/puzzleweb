@@ -47,7 +47,7 @@ func VerifyOrRegister(login string, password string, register bool) (uint64, boo
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		var response *pb.LoginResponse
+		var response *pb.Response
 		client := pb.NewLoginClient(conn)
 		request := &pb.LoginRequest{Login: login, Salted: salt(password)}
 		if register {
@@ -98,6 +98,62 @@ func GetLogins(userIds []uint64) (map[uint64]string, error) {
 		err = errors.ErrorTechnical
 	}
 	return logins, err
+}
+
+func ChangeLogin(userId uint64, newLogin string, password string) error {
+	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err == nil {
+		defer conn.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		var response *pb.Response
+		response, err = pb.NewLoginClient(conn).ChangeLogin(ctx, &pb.ChangeLoginRequest{
+			UserId: userId, NewLogin: newLogin, Salted: salt(password),
+		})
+
+		if err == nil {
+			if !response.Success {
+				err = errors.ErrorUpdate
+			}
+		} else {
+			errors.LogOriginalError(err)
+			err = errors.ErrorTechnical
+		}
+	} else {
+		errors.LogOriginalError(err)
+		err = errors.ErrorTechnical
+	}
+	return err
+}
+
+func ChangePassword(userId uint64, oldPassword string, newPassword string) error {
+	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err == nil {
+		defer conn.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		var response *pb.Response
+		response, err = pb.NewLoginClient(conn).ChangePassword(ctx, &pb.ChangePasswordRequest{
+			UserId: userId, OldSalted: salt(oldPassword), NewSalted: salt(newPassword),
+		})
+
+		if err == nil {
+			if !response.Success {
+				err = errors.ErrorUpdate
+			}
+		} else {
+			errors.LogOriginalError(err)
+			err = errors.ErrorTechnical
+		}
+	} else {
+		errors.LogOriginalError(err)
+		err = errors.ErrorTechnical
+	}
+	return err
 }
 
 func removeDuplicateId(ids []uint64) []uint64 {

@@ -71,12 +71,12 @@ func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			var response *pb.RightResponse
+			var response *pb.Response
 			response, err = pb.NewRightClient(conn).AuthQuery(ctx, &pb.RightRequest{
 				UserId: userId, ObjectId: groupId, Action: action,
 			})
 			if err == nil {
-				if !response.Authorized {
+				if !response.Success {
 					err = puzzleerrors.ErrorNotAuthorized
 				}
 			} else {
@@ -108,13 +108,13 @@ func GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAc
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		var response *pb.RightResponse
+		var response *pb.Response
 		client := pb.NewRightClient(conn)
 		response, err = client.AuthQuery(ctx, &pb.RightRequest{
 			UserId: adminId, ObjectId: AdminGroupId, Action: ActionAccess,
 		})
 		if err == nil {
-			if response.Authorized {
+			if response.Success {
 				var actions *pb.Actions
 				actions, err = client.RoleRight(ctx, &pb.RoleRequest{
 					Name: roleName, ObjectId: nameToGroupId[groupName],
@@ -147,13 +147,13 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		var response *pb.RightResponse
+		var response *pb.Response
 		client := pb.NewRightClient(conn)
 		response, err = client.AuthQuery(ctx, &pb.RightRequest{
 			UserId: adminId, ObjectId: AdminGroupId, Action: ActionUpdate,
 		})
 		if err == nil {
-			if response.Authorized {
+			if response.Success {
 				converted := make([]*pb.RoleRequest, 0, len(roles))
 				for _, role := range roles {
 					converted = append(converted, &pb.RoleRequest{
@@ -165,7 +165,7 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 					UserId: userId, List: converted,
 				})
 				if err == nil {
-					if !response.Authorized {
+					if !response.Success {
 						err = puzzleerrors.ErrorUpdate
 					}
 				} else {
@@ -194,19 +194,19 @@ func UpdateRole(adminId uint64, role Role) error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		var response *pb.RightResponse
+		var response *pb.Response
 		client := pb.NewRightClient(conn)
 		response, err = client.AuthQuery(ctx, &pb.RightRequest{
 			UserId: adminId, ObjectId: AdminGroupId, Action: ActionUpdate,
 		})
 		if err == nil {
-			if response.Authorized {
+			if response.Success {
 				response, err = client.UpdateRole(ctx, &pb.Role{
 					Name: role.Name, ObjectId: nameToGroupId[role.Group],
-					List: &pb.Actions{List: role.Actions},
+					List: role.Actions,
 				})
 				if err == nil {
-					if !response.Authorized {
+					if !response.Success {
 						err = puzzleerrors.ErrorUpdate
 					}
 				} else {
@@ -236,7 +236,7 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		var response *pb.RightResponse
+		var response *pb.Response
 		client := pb.NewRightClient(conn)
 		if adminId != userId {
 			response, err = client.AuthQuery(ctx, &pb.RightRequest{
@@ -244,7 +244,7 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 			})
 		}
 		if err == nil {
-			if response.Authorized {
+			if response.Success {
 				var roles *pb.Roles
 				roles, err = client.ListUserRoles(ctx, &pb.UserId{Id: userId})
 				if err == nil {
@@ -253,7 +253,7 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 					for _, role := range list {
 						roleList = append(roleList, &Role{
 							Name: role.Name, Group: groupIdToName[role.ObjectId],
-							Actions: role.List.List,
+							Actions: role.List,
 						})
 					}
 				} else {
@@ -283,13 +283,13 @@ func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		var response *pb.RightResponse
+		var response *pb.Response
 		client := pb.NewRightClient(conn)
 		response, err = client.AuthQuery(ctx, &pb.RightRequest{
 			UserId: adminId, ObjectId: AdminGroupId, Action: ActionAccess,
 		})
 		if err == nil {
-			if response.Authorized {
+			if response.Success {
 				var roles *pb.Roles
 				roles, err = client.ListRoles(ctx, &pb.ObjectIds{Ids: groupIds})
 				if err == nil {
@@ -298,7 +298,7 @@ func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
 					for _, role := range list {
 						roleList = append(roleList, &Role{
 							Name: role.Name, Group: groupIdToName[role.ObjectId],
-							Actions: role.List.List,
+							Actions: role.List,
 						})
 					}
 				} else {

@@ -106,12 +106,7 @@ func update(addr string, id uint64, info map[string]string) error {
 		defer cancel()
 
 		var strErr *pb.SessionError
-		strErr, err = client.UpdateSessionInfo(ctx,
-			&pb.SessionUpdate{
-				Id:   &pb.SessionId{Id: id},
-				Info: &pb.SessionInfo{Info: info},
-			},
-		)
+		strErr, err = client.UpdateSessionInfo(ctx, &pb.SessionUpdate{Id: id, Info: info})
 
 		if err == nil {
 			if strErr.Err != "" {

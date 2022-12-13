@@ -90,10 +90,12 @@ func (site *Site) initEngine() *gin.Engine {
 		}
 		engine.StaticFile(favicon, config.StaticPath+faviconPath)
 		site.root.Widget.LoadInto(engine)
-		engine.GET("/changeLang", CreateRedirect(func(c *gin.Context) string {
-			locale.SetLangCookie(c, c.Query(locale.LangName))
-			return c.Query(RedirectName)
-		}))
+		if len(locale.AllLang) != 1 {
+			engine.GET("/changeLang", CreateRedirect(func(c *gin.Context) string {
+				locale.SetLangCookie(c, c.Query(locale.LangName))
+				return c.Query(RedirectName)
+			}))
+		}
 		engine.NoRoute(CreateRedirectString(site.Page404Url))
 		site.initialized = true
 	}

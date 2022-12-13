@@ -85,7 +85,7 @@ func GetLogins(userIds []uint64) (map[uint64]string, error) {
 		response, err = pb.NewLoginClient(conn).ListLogins(ctx, &pb.UserIds{Ids: userIds})
 
 		if err == nil {
-			logins = make(map[uint64]string)
+			logins = map[uint64]string{}
 			for index, value := range response.List {
 				logins[userIds[index]] = value
 			}
@@ -157,8 +157,8 @@ func ChangePassword(userId uint64, oldPassword string, newPassword string) error
 }
 
 func removeDuplicateId(ids []uint64) []uint64 {
-	type empty struct{}
-	idSet := make(map[uint64]empty)
+	type empty = struct{}
+	idSet := map[uint64]empty{}
 	for _, id := range ids {
 		idSet[id] = empty{}
 	}

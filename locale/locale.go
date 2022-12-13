@@ -60,9 +60,9 @@ func InitMessages() {
 		}
 		DefaultLang = AllLang[0]
 		matcher = language.NewMatcher(list)
-		messages = make(map[string]map[string]string)
+		messages = map[string]map[string]string{}
 		for _, lang := range AllLang {
-			messagesLang := make(map[string]string)
+			messagesLang := map[string]string{}
 			messages[lang] = messagesLang
 
 			var pathBuilder strings.Builder

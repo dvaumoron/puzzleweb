@@ -76,10 +76,10 @@ func (wiki *wikiCache) delete(wikiRef string) {
 	wiki.mutex.Unlock()
 }
 
-var wikisCache map[uint64]*wikiCache = make(map[uint64]*wikiCache)
+var wikisCache map[uint64]*wikiCache = map[uint64]*wikiCache{}
 
 func InitWiki(wikiId uint64) {
-	wikisCache[wikiId] = &wikiCache{cache: make(map[string]*WikiContent)}
+	wikisCache[wikiId] = &wikiCache{cache: map[string]*WikiContent{}}
 }
 
 func Load(wikiId uint64, wikiRef string) *WikiContent {

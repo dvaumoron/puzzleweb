@@ -24,11 +24,10 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb"
-	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/errors"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
-	"github.com/dvaumoron/puzzleweb/login"
+	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/dvaumoron/puzzleweb/wiki/cache"
 	"github.com/dvaumoron/puzzleweb/wiki/client"
 	"github.com/gin-gonic/gin"
@@ -71,9 +70,8 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 	router.GET("/:lang/delete/:title", w.deleteHandler)
 }
 
-func NewWikiPage(wikiName string, wikiId uint64, args ...string) *puzzleweb.Page {
-	rightclient.RegisterObject(wikiId, wikiName)
-	cache.InitWikiId(wikiId)
+func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string) *puzzleweb.Page {
+	cache.InitWiki(wikiId)
 
 	defaultPage := "Welcome"
 	viewTmpl := "wiki/view.html"
@@ -81,7 +79,7 @@ func NewWikiPage(wikiName string, wikiId uint64, args ...string) *puzzleweb.Page
 	listTmpl := "wiki/list.html"
 	switch len(args) {
 	default:
-		log.Logger.Info("NewWikiPage should be called with 2 to 6 arguments.")
+		log.Logger.Info("NewWikiPage should be called with 3 to 7 arguments.")
 		fallthrough
 	case 4:
 		if args[3] != "" {
@@ -119,9 +117,9 @@ func NewWikiPage(wikiName string, wikiId uint64, args ...string) *puzzleweb.Page
 
 			redirect := ""
 			if lang == askedLang {
-				userId := login.GetUserId(c)
+				userId := session.GetUserId(c)
 				version := c.Query(versionName)
-				content, err := client.LoadContent(wikiId, userId, lang, title, version)
+				content, err := client.LoadContent(wikiId, groupId, userId, lang, title, version)
 				if err == nil {
 					if content == nil {
 						base := puzzleweb.GetBaseUrl(3, c)
@@ -167,8 +165,8 @@ func NewWikiPage(wikiName string, wikiId uint64, args ...string) *puzzleweb.Page
 
 			redirect := ""
 			if lang == askedLang {
-				userId := login.GetUserId(c)
-				content, err := client.LoadContent(wikiId, userId, lang, title, "")
+				userId := session.GetUserId(c)
+				content, err := client.LoadContent(wikiId, groupId, userId, lang, title, "")
 				if err == nil {
 					data["EditTitle"] = locale.GetText("edit.title", c)
 					data[wikiTitleName] = title
@@ -201,8 +199,8 @@ func NewWikiPage(wikiName string, wikiId uint64, args ...string) *puzzleweb.Page
 				content := c.PostForm("content")
 				last := c.PostForm(versionName)
 
-				userId := login.GetUserId(c)
-				err := client.StoreContent(wikiId, userId, lang, title, last, content)
+				userId := session.GetUserId(c)
+				err := client.StoreContent(wikiId, groupId, userId, lang, title, last, content)
 				if err != nil {
 					writeError(targetBuilder, err.Error(), c)
 				}
@@ -218,8 +216,8 @@ func NewWikiPage(wikiName string, wikiId uint64, args ...string) *puzzleweb.Page
 
 			redirect := ""
 			if lang == askedLang {
-				userId := login.GetUserId(c)
-				versions, err := client.GetVersions(wikiId, userId, lang, title)
+				userId := session.GetUserId(c)
+				versions, err := client.GetVersions(wikiId, groupId, userId, lang, title)
 				if err == nil {
 					data[wikiTitleName] = title
 					size := len(versions)
@@ -264,9 +262,9 @@ func NewWikiPage(wikiName string, wikiId uint64, args ...string) *puzzleweb.Page
 
 			targetBuilder := wikiUrlBuilder(puzzleweb.GetBaseUrl(3, c), lang, listMode, title)
 			if lang == askedLang {
-				userId := login.GetUserId(c)
+				userId := session.GetUserId(c)
 				version := c.Query(versionName)
-				err := client.DeleteContent(wikiId, userId, lang, title, version)
+				err := client.DeleteContent(wikiId, groupId, userId, lang, title, version)
 				if err != nil {
 					writeError(targetBuilder, err.Error(), c)
 				}

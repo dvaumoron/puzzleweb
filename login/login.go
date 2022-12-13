@@ -20,7 +20,6 @@ package login
 import (
 	"fmt"
 	"net/url"
-	"strconv"
 
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/errors"
@@ -30,11 +29,9 @@ import (
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/dvaumoron/puzzleweb/settings"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
-const LoginName = "Login"
-const userIdName = "UserId"
+const loginName = "Login"
 const loginUrlName = "LoginUrl"
 const prevUrlWithErrorName = "PrevUrlWithError"
 
@@ -43,7 +40,7 @@ type loginWidget struct {
 }
 
 var submitHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
-	login := c.PostForm(LoginName)
+	login := c.PostForm(loginName)
 	password := c.PostForm("Password")
 	register := c.PostForm("Register") == "true"
 
@@ -57,9 +54,9 @@ var submitHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
 
 	target := ""
 	if errorMsg == "" {
-		session := session.Get(c)
-		session.Store(LoginName, login)
-		session.Store(userIdName, fmt.Sprint(userId))
+		s := session.Get(c)
+		s.Store(loginName, login)
+		s.Store(session.UserIdName, fmt.Sprint(userId))
 
 		locale.SetLangCookie(c, settings.Get(userId, c)[locale.LangName])
 
@@ -71,9 +68,9 @@ var submitHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
 })
 
 var logoutHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
-	session := session.Get(c)
-	session.Delete(LoginName)
-	session.Delete(userIdName)
+	s := session.Get(c)
+	s.Delete(loginName)
+	s.Delete(session.UserIdName)
 	return c.Query(puzzleweb.RedirectName)
 })
 
@@ -83,26 +80,16 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 	router.GET("/logout", logoutHandler)
 }
 
-func GetUserId(c *gin.Context) uint64 {
-	userIdStr := session.Get(c).Load(userIdName)
-	userId, err := strconv.ParseUint(userIdStr, 10, 64)
-	if err != nil {
-		log.Logger.Info("Failed to parse userId.", zap.Error(err))
-		userId = 0
-	}
-	return userId
-}
-
 func loginData(loginUrl string, logoutUrl string) puzzleweb.DataAdder {
 	const loginLinkName = "LoginLinkName"
 	return func(data gin.H, c *gin.Context) {
 		escapedUrl := url.QueryEscape(c.Request.URL.Path)
-		if login := session.Get(c).Load(LoginName); login == "" {
+		if login := session.Get(c).Load(loginName); login == "" {
 			data[loginLinkName] = locale.GetText("login.link.name", c)
 			data[loginUrlName] = loginUrl + escapedUrl
 		} else {
 			data["Welcome"] = locale.GetText("welcome", c)
-			data[LoginName] = login
+			data[loginName] = login
 			data[loginLinkName] = locale.GetText("logout.link.name", c)
 			data[loginUrlName] = logoutUrl + escapedUrl
 		}

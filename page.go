@@ -20,7 +20,10 @@ package puzzleweb
 import (
 	"strings"
 
+	"github.com/dvaumoron/puzzleweb/admin/client"
+	"github.com/dvaumoron/puzzleweb/errors"
 	"github.com/dvaumoron/puzzleweb/locale"
+	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
 )
 
@@ -58,32 +61,38 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func localizedTmpl(tmpl string) TemplateRedirecter {
+func localizedTmpl(groupId uint64, tmpl string) TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
-		if lang := locale.GetLang(c); lang != locale.DefaultLang {
-			var builder strings.Builder
-			builder.WriteString(lang)
-			builder.WriteString("/")
-			builder.WriteString(tmpl)
-			tmpl = builder.String()
+		redirect := ""
+		err := client.AuthQuery(session.GetUserId(c), groupId, client.ActionAccess)
+		if err == nil {
+			if lang := locale.GetLang(c); lang != locale.DefaultLang {
+				var builder strings.Builder
+				builder.WriteString(lang)
+				builder.WriteString("/")
+				builder.WriteString(tmpl)
+				tmpl = builder.String()
+			}
+		} else {
+			redirect = errors.DefaultErrorRedirect(err.Error(), c)
 		}
-		return tmpl, ""
+		return tmpl, redirect
 	}
 }
 
-func newStaticWidget(tmpl string) Widget {
-	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(tmpl))}
+func newStaticWidget(groupId uint64, tmpl string) Widget {
+	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(groupId, tmpl))}
 }
 
-func NewStaticPage(name, tmpl string) *Page {
+func NewStaticPage(name string, groupId uint64, tmpl string) *Page {
 	p := NewPage(name)
-	p.Widget = newStaticWidget(tmpl)
+	p.Widget = newStaticWidget(groupId, tmpl)
 	return p
 }
 
-func NewHiddenStaticPage(name, tmpl string) *Page {
+func NewHiddenStaticPage(name string, groupId uint64, tmpl string) *Page {
 	p := NewHiddenPage(name)
-	p.Widget = newStaticWidget(tmpl)
+	p.Widget = newStaticWidget(groupId, tmpl)
 	return p
 }
 

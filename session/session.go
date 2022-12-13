@@ -29,6 +29,7 @@ import (
 	"go.uber.org/zap"
 )
 
+const UserIdName = "UserId"
 const cookieName = "pw_session_id"
 
 func getSessionId(c *gin.Context) (uint64, error) {
@@ -126,4 +127,14 @@ func Get(c *gin.Context) *Session {
 		c.Set(sessionName, typed)
 	}
 	return typed
+}
+
+func GetUserId(c *gin.Context) uint64 {
+	userIdStr := Get(c).Load(UserIdName)
+	userId, err := strconv.ParseUint(userIdStr, 10, 64)
+	if err != nil {
+		log.Logger.Info("Failed to parse userId.", zap.Error(err))
+		userId = 0
+	}
+	return userId
 }

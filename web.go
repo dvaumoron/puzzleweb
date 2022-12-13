@@ -20,6 +20,7 @@ package puzzleweb
 import (
 	"net/http"
 
+	"github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
@@ -60,7 +61,7 @@ func CreateSite(args ...string) *Site {
 
 	site := &Site{
 		engine: engine,
-		root:   NewStaticPage("root", rootTmpl),
+		root:   NewStaticPage("root", client.PublicGroupId, rootTmpl),
 		adders: make([]DataAdder, 0),
 	}
 

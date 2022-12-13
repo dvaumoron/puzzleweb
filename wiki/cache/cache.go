@@ -78,7 +78,7 @@ func (wiki *wikiCache) delete(wikiRef string) {
 
 var wikisCache map[uint64]*wikiCache = make(map[uint64]*wikiCache)
 
-func InitWikiId(wikiId uint64) {
+func InitWiki(wikiId uint64) {
 	wikisCache[wikiId] = &wikiCache{cache: make(map[string]*WikiContent)}
 }
 

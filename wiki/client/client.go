@@ -40,80 +40,64 @@ type Version struct {
 	UserLogin string
 }
 
-func LoadContent(wikiId uint64, userId uint64, lang string, title string, versionStr string) (*cache.WikiContent, error) {
-	authorized, err := rightclient.AuthQuery(userId, wikiId, rightclient.ActionAccess)
+func LoadContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, versionStr string) (*cache.WikiContent, error) {
+	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
 	var content *cache.WikiContent
 	if err == nil {
-		if authorized {
-			version := uint64(0)
-			if versionStr != "" {
-				version, err = strconv.ParseUint(versionStr, 10, 64)
-				if err != nil {
-					log.Logger.Info("Failed to parse wiki version, falling to last.",
-						zap.Error(err),
-					)
-					version = 0
-				}
+		version := uint64(0)
+		if versionStr != "" {
+			version, err = strconv.ParseUint(versionStr, 10, 64)
+			if err != nil {
+				log.Logger.Info("Failed to parse wiki version, falling to last.",
+					zap.Error(err),
+				)
+				version = 0
 			}
-
-			content, err = loadContent(wikiId, buildRef(lang, title), version)
-		} else {
-			err = errors.ErrorNotAuthorized
 		}
+
+		content, err = loadContent(wikiId, buildRef(lang, title), version)
 	}
 	return content, err
 }
 
-func StoreContent(wikiId uint64, userId uint64, lang string, title string, last string, markdown string) error {
-	authorized, err := rightclient.AuthQuery(userId, wikiId, rightclient.ActionCreate)
+func StoreContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, last string, markdown string) error {
+	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate)
 	if err == nil {
-		if authorized {
-			version := uint64(0)
-			version, err = strconv.ParseUint(last, 10, 64)
-			if err == nil {
-				err = storeContent(wikiId, buildRef(lang, title), version, markdown)
-			} else {
-				log.Logger.Warn("Failed to parse wiki last version.",
-					zap.Error(err),
-				)
-				err = errors.ErrorTechnical
-			}
+		version := uint64(0)
+		version, err = strconv.ParseUint(last, 10, 64)
+		if err == nil {
+			err = storeContent(wikiId, buildRef(lang, title), version, markdown)
 		} else {
-			err = errors.ErrorNotAuthorized
+			log.Logger.Warn("Failed to parse wiki last version.",
+				zap.Error(err),
+			)
+			err = errors.ErrorTechnical
 		}
 	}
 	return err
 }
 
-func GetVersions(wikiId uint64, userId uint64, lang string, title string) ([]Version, error) {
-	authorized, err := rightclient.AuthQuery(userId, wikiId, rightclient.ActionAccess)
+func GetVersions(wikiId uint64, groupId uint64, userId uint64, lang string, title string) ([]Version, error) {
+	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
 	var versions []Version
 	if err == nil {
-		if authorized {
-			versions, err = getVersions(wikiId, buildRef(lang, title))
-		} else {
-			err = errors.ErrorNotAuthorized
-		}
+		versions, err = getVersions(wikiId, buildRef(lang, title))
 	}
 	return versions, err
 }
 
-func DeleteContent(wikiId uint64, userId uint64, lang string, title string, versionStr string) error {
-	authorized, err := rightclient.AuthQuery(userId, wikiId, rightclient.ActionDelete)
+func DeleteContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, versionStr string) error {
+	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionDelete)
 	if err == nil {
-		if authorized {
-			version := uint64(0)
-			version, err = strconv.ParseUint(versionStr, 10, 64)
-			if err == nil {
-				err = deleteContent(wikiId, buildRef(lang, title), version)
-			} else {
-				log.Logger.Warn("Failed to parse wiki version to delete.",
-					zap.Error(err),
-				)
-				err = errors.ErrorTechnical
-			}
+		version := uint64(0)
+		version, err = strconv.ParseUint(versionStr, 10, 64)
+		if err == nil {
+			err = deleteContent(wikiId, buildRef(lang, title), version)
 		} else {
-			err = errors.ErrorNotAuthorized
+			log.Logger.Warn("Failed to parse wiki version to delete.",
+				zap.Error(err),
+			)
+			err = errors.ErrorTechnical
 		}
 	}
 	return err
@@ -293,12 +277,12 @@ func maxVersion(list []*pb.Version) *pb.Version {
 func sortConvertVersion(list []*pb.Version) []Version {
 	size := len(list)
 	valueSet := make([]*pb.Version, maxVersion(list).Number)
-	ids := make([]uint64, 0, size)
+	userIds := make([]uint64, 0, size)
 	for _, value := range list {
 		valueSet[value.Number] = value
-		ids = append(ids, value.UserId)
+		userIds = append(userIds, value.UserId)
 	}
-	logins, err := loginclient.GetLogins(ids)
+	logins, err := loginclient.GetLogins(userIds)
 	if err != nil {
 		errors.LogOriginalError(err)
 	}

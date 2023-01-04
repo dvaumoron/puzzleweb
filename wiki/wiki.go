@@ -133,11 +133,10 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 						body, err = content.GetBody()
 						if err == nil {
 							data[wikiTitleName] = title
-							contentVersionStr := fmt.Sprint(content.Version)
-							if version == contentVersionStr {
+							if version == "" {
 								data["EditLinkName"] = locale.GetText("edit.link.name", c)
 							} else {
-								data[wikiVersionName] = contentVersionStr
+								data[wikiVersionName] = fmt.Sprint(content.Version)
 							}
 							data["ListLinkName"] = locale.GetText("list.link.name", c)
 							data[wikiBaseUrlName] = puzzleweb.GetBaseUrl(2, c)

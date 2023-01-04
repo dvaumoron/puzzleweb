@@ -29,15 +29,6 @@ import (
 var Logger *zap.Logger
 
 func init() {
-	defaultLogConfig := func() {
-		var err error
-		Logger, err = zap.NewProduction()
-		if err != nil {
-			fmt.Println("Failed to init logging with default config :", err)
-			os.Exit(1)
-		}
-	}
-
 	if len(config.LogConfig) == 0 {
 		defaultLogConfig()
 		return
@@ -57,4 +48,13 @@ func init() {
 	}
 
 	config.LogConfig = make([]byte, 0)
+}
+
+func defaultLogConfig() {
+	var err error
+	Logger, err = zap.NewProduction()
+	if err != nil {
+		fmt.Println("Failed to init logging with default config :", err)
+		os.Exit(1)
+	}
 }

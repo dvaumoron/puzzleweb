@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 const defaultSessionTimeOut = 1200
@@ -46,6 +48,12 @@ var WikiServiceAddr string
 var MarkdownServiceAddr string
 
 func init() {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Failed to load .env file")
+		os.Exit(1)
+	}
+
 	Domain = os.Getenv("SITE_DOMAIN")
 	if Domain == "" {
 		Domain = "localhost"
@@ -132,10 +140,8 @@ func init() {
 }
 
 func checkPath(path string) string {
-	if last := len(path) - 1; last != -1 {
-		if path[last] == '/' {
-			path = path[:last]
-		}
+	if last := len(path) - 1; last != -1 && path[last] == '/' {
+		path = path[:last]
 	}
 	return path
 }

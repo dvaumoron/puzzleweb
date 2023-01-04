@@ -9,6 +9,7 @@ require (
 	github.com/dvaumoron/puzzlesessionservice v1.1.0
 	github.com/dvaumoron/puzzlewikiservice v1.1.0
 	github.com/gin-gonic/gin v1.8.1
+	github.com/joho/godotenv v1.4.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.5.0

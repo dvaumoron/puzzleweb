@@ -79,7 +79,7 @@ func (s *Session) Store(key, value string) {
 func (s *Session) Delete(key string) {
 	_, present := s.session[key]
 	if present {
-		delete(s.session, key)
+		s.session[key] = "" // to allow a deletion in the service
 		s.change = true
 	}
 }

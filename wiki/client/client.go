@@ -44,7 +44,7 @@ func LoadContent(wikiId uint64, groupId uint64, userId uint64, lang string, titl
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
 	var content *cache.WikiContent
 	if err == nil {
-		version := uint64(0)
+		var version uint64
 		if versionStr != "" {
 			version, err = strconv.ParseUint(versionStr, 10, 64)
 			if err != nil {
@@ -63,7 +63,7 @@ func LoadContent(wikiId uint64, groupId uint64, userId uint64, lang string, titl
 func StoreContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, last string, markdown string) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate)
 	if err == nil {
-		version := uint64(0)
+		var version uint64
 		version, err = strconv.ParseUint(last, 10, 64)
 		if err == nil {
 			err = storeContent(wikiId, userId, buildRef(lang, title), version, markdown)
@@ -89,7 +89,7 @@ func GetVersions(wikiId uint64, groupId uint64, userId uint64, lang string, titl
 func DeleteContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, versionStr string) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionDelete)
 	if err == nil {
-		version := uint64(0)
+		var version uint64
 		version, err = strconv.ParseUint(versionStr, 10, 64)
 		if err == nil {
 			err = deleteContent(wikiId, buildRef(lang, title), version)

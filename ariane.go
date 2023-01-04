@@ -49,7 +49,7 @@ func GetCurrentUrl(c *gin.Context) string {
 func GetBaseUrl(levelToErase uint8, c *gin.Context) string {
 	res := GetCurrentUrl(c)
 	i := len(res) - 2
-	count := uint8(0)
+	var count uint8
 	for count < levelToErase {
 		if res[i] == '/' {
 			count++

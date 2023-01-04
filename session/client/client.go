@@ -30,7 +30,7 @@ import (
 
 func Generate() (uint64, error) {
 	conn, err := grpc.Dial(config.SessionServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	id := uint64(0)
+	var id uint64
 	if err == nil {
 		defer conn.Close()
 

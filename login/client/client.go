@@ -39,7 +39,7 @@ func salt(password string) string {
 
 func VerifyOrRegister(login string, password string, register bool) (uint64, bool, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	id := uint64(0)
+	var id uint64
 	success := false
 	if err == nil {
 		defer conn.Close()

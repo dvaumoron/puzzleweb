@@ -236,7 +236,7 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		var response *pb.Response
+		response := &pb.Response{Success: true} // should allow when there is no call
 		client := pb.NewRightClient(conn)
 		if adminId != userId {
 			response, err = client.AuthQuery(ctx, &pb.RightRequest{

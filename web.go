@@ -55,8 +55,6 @@ func CreateSite(args ...string) *Site {
 
 	engine := gin.Default()
 
-	engine.HTMLRender = templatesRender
-
 	engine.Static("/static", config.StaticPath)
 
 	site := &Site{
@@ -83,6 +81,10 @@ func (site *Site) AddDefaultData(adder DataAdder) {
 func (site *Site) initEngine() *gin.Engine {
 	engine := site.engine
 	if !site.initialized {
+		if engine.HTMLRender == nil {
+			engine.HTMLRender = loadTemplates()
+		}
+
 		favicon := "/favicon.ico"
 		faviconPath := site.FaviconPath
 		if faviconPath == "" {

@@ -29,7 +29,7 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-var templatesRender puzzleHTMLRender = loadTemplates()
+var templatesRender render.HTMLRender
 
 // As HTMLProduction from gin, but without unused Delims.
 type puzzleHTMLRender struct {
@@ -44,27 +44,30 @@ func (r puzzleHTMLRender) Instance(name string, data any) render.Render {
 	}
 }
 
-func loadTemplates() puzzleHTMLRender {
-	tmpl := template.New("")
-	inSize := len(config.TemplatesPath) + 1
-	err := filepath.WalkDir(config.TemplatesPath+"/", func(path string, d fs.DirEntry, err error) error {
-		if err == nil && !d.IsDir() {
-			name := path[inSize:]
-			if name[len(name)-5:] == ".html" {
-				var data []byte
-				data, err = os.ReadFile(path)
-				if err == nil {
-					_, err = tmpl.New(name).Parse(string(data))
+func loadTemplates() render.HTMLRender {
+	if templatesRender == nil {
+		tmpl := template.New("")
+		inSize := len(config.TemplatesPath) + 1
+		err := filepath.WalkDir(config.TemplatesPath+"/", func(path string, d fs.DirEntry, err error) error {
+			if err == nil && !d.IsDir() {
+				name := path[inSize:]
+				if name[len(name)-5:] == ".html" {
+					var data []byte
+					data, err = os.ReadFile(path)
+					if err == nil {
+						_, err = tmpl.New(name).Parse(string(data))
+					}
 				}
 			}
-		}
-		return err
-	})
+			return err
+		})
 
-	if err != nil {
-		panic(err)
+		if err != nil {
+			panic(err)
+		}
+		templatesRender = puzzleHTMLRender{templates: tmpl}
 	}
-	return puzzleHTMLRender{templates: tmpl}
+	return templatesRender
 }
 
 type TemplateRedirecter func(gin.H, *gin.Context) (string, string)
@@ -74,9 +77,6 @@ func CreateTemplate(redirecter TemplateRedirecter) gin.HandlerFunc {
 		data := initData(c)
 		tmpl, redirect := redirecter(data, c)
 		if redirect == "" {
-			if tmpl == "" {
-				tmpl = "main.html"
-			}
 			c.HTML(http.StatusOK, tmpl, data)
 		} else {
 			c.Redirect(http.StatusFound, redirect)

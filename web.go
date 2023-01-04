@@ -26,6 +26,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/render"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -76,6 +77,10 @@ func (site *Site) AddPage(page *Page) {
 
 func (site *Site) AddDefaultData(adder DataAdder) {
 	site.adders = append(site.adders, adder)
+}
+
+func (site *Site) SetHTMLRender(r render.HTMLRender) {
+	site.engine.HTMLRender = r
 }
 
 func (site *Site) initEngine() *gin.Engine {

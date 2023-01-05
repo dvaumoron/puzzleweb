@@ -32,9 +32,13 @@ const QueryError = "?error="
 const WrongLang = "wrong.lang"
 const NoElement = "no.element"
 
+// error displayed to user
 var ErrorNotAuthorized = errors.New("error.not.authorized")
 var ErrorTechnical = errors.New("error.technical.problem")
 var ErrorUpdate = errors.New("error.update")
+
+// initialization error
+var ErrorDuplicateObject = errors.New("duplicate objectId")
 
 func LogOriginalError(err error) {
 	log.Logger.Warn("Original technical error.", zap.Error(err))

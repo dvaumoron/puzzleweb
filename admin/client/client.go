@@ -185,7 +185,7 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 	return err
 }
 
-func UpdateRole(adminId uint64, role Role) error {
+func UpdateRole(adminId uint64, role *Role) error {
 	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err == nil {
 		defer conn.Close()
@@ -247,14 +247,7 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 				var roles *pb.Roles
 				roles, err = client.ListUserRoles(ctx, &pb.UserId{Id: userId})
 				if err == nil {
-					list := roles.List
-					roleList = make([]*Role, 0, len(list))
-					for _, role := range list {
-						roleList = append(roleList, &Role{
-							Name: role.Name, Group: groupIdToName[role.ObjectId],
-							Actions: role.List,
-						})
-					}
+					roleList = convertRolesFromRequest(roles.List)
 				} else {
 					errors.LogOriginalError(err)
 					err = errors.ErrorTechnical
@@ -292,14 +285,7 @@ func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
 				var roles *pb.Roles
 				roles, err = client.ListRoles(ctx, &pb.ObjectIds{Ids: groupIds})
 				if err == nil {
-					list := roles.List
-					roleList = make([]*Role, 0, len(list))
-					for _, role := range list {
-						roleList = append(roleList, &Role{
-							Name: role.Name, Group: groupIdToName[role.ObjectId],
-							Actions: role.List,
-						})
-					}
+					roleList = convertRolesFromRequest(roles.List)
 				} else {
 					errors.LogOriginalError(err)
 					err = errors.ErrorTechnical
@@ -316,4 +302,15 @@ func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
 		err = errors.ErrorTechnical
 	}
 	return roleList, err
+}
+
+func convertRolesFromRequest(roles []*pb.Role) []*Role {
+	resRoles := make([]*Role, 0, len(roles))
+	for _, role := range roles {
+		resRoles = append(resRoles, &Role{
+			Name: role.Name, Group: groupIdToName[role.ObjectId],
+			Actions: role.List,
+		})
+	}
+	return resRoles
 }

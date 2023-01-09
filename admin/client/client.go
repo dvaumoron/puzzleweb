@@ -235,29 +235,24 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		response := &pb.Response{Success: true} // should allow when there is no call
 		client := pb.NewRightClient(conn)
-		if adminId != userId {
+		if adminId == userId {
+			roleList, err = getUserRoles(client, ctx, userId)
+		} else {
+			var response *pb.Response
 			response, err = client.AuthQuery(ctx, &pb.RightRequest{
 				UserId: adminId, ObjectId: AdminGroupId, Action: ActionAccess,
 			})
-		}
-		if err == nil {
-			if response.Success {
-				var roles *pb.Roles
-				roles, err = client.ListUserRoles(ctx, &pb.UserId{Id: userId})
-				if err == nil {
-					roleList = convertRolesFromRequest(roles.List)
+			if err == nil {
+				if response.Success {
+					roleList, err = getUserRoles(client, ctx, userId)
 				} else {
-					errors.LogOriginalError(err)
-					err = errors.ErrorTechnical
+					err = errors.ErrorNotAuthorized
 				}
 			} else {
-				err = errors.ErrorNotAuthorized
+				errors.LogOriginalError(err)
+				err = errors.ErrorTechnical
 			}
-		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
 		}
 	} else {
 		errors.LogOriginalError(err)
@@ -297,6 +292,18 @@ func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
 			errors.LogOriginalError(err)
 			err = errors.ErrorTechnical
 		}
+	} else {
+		errors.LogOriginalError(err)
+		err = errors.ErrorTechnical
+	}
+	return roleList, err
+}
+
+func getUserRoles(client pb.RightClient, ctx context.Context, userId uint64) ([]*Role, error) {
+	var roleList []*Role
+	roles, err := client.ListUserRoles(ctx, &pb.UserId{Id: userId})
+	if err == nil {
+		roleList = convertRolesFromRequest(roles.List)
 	} else {
 		errors.LogOriginalError(err)
 		err = errors.ErrorTechnical

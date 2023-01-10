@@ -22,7 +22,7 @@ import (
 	"net/url"
 
 	"github.com/dvaumoron/puzzleweb"
-	"github.com/dvaumoron/puzzleweb/errors"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/login/client"
@@ -56,11 +56,11 @@ var submitHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
 	if errorMsg == "" {
 		s := session.Get(c)
 		s.Store(loginName, login)
-		s.Store(session.UserIdName, fmt.Sprint(userId))
+		s.Store(common.UserIdName, fmt.Sprint(userId))
 
 		locale.SetLangCookie(c, settings.Get(userId, c)[locale.LangName])
 
-		target = c.PostForm(puzzleweb.RedirectName)
+		target = c.PostForm(common.RedirectName)
 	} else {
 		target = c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
 	}
@@ -70,8 +70,8 @@ var submitHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
 var logoutHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
 	s := session.Get(c)
 	s.Delete(loginName)
-	s.Delete(session.UserIdName)
-	return c.Query(puzzleweb.RedirectName)
+	s.Delete(common.UserIdName)
+	return c.Query(common.RedirectName)
 })
 
 func (w *loginWidget) LoadInto(router gin.IRouter) {
@@ -109,12 +109,12 @@ func AddLoginPage(site *puzzleweb.Site, name string, args ...string) {
 	p := puzzleweb.NewHiddenPage(name)
 	p.Widget = &loginWidget{
 		displayHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			data[puzzleweb.RedirectName] = c.Query(puzzleweb.RedirectName)
+			data[common.RedirectName] = c.Query(common.RedirectName)
 
 			currentUrl := c.Request.URL
 			var errorKey string
 			if len(currentUrl.Query()) == 0 {
-				errorKey = errors.QueryError
+				errorKey = common.QueryError
 			} else {
 				errorKey = "&error="
 			}

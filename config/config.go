@@ -43,6 +43,7 @@ const defaultServiceAddr = "localhost:50051"
 var SessionServiceAddr string
 var LoginServiceAddr string
 var RightServiceAddr string
+var ProfileServiceAddr string
 var SettingsServiceAddr string
 var WikiServiceAddr string
 var MarkdownServiceAddr string
@@ -83,6 +84,7 @@ func init() {
 		var err error
 		SessionTimeOut, err = strconv.Atoi(sessionTimeOutStr)
 		if err != nil {
+			fmt.Println("Failed to parse SESSION_TIME_OUT")
 			SessionTimeOut = defaultSessionTimeOut
 		}
 	}
@@ -121,6 +123,11 @@ func init() {
 	RightServiceAddr = os.Getenv("RIGHT_SERVICE_ADDR")
 	if RightServiceAddr == "" {
 		RightServiceAddr = defaultServiceAddr
+	}
+
+	ProfileServiceAddr = os.Getenv("PROFILE_SERVICE_ADDR")
+	if ProfileServiceAddr == "" {
+		ProfileServiceAddr = defaultServiceAddr
 	}
 
 	SettingsServiceAddr = os.Getenv("SETTINGS_SERVICE_ADDR")

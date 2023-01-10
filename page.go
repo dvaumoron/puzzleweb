@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb/admin/client"
-	"github.com/dvaumoron/puzzleweb/errors"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
@@ -74,7 +74,7 @@ func localizedTmpl(groupId uint64, tmpl string) TemplateRedirecter {
 				tmpl = builder.String()
 			}
 		} else {
-			redirect = errors.DefaultErrorRedirect(err.Error(), c)
+			redirect = common.DefaultErrorRedirect(err.Error(), c)
 		}
 		return tmpl, redirect
 	}

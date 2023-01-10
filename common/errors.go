@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  */
-package errors
+package common
 
 import (
 	"errors"
@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const Msg = "ErrorMsg"
+const ErrorMsgName = "ErrorMsg"
 const QueryError = "?error="
 const WrongLang = "wrong.lang"
 const NoElement = "no.element"
@@ -41,7 +41,7 @@ var ErrorUpdate = errors.New("error.update")
 var ErrorDuplicateObject = errors.New("duplicate objectId")
 
 func LogOriginalError(err error) {
-	log.Logger.Warn("Original technical error.", zap.Error(err))
+	log.Logger.Warn("Original error.", zap.Error(err))
 }
 
 func DefaultErrorRedirect(errMsg string, c *gin.Context) string {

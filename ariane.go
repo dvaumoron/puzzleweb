@@ -20,7 +20,7 @@ package puzzleweb
 import (
 	"strings"
 
-	"github.com/dvaumoron/puzzleweb/errors"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
 )
@@ -71,8 +71,9 @@ func extractAriane(splittedPath []string, c *gin.Context) []PageDesc {
 }
 
 func getSite(c *gin.Context) *Site {
-	siteAny, _ := c.Get(siteName)
-	return siteAny.(*Site)
+	siteUntyped, _ := c.Get(siteName)
+	site, _ := siteUntyped.(*Site)
+	return site
 }
 
 func initData(c *gin.Context) gin.H {
@@ -85,7 +86,7 @@ func initData(c *gin.Context) gin.H {
 		"SubPages":   page.extractSubPageNames(c),
 	}
 	if errorMsg := c.Query("error"); errorMsg != "" {
-		data[errors.Msg] = errorMsg
+		data[common.ErrorMsgName] = errorMsg
 	}
 	for _, adder := range site.adders {
 		adder(data, c)

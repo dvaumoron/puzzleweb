@@ -19,18 +19,24 @@ package puzzleweb
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/dvaumoron/puzzleweb/admin/client"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
+	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"golang.org/x/sync/errgroup"
 )
 
+const siteName = "Site"
+
 type DataAdder func(gin.H, *gin.Context)
+type Redirecter func(*gin.Context) string
 
 type Site struct {
 	engine      *gin.Engine
@@ -41,10 +47,7 @@ type Site struct {
 	FaviconPath string
 }
 
-const siteName = "Site"
-const RedirectName = "Redirect"
-
-func CreateSite(args ...string) *Site {
+func NewSite(args ...string) *Site {
 	size := len(args)
 	rootTmpl := "index.html"
 	if size != 0 && args[0] != "" {
@@ -57,6 +60,7 @@ func CreateSite(args ...string) *Site {
 	engine := gin.Default()
 
 	engine.Static("/static", config.StaticPath)
+	engine.GET("/profilePic", profilePicHandler)
 
 	site := &Site{
 		engine: engine,
@@ -100,20 +104,13 @@ func (site *Site) initEngine() *gin.Engine {
 		if len(locale.AllLang) != 1 {
 			engine.GET("/changeLang", CreateRedirect(func(c *gin.Context) string {
 				locale.SetLangCookie(c, c.Query(locale.LangName))
-				return c.Query(RedirectName)
+				return c.Query(common.RedirectName)
 			}))
 		}
 		engine.NoRoute(CreateRedirectString(site.Page404Url))
 		site.initialized = true
 	}
 	return engine
-}
-
-func checkPort(port string) string {
-	if port[0] != ':' {
-		port = ":" + port
-	}
-	return port
 }
 
 func (site *Site) Run() error {
@@ -140,7 +137,25 @@ func Run(sites ...SiteConfig) error {
 	return g.Wait()
 }
 
-type Redirecter func(*gin.Context) string
+func profilePicHandler(c *gin.Context) {
+	userId, err := strconv.ParseUint(c.Query(common.UserIdName), 10, 64)
+	if err == nil {
+		var data []byte
+		data, err = profileclient.GetPicture(userId)
+		if err == nil {
+			c.Data(http.StatusFound, http.DetectContentType(data), data)
+			return
+		}
+	}
+	c.AbortWithError(http.StatusNotFound, err)
+}
+
+func checkPort(port string) string {
+	if port[0] != ':' {
+		port = ":" + port
+	}
+	return port
+}
 
 func checkTarget(target string) string {
 	if target == "" {

@@ -22,8 +22,8 @@ import (
 	"time"
 
 	pb "github.com/dvaumoron/puzzlerightservice"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -46,7 +46,7 @@ var nameToGroupId = map[string]uint64{PublicName: PublicGroupId, AdminName: Admi
 func RegisterGroup(groupId uint64, name string) {
 	for usedId := range groupIdToName {
 		if groupId == usedId {
-			panic(errors.ErrorDuplicateObject)
+			panic(common.ErrorDuplicateObject)
 		}
 	}
 	groupIdToName[groupId] = name
@@ -76,15 +76,15 @@ func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
 			})
 			if err == nil {
 				if !response.Success {
-					err = errors.ErrorNotAuthorized
+					err = common.ErrorNotAuthorized
 				}
 			} else {
-				errors.LogOriginalError(err)
-				err = errors.ErrorTechnical
+				common.LogOriginalError(err)
+				err = common.ErrorTechnical
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	}
 	return err
@@ -121,19 +121,19 @@ func GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAc
 				if err == nil {
 					list = actions.List
 				} else {
-					errors.LogOriginalError(err)
-					err = errors.ErrorTechnical
+					common.LogOriginalError(err)
+					err = common.ErrorTechnical
 				}
 			} else {
-				err = errors.ErrorNotAuthorized
+				err = common.ErrorNotAuthorized
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return list, err
 }
@@ -165,22 +165,22 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 				})
 				if err == nil {
 					if !response.Success {
-						err = errors.ErrorUpdate
+						err = common.ErrorUpdate
 					}
 				} else {
-					errors.LogOriginalError(err)
-					err = errors.ErrorTechnical
+					common.LogOriginalError(err)
+					err = common.ErrorTechnical
 				}
 			} else {
-				err = errors.ErrorNotAuthorized
+				err = common.ErrorNotAuthorized
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return err
 }
@@ -206,22 +206,22 @@ func UpdateRole(adminId uint64, role *Role) error {
 				})
 				if err == nil {
 					if !response.Success {
-						err = errors.ErrorUpdate
+						err = common.ErrorUpdate
 					}
 				} else {
-					errors.LogOriginalError(err)
-					err = errors.ErrorTechnical
+					common.LogOriginalError(err)
+					err = common.ErrorTechnical
 				}
 			} else {
-				err = errors.ErrorNotAuthorized
+				err = common.ErrorNotAuthorized
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return err
 }
@@ -247,16 +247,16 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 				if response.Success {
 					roleList, err = getUserRoles(client, ctx, userId)
 				} else {
-					err = errors.ErrorNotAuthorized
+					err = common.ErrorNotAuthorized
 				}
 			} else {
-				errors.LogOriginalError(err)
-				err = errors.ErrorTechnical
+				common.LogOriginalError(err)
+				err = common.ErrorTechnical
 			}
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return roleList, err
 }
@@ -282,19 +282,19 @@ func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
 				if err == nil {
 					roleList = convertRolesFromRequest(roles.List)
 				} else {
-					errors.LogOriginalError(err)
-					err = errors.ErrorTechnical
+					common.LogOriginalError(err)
+					err = common.ErrorTechnical
 				}
 			} else {
-				err = errors.ErrorNotAuthorized
+				err = common.ErrorNotAuthorized
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return roleList, err
 }
@@ -305,8 +305,8 @@ func getUserRoles(client pb.RightClient, ctx context.Context, userId uint64) ([]
 	if err == nil {
 		roleList = convertRolesFromRequest(roles.List)
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return roleList, err
 }

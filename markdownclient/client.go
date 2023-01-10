@@ -23,8 +23,8 @@ import (
 	"time"
 
 	pb "github.com/dvaumoron/puzzlemarkdownservice"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -45,12 +45,12 @@ func Apply(text string) (template.HTML, error) {
 		if err == nil {
 			html = template.HTML(markdownHtml.Html)
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return html, err
 }

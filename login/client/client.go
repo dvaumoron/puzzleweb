@@ -24,8 +24,8 @@ import (
 	"time"
 
 	pb "github.com/dvaumoron/puzzleloginservice"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -65,16 +65,17 @@ func VerifyOrRegister(login string, password string, register bool) (uint64, boo
 			id = response.Id
 			success = response.Success
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return id, success, err
 }
 
+// You should remove duplicate id in list
 func GetLogins(userIds []uint64) (map[uint64]string, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	var logins map[uint64]string
@@ -83,8 +84,6 @@ func GetLogins(userIds []uint64) (map[uint64]string, error) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-
-		userIds = removeDuplicateId(userIds)
 
 		var response *pb.Logins
 		response, err = pb.NewLoginClient(conn).ListLogins(ctx, &pb.UserIds{Ids: userIds})
@@ -95,12 +94,12 @@ func GetLogins(userIds []uint64) (map[uint64]string, error) {
 				logins[userIds[index]] = value
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return logins, err
 }
@@ -120,15 +119,15 @@ func ChangeLogin(userId uint64, newLogin string, password string) error {
 
 		if err == nil {
 			if !response.Success {
-				err = errors.ErrorUpdate
+				err = common.ErrorUpdate
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return err
 }
@@ -148,15 +147,15 @@ func ChangePassword(userId uint64, oldPassword string, newPassword string) error
 
 		if err == nil {
 			if !response.Success {
-				err = errors.ErrorUpdate
+				err = common.ErrorUpdate
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return err
 }
@@ -186,25 +185,12 @@ func GetUsers(start uint64, end uint64, filter string) (uint64, []*User, error) 
 				})
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return total, users, err
-}
-
-func removeDuplicateId(ids []uint64) []uint64 {
-	type empty = struct{}
-	idSet := map[uint64]empty{}
-	for _, id := range ids {
-		idSet[id] = empty{}
-	}
-	cleanned := make([]uint64, 0, len(ids))
-	for id := range idSet {
-		cleanned = append(cleanned, id)
-	}
-	return cleanned
 }

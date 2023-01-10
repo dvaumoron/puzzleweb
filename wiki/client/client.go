@@ -24,8 +24,8 @@ import (
 	"time"
 
 	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/errors"
 	"github.com/dvaumoron/puzzleweb/log"
 	loginclient "github.com/dvaumoron/puzzleweb/login/client"
 	"github.com/dvaumoron/puzzleweb/wiki/cache"
@@ -71,7 +71,7 @@ func StoreContent(wikiId uint64, groupId uint64, userId uint64, lang string, tit
 			log.Logger.Warn("Failed to parse wiki last version.",
 				zap.Error(err),
 			)
-			err = errors.ErrorTechnical
+			err = common.ErrorTechnical
 		}
 	}
 	return err
@@ -97,7 +97,7 @@ func DeleteContent(wikiId uint64, groupId uint64, userId uint64, lang string, ti
 			log.Logger.Warn("Failed to parse wiki version to delete.",
 				zap.Error(err),
 			)
-			err = errors.ErrorTechnical
+			err = common.ErrorTechnical
 		}
 	}
 	return err
@@ -137,15 +137,15 @@ func loadContent(wikiId uint64, wikiRef string, version uint64) (*cache.WikiCont
 					}
 				}
 			} else {
-				errors.LogOriginalError(err)
-				err = errors.ErrorTechnical
+				common.LogOriginalError(err)
+				err = common.ErrorTechnical
 			}
 		} else {
 			content, err = innerLoadContent(ctx, client, wikiId, wikiRef, version)
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return content, err
 }
@@ -163,8 +163,8 @@ func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, 
 			cache.Store(wikiId, wikiRef, content)
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return content, err
 }
@@ -187,15 +187,15 @@ func storeContent(wikiId uint64, userId uint64, wikiRef string, last uint64, mar
 					Version: response.Version, Markdown: markdown,
 				})
 			} else {
-				err = errors.ErrorUpdate
+				err = common.ErrorUpdate
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return err
 }
@@ -216,15 +216,15 @@ func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {
 		if err == nil {
 			list := response.List
 			if len(list) != 0 {
-				versions = sortConvertVersion(list)
+				versions, err = sortConvertVersion(list)
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return versions, err
 }
@@ -248,15 +248,15 @@ func deleteContent(wikiId uint64, wikiRef string, version uint64) error {
 					cache.Store(wikiId, wikiRef, nil)
 				}
 			} else {
-				err = errors.ErrorUpdate
+				err = common.ErrorUpdate
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return err
 }
@@ -274,23 +274,23 @@ func maxVersion(list []*pb.Version) *pb.Version {
 	return res
 }
 
-func sortConvertVersion(list []*pb.Version) []Version {
+func sortConvertVersion(list []*pb.Version) ([]Version, error) {
 	size := len(list)
 	valueSet := make([]*pb.Version, maxVersion(list).Number)
-	userIds := make([]uint64, 0, size)
+	userIdSet := common.MakeSet[uint64]()
 	for _, value := range list {
 		valueSet[value.Number] = value
-		userIds = append(userIds, value.UserId)
+		userIdSet.Add(value.UserId)
 	}
-	logins, err := loginclient.GetLogins(userIds)
-	if err != nil {
-		errors.LogOriginalError(err)
-	}
-	newList := make([]Version, 0, size)
-	for _, value := range valueSet {
-		if value != nil {
-			newList = append(newList, Version{Number: value.Number, UserLogin: logins[value.UserId]})
+	logins, err := loginclient.GetLogins(userIdSet.Slice())
+	var newList []Version
+	if err == nil {
+		newList = make([]Version, 0, size)
+		for _, value := range valueSet {
+			if value != nil {
+				newList = append(newList, Version{Number: value.Number, UserLogin: logins[value.UserId]})
+			}
 		}
 	}
-	return newList
+	return newList, err
 }

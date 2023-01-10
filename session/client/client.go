@@ -22,8 +22,8 @@ import (
 	"time"
 
 	pb "github.com/dvaumoron/puzzlesessionservice"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -44,12 +44,12 @@ func Generate() (uint64, error) {
 		if err == nil {
 			id = response.Id
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return id, err
 }
@@ -78,12 +78,12 @@ func get(addr string, id uint64) (map[string]string, error) {
 		if err == nil {
 			info = response.Info
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return info, err
 }
@@ -110,16 +110,16 @@ func update(addr string, id uint64, info map[string]string) error {
 
 		if err == nil {
 			if strErr.Err != "" {
-				errors.LogOriginalError(err)
-				err = errors.ErrorTechnical
+				common.LogOriginalError(err)
+				err = common.ErrorUpdate
 			}
 		} else {
-			errors.LogOriginalError(err)
-			err = errors.ErrorTechnical
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
 		}
 	} else {
-		errors.LogOriginalError(err)
-		err = errors.ErrorTechnical
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
 	}
 	return err
 }

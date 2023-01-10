@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb"
-	"github.com/dvaumoron/puzzleweb/errors"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/session"
@@ -142,17 +142,17 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 							data[wikiBaseUrlName] = puzzleweb.GetBaseUrl(2, c)
 							data[wikiContentName] = body
 						} else {
-							redirect = errors.DefaultErrorRedirect(err.Error(), c)
+							redirect = common.DefaultErrorRedirect(err.Error(), c)
 						}
 					}
 				} else {
-					redirect = errors.DefaultErrorRedirect(err.Error(), c)
+					redirect = common.DefaultErrorRedirect(err.Error(), c)
 				}
 			} else {
 				targetBuilder := wikiUrlBuilder(
 					puzzleweb.GetBaseUrl(3, c), lang, viewMode, title,
 				)
-				writeError(targetBuilder, errors.WrongLang, c)
+				writeError(targetBuilder, common.WrongLang, c)
 				redirect = targetBuilder.String()
 			}
 			return viewTmpl, redirect
@@ -179,11 +179,11 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 					}
 					data["SaveLinkName"] = locale.GetText("save.link.name", c)
 				} else {
-					redirect = errors.DefaultErrorRedirect(err.Error(), c)
+					redirect = common.DefaultErrorRedirect(err.Error(), c)
 				}
 			} else {
 				targetBuilder := wikiUrlBuilder(puzzleweb.GetBaseUrl(3, c), lang, viewMode, title)
-				writeError(targetBuilder, errors.WrongLang, c)
+				writeError(targetBuilder, common.WrongLang, c)
 				redirect = targetBuilder.String()
 			}
 			return editTmpl, redirect
@@ -204,7 +204,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 					writeError(targetBuilder, err.Error(), c)
 				}
 			} else {
-				writeError(targetBuilder, errors.WrongLang, c)
+				writeError(targetBuilder, common.WrongLang, c)
 			}
 			return targetBuilder.String()
 		}),
@@ -221,7 +221,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 					data[wikiTitleName] = title
 					size := len(versions)
 					if size == 0 {
-						data[errors.Msg] = locale.GetText(errors.NoElement, c)
+						data[common.ErrorMsgName] = locale.GetText(common.NoElement, c)
 						data[versionsName] = versions
 					} else {
 						viewLinkName := locale.GetText("view.link.name", c)
@@ -249,7 +249,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				targetBuilder := wikiUrlBuilder(
 					puzzleweb.GetBaseUrl(3, c), lang, listMode, title,
 				)
-				writeError(targetBuilder, errors.WrongLang, c)
+				writeError(targetBuilder, common.WrongLang, c)
 				redirect = targetBuilder.String()
 			}
 			return listTmpl, redirect
@@ -268,7 +268,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 					writeError(targetBuilder, err.Error(), c)
 				}
 			} else {
-				writeError(targetBuilder, errors.WrongLang, c)
+				writeError(targetBuilder, common.WrongLang, c)
 			}
 			return targetBuilder.String()
 		}),
@@ -286,6 +286,6 @@ func wikiUrlBuilder(base, lang, mode, title string) *strings.Builder {
 }
 
 func writeError(urlBuilder *strings.Builder, errMsg string, c *gin.Context) {
-	urlBuilder.WriteString(errors.QueryError)
+	urlBuilder.WriteString(common.QueryError)
 	urlBuilder.WriteString(url.QueryEscape(locale.GetText(errMsg, c)))
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
+	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/dvaumoron/puzzleweb/wiki/cache"
 	"github.com/dvaumoron/puzzleweb/wiki/client"
@@ -46,7 +47,7 @@ const wikiContentName = "WikiContent"
 type VersionDisplay struct {
 	Title          string
 	Number         string
-	Creator        string
+	Creator        *profileclient.Profile
 	BaseUrl        string
 	ViewLinkName   string
 	DeleteLinkName string
@@ -232,7 +233,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 						for _, version := range versions {
 							converted = append(converted, &VersionDisplay{
 								Title: title, Number: fmt.Sprint(version.Number),
-								Creator: version.UserLogin, BaseUrl: baseUrl,
+								Creator: version.Creator, BaseUrl: baseUrl,
 								ViewLinkName: viewLinkName, DeleteLinkName: deleteLinkName,
 							})
 						}

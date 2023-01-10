@@ -27,7 +27,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/log"
-	loginclient "github.com/dvaumoron/puzzleweb/login/client"
+	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
 	"github.com/dvaumoron/puzzleweb/wiki/cache"
 	pb "github.com/dvaumoron/puzzlewikiservice"
 	"go.uber.org/zap"
@@ -36,8 +36,8 @@ import (
 )
 
 type Version struct {
-	Number    uint64
-	UserLogin string
+	Number  uint64
+	Creator *profileclient.Profile
 }
 
 func LoadContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, versionStr string) (*cache.WikiContent, error) {
@@ -282,13 +282,13 @@ func sortConvertVersion(list []*pb.Version) ([]Version, error) {
 		valueSet[value.Number] = value
 		userIdSet.Add(value.UserId)
 	}
-	logins, err := loginclient.GetLogins(userIdSet.Slice())
+	profiles, err := profileclient.GetProfiles(userIdSet.Slice())
 	var newList []Version
 	if err == nil {
 		newList = make([]Version, 0, size)
 		for _, value := range valueSet {
 			if value != nil {
-				newList = append(newList, Version{Number: value.Number, UserLogin: logins[value.UserId]})
+				newList = append(newList, Version{Number: value.Number, Creator: profiles[value.UserId]})
 			}
 		}
 	}

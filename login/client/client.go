@@ -30,6 +30,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type User struct {
+	Id    uint64
+	Login string
+}
+
 func salt(password string) string {
 	// TODO improve the security
 	sha512Hasher := sha512.New()
@@ -154,6 +159,41 @@ func ChangePassword(userId uint64, oldPassword string, newPassword string) error
 		err = errors.ErrorTechnical
 	}
 	return err
+}
+
+func GetUsers(start uint64, end uint64, filter string) (uint64, []*User, error) {
+	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	var total uint64
+	var users []*User
+	if err == nil {
+		defer conn.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		var response *pb.Users
+		response, err = pb.NewLoginClient(conn).ListUsers(ctx, &pb.RangeRequest{
+			Start: start, End: end, Filter: filter,
+		})
+
+		if err == nil {
+			total = response.Total
+			list := response.List
+			users = make([]*User, 0, len(list))
+			for _, user := range list {
+				users = append(users, &User{
+					Id: user.UserId, Login: user.Login,
+				})
+			}
+		} else {
+			errors.LogOriginalError(err)
+			err = errors.ErrorTechnical
+		}
+	} else {
+		errors.LogOriginalError(err)
+		err = errors.ErrorTechnical
+	}
+	return total, users, err
 }
 
 func removeDuplicateId(ids []uint64) []uint64 {

@@ -60,8 +60,16 @@ var saveUserHanler = common.CreateRedirect(func(c *gin.Context) string {
 	adminId := session.GetUserId(c)
 	userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
 	if err == nil {
-		var roles []*client.Role
-		// TODO retrieve roles from post
+		rolesStr := c.PostFormArray("roles")
+		roles := make([]*client.Role, 0, len(rolesStr))
+		for _, roleStr := range rolesStr {
+			splitted := strings.Split(roleStr, "/")
+			if len(splitted) > 1 {
+				roles = append(roles, &client.Role{
+					Name: splitted[0], Group: splitted[1],
+				})
+			}
+		}
 		err = client.UpdateUser(adminId, userId, roles)
 	}
 
@@ -244,6 +252,18 @@ func AddAdminPage(site *puzzleweb.Site, name string, args ...string) {
 				redirect = common.DefaultErrorRedirect(err.Error(), c)
 			}
 			return listUserTmpl, redirect
+		}),
+		viewUserHanler: puzzleweb.CreateTemplate(func(h gin.H, ctx *gin.Context) (string, string) {
+			return viewUserTmpl, ""
+		}),
+		editUserHanler: puzzleweb.CreateTemplate(func(h gin.H, ctx *gin.Context) (string, string) {
+			return editUserTmpl, ""
+		}),
+		listRoleHanler: puzzleweb.CreateTemplate(func(h gin.H, ctx *gin.Context) (string, string) {
+			return listRoleTmpl, ""
+		}),
+		editRoleHanler: puzzleweb.CreateTemplate(func(h gin.H, ctx *gin.Context) (string, string) {
+			return editRoleTmpl, ""
 		}),
 	}
 

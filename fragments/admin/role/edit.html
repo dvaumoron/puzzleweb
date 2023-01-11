@@ -1,10 +1,13 @@
 
 <h2>
-    {{.EditTitle}}&nbsp;{{.RoleName}}&nbsp;
-    [<a href="{{.BasetUrl}}role/list">{{.CancelLinkName}}</a>]
+    {{.EditTitle}}&nbsp;{{.Group}}/{{.RoleName}}&nbsp;
+    [<a href="{{.BaseUrl}}role/list">{{.CancelLinkName}}</a>]
 </h2>
 
-<form action="{{.SaveBasetUrl}}{{.RoleName}}/{{.GroupId}}" method="POST">
-    TODO
+<form action="{{.BaseUrl}}role/save/{{.RoleName}}/{{.Group}}" method="POST">
+    <div><input type="checkbox" name="actions" value="access" checked="{{.Access}}" /></div>
+    <div><input type="checkbox" name="actions" value="create" checked="{{.Create}}" /></div>
+    <div><input type="checkbox" name="actions" value="update" checked="{{.Update}}" /></div>
+    <div><input type="checkbox" name="actions" value="delete" checked="{{.Delete}}" /></div>
     <div><input type="submit" value="{{.SaveLinkName}}"></div>
 </form>

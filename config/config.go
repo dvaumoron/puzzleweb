@@ -26,6 +26,7 @@ import (
 )
 
 const defaultSessionTimeOut = 1200
+const defaultPageSize = 50
 
 var Domain string
 var Port string
@@ -33,6 +34,7 @@ var Port string
 var LogConfig []byte
 
 var SessionTimeOut int
+var PageSize uint64
 
 var StaticPath string
 var LocalesPath string
@@ -86,6 +88,18 @@ func init() {
 		if err != nil {
 			fmt.Println("Failed to parse SESSION_TIME_OUT")
 			SessionTimeOut = defaultSessionTimeOut
+		}
+	}
+
+	pageSizeStr := os.Getenv("PAGE_SIZE")
+	if pageSizeStr == "" {
+		PageSize = defaultPageSize
+	} else {
+		var err error
+		PageSize, err = strconv.ParseUint(pageSizeStr, 10, 64)
+		if err != nil {
+			fmt.Println("Failed to parse PAGE_SIZE")
+			PageSize = defaultPageSize
 		}
 	}
 

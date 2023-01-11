@@ -153,6 +153,7 @@ func GetProfiles(userIds []uint64) (map[uint64]*Profile, error) {
 	return profiles, err
 }
 
+// no right check
 func Delete(userId uint64) error {
 	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err == nil {

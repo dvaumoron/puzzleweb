@@ -219,8 +219,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				versions, err := client.GetVersions(wikiId, groupId, userId, lang, title)
 				if err == nil {
 					data[wikiTitleName] = title
-					size := len(versions)
-					if size == 0 {
+					if size := len(versions); size == 0 {
 						data[common.ErrorMsgName] = locale.GetText(common.NoElement, c)
 						data[versionsName] = versions
 					} else {

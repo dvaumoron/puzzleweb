@@ -195,6 +195,7 @@ func GetUsers(start uint64, end uint64, filter string) (uint64, []*User, error) 
 	return total, users, err
 }
 
+// no right check
 func DeleteUser(userId uint64) error {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err == nil {

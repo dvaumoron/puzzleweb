@@ -1,0 +1,14 @@
+
+<h2>{{.UserListTitle}}</h2>
+
+<ul>
+    TODO paginate
+    {{range .Users}}
+        <li>
+            <ul>
+                <li>{{.Login}}</li>
+                <li><a href="{{.ViewBaseUrl}}{{.Id}}">{{.ViewLinkName}}</a></li>
+            </ul>
+        <li>
+    {{end}}
+</ul>

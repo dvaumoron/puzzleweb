@@ -39,7 +39,7 @@ type loginWidget struct {
 	displayHanler gin.HandlerFunc
 }
 
-var submitHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
+var submitHandler = common.CreateRedirect(func(c *gin.Context) string {
 	login := c.PostForm(loginName)
 	password := c.PostForm("Password")
 	register := c.PostForm("Register") == "true"
@@ -67,7 +67,7 @@ var submitHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
 	return target
 })
 
-var logoutHandler = puzzleweb.CreateRedirect(func(c *gin.Context) string {
+var logoutHandler = common.CreateRedirect(func(c *gin.Context) string {
 	s := session.Get(c)
 	s.Delete(loginName)
 	s.Delete(common.UserIdName)
@@ -80,7 +80,7 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 	router.GET("/logout", logoutHandler)
 }
 
-func loginData(loginUrl string, logoutUrl string) puzzleweb.DataAdder {
+func loginData(loginUrl string, logoutUrl string) common.DataAdder {
 	const loginLinkName = "LoginLinkName"
 	return func(data gin.H, c *gin.Context) {
 		escapedUrl := url.QueryEscape(c.Request.URL.Path)

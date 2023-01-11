@@ -38,27 +38,6 @@ func getPageTitle(name string, c *gin.Context) string {
 	return locale.GetText("page.title."+name, c)
 }
 
-func GetCurrentUrl(c *gin.Context) string {
-	path := c.Request.URL.Path
-	if path[len(path)-1] != '/' {
-		path += "/"
-	}
-	return path
-}
-
-func GetBaseUrl(levelToErase uint8, c *gin.Context) string {
-	res := GetCurrentUrl(c)
-	i := len(res) - 2
-	var count uint8
-	for count < levelToErase {
-		if res[i] == '/' {
-			count++
-		}
-		i--
-	}
-	return res[:i+1]
-}
-
 func extractAriane(splittedPath []string, c *gin.Context) []PageDesc {
 	pageDescs := make([]PageDesc, 0, len(splittedPath))
 	var urlBuilder strings.Builder
@@ -72,7 +51,7 @@ func extractAriane(splittedPath []string, c *gin.Context) []PageDesc {
 
 func getSite(c *gin.Context) *Site {
 	siteUntyped, _ := c.Get(siteName)
-	site, _ := siteUntyped.(*Site)
+	site := siteUntyped.(*Site)
 	return site
 }
 
@@ -81,7 +60,7 @@ func initData(c *gin.Context) gin.H {
 	page, path := site.root.extractPageAndPath(c.Request.URL.Path)
 	data := gin.H{
 		"PageTitle":  getPageTitle(page.name, c),
-		"CurrentUrl": GetCurrentUrl(c),
+		"CurrentUrl": common.GetCurrentUrl(c),
 		"Ariane":     extractAriane(path, c),
 		"SubPages":   page.extractSubPageNames(c),
 	}

@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
@@ -70,9 +71,7 @@ func loadTemplates() render.HTMLRender {
 	return templatesRender
 }
 
-type TemplateRedirecter func(gin.H, *gin.Context) (string, string)
-
-func CreateTemplate(redirecter TemplateRedirecter) gin.HandlerFunc {
+func CreateTemplate(redirecter common.TemplateRedirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		data := initData(c)
 		tmpl, redirect := redirecter(data, c)

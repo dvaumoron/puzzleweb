@@ -118,9 +118,9 @@ func logSessionError(c *gin.Context, msg string, sessionId uint64, err error) {
 
 func Get(c *gin.Context) *Session {
 	var typed *Session
-	s, ok := c.Get(sessionName)
+	untyped, ok := c.Get(sessionName)
 	if ok {
-		typed = s.(*Session)
+		typed = untyped.(*Session)
 	} else {
 		log.Logger.Error("There is no session in context.")
 		typed = &Session{session: map[string]string{}, change: true}

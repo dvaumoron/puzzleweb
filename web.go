@@ -35,14 +35,11 @@ import (
 
 const siteName = "Site"
 
-type DataAdder func(gin.H, *gin.Context)
-type Redirecter func(*gin.Context) string
-
 type Site struct {
 	engine      *gin.Engine
 	root        *Page
 	Page404Url  string
-	adders      []DataAdder
+	adders      []common.DataAdder
 	initialized bool
 	FaviconPath string
 }
@@ -65,7 +62,6 @@ func NewSite(args ...string) *Site {
 	site := &Site{
 		engine: engine,
 		root:   NewStaticPage("root", client.PublicGroupId, rootTmpl),
-		adders: make([]DataAdder, 0),
 	}
 
 	engine.Use(session.Manage, func(c *gin.Context) {
@@ -79,7 +75,7 @@ func (site *Site) AddPage(page *Page) {
 	site.root.AddSubPage(page)
 }
 
-func (site *Site) AddDefaultData(adder DataAdder) {
+func (site *Site) AddDefaultData(adder common.DataAdder) {
 	site.adders = append(site.adders, adder)
 }
 
@@ -102,12 +98,12 @@ func (site *Site) initEngine() *gin.Engine {
 		engine.StaticFile(favicon, config.StaticPath+faviconPath)
 		site.root.Widget.LoadInto(engine)
 		if len(locale.AllLang) != 1 {
-			engine.GET("/changeLang", CreateRedirect(func(c *gin.Context) string {
+			engine.GET("/changeLang", common.CreateRedirect(func(c *gin.Context) string {
 				locale.SetLangCookie(c, c.Query(locale.LangName))
 				return c.Query(common.RedirectName)
 			}))
 		}
-		engine.NoRoute(CreateRedirectString(site.Page404Url))
+		engine.NoRoute(common.CreateRedirectString(site.Page404Url))
 		site.initialized = true
 	}
 	return engine
@@ -155,24 +151,4 @@ func checkPort(port string) string {
 		port = ":" + port
 	}
 	return port
-}
-
-func checkTarget(target string) string {
-	if target == "" {
-		target = "/"
-	}
-	return target
-}
-
-func CreateRedirect(redirecter Redirecter) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Redirect(http.StatusFound, checkTarget(redirecter(c)))
-	}
-}
-
-func CreateRedirectString(target string) gin.HandlerFunc {
-	target = checkTarget(target)
-	return func(c *gin.Context) {
-		c.Redirect(http.StatusFound, target)
-	}
 }

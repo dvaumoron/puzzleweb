@@ -61,7 +61,7 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func localizedTmpl(groupId uint64, tmpl string) TemplateRedirecter {
+func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
 		redirect := ""
 		err := client.AuthQuery(session.GetUserId(c), groupId, client.ActionAccess)
@@ -135,7 +135,7 @@ func (p *Page) extractSubPageNames(c *gin.Context) []PageDesc {
 	if ok {
 		pages := sw.subPages
 		if size := len(pages); size != 0 {
-			url := GetCurrentUrl(c)
+			url := common.GetCurrentUrl(c)
 			pageDescs = make([]PageDesc, 0, size)
 			for _, page := range pages {
 				if page.visible {

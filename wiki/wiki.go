@@ -20,7 +20,6 @@ package wiki
 import (
 	"fmt"
 	"html/template"
-	"net/url"
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb"
@@ -106,9 +105,9 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 
 	p := puzzleweb.NewPage(wikiName)
 	p.Widget = &wikiWidget{
-		defaultHandler: puzzleweb.CreateRedirect(func(c *gin.Context) string {
+		defaultHandler: common.CreateRedirect(func(c *gin.Context) string {
 			return wikiUrlBuilder(
-				puzzleweb.GetCurrentUrl(c), locale.GetLang(c), viewMode, defaultPage,
+				common.GetCurrentUrl(c), locale.GetLang(c), viewMode, defaultPage,
 			).String()
 		}),
 		viewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
@@ -123,7 +122,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				content, err := client.LoadContent(wikiId, groupId, userId, lang, title, version)
 				if err == nil {
 					if content == nil {
-						base := puzzleweb.GetBaseUrl(3, c)
+						base := common.GetBaseUrl(3, c)
 						if version == "" {
 							redirect = wikiUrlBuilder(base, lang, "/edit/", title).String()
 						} else {
@@ -140,7 +139,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 								data[wikiVersionName] = fmt.Sprint(content.Version)
 							}
 							data["ListLinkName"] = locale.GetText("list.link.name", c)
-							data[wikiBaseUrlName] = puzzleweb.GetBaseUrl(2, c)
+							data[wikiBaseUrlName] = common.GetBaseUrl(2, c)
 							data[wikiContentName] = body
 						} else {
 							redirect = common.DefaultErrorRedirect(err.Error(), c)
@@ -151,9 +150,9 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				}
 			} else {
 				targetBuilder := wikiUrlBuilder(
-					puzzleweb.GetBaseUrl(3, c), lang, viewMode, title,
+					common.GetBaseUrl(3, c), lang, viewMode, title,
 				)
-				writeError(targetBuilder, common.WrongLang, c)
+				common.WriteError(targetBuilder, common.WrongLang, c)
 				redirect = targetBuilder.String()
 			}
 			return viewTmpl, redirect
@@ -170,7 +169,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				if err == nil {
 					data["EditTitle"] = locale.GetText("edit.title", c)
 					data[wikiTitleName] = title
-					data[wikiBaseUrlName] = puzzleweb.GetBaseUrl(2, c)
+					data[wikiBaseUrlName] = common.GetBaseUrl(2, c)
 					data["CancelLinkName"] = locale.GetText("cancel.link.name", c)
 					if content == nil {
 						data[wikiVersionName] = "0"
@@ -183,18 +182,18 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 					redirect = common.DefaultErrorRedirect(err.Error(), c)
 				}
 			} else {
-				targetBuilder := wikiUrlBuilder(puzzleweb.GetBaseUrl(3, c), lang, viewMode, title)
-				writeError(targetBuilder, common.WrongLang, c)
+				targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
+				common.WriteError(targetBuilder, common.WrongLang, c)
 				redirect = targetBuilder.String()
 			}
 			return editTmpl, redirect
 		}),
-		saveHandler: puzzleweb.CreateRedirect(func(c *gin.Context) string {
+		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
 			askedLang := c.Param(locale.LangName)
 			title := c.Param(titleName)
 			lang := locale.CheckLang(askedLang)
 
-			targetBuilder := wikiUrlBuilder(puzzleweb.GetBaseUrl(3, c), lang, viewMode, title)
+			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
 			if lang == askedLang {
 				content := c.PostForm("content")
 				last := c.PostForm(versionName)
@@ -202,10 +201,10 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				userId := session.GetUserId(c)
 				err := client.StoreContent(wikiId, groupId, userId, lang, title, last, content)
 				if err != nil {
-					writeError(targetBuilder, err.Error(), c)
+					common.WriteError(targetBuilder, err.Error(), c)
 				}
 			} else {
-				writeError(targetBuilder, common.WrongLang, c)
+				common.WriteError(targetBuilder, common.WrongLang, c)
 			}
 			return targetBuilder.String()
 		}),
@@ -228,7 +227,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 						viewLinkName := locale.GetText("view.link.name", c)
 						deleteLinkName := locale.GetText("delete.link.name", c)
 
-						baseUrl := puzzleweb.GetBaseUrl(2, c)
+						baseUrl := common.GetBaseUrl(2, c)
 						converted := make([]*VersionDisplay, 0, size)
 						for _, version := range versions {
 							converted = append(converted, &VersionDisplay{
@@ -241,35 +240,35 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 					}
 				} else {
 					targetBuilder := wikiUrlBuilder(
-						puzzleweb.GetBaseUrl(3, c), lang, listMode, title,
+						common.GetBaseUrl(3, c), lang, listMode, title,
 					)
-					writeError(targetBuilder, err.Error(), c)
+					common.WriteError(targetBuilder, err.Error(), c)
 					redirect = targetBuilder.String()
 				}
 			} else {
 				targetBuilder := wikiUrlBuilder(
-					puzzleweb.GetBaseUrl(3, c), lang, listMode, title,
+					common.GetBaseUrl(3, c), lang, listMode, title,
 				)
-				writeError(targetBuilder, common.WrongLang, c)
+				common.WriteError(targetBuilder, common.WrongLang, c)
 				redirect = targetBuilder.String()
 			}
 			return listTmpl, redirect
 		}),
-		deleteHandler: puzzleweb.CreateRedirect(func(c *gin.Context) string {
+		deleteHandler: common.CreateRedirect(func(c *gin.Context) string {
 			askedLang := c.Param(locale.LangName)
 			title := c.Param(titleName)
 			lang := locale.CheckLang(askedLang)
 
-			targetBuilder := wikiUrlBuilder(puzzleweb.GetBaseUrl(3, c), lang, listMode, title)
+			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, listMode, title)
 			if lang == askedLang {
 				userId := session.GetUserId(c)
 				version := c.Query(versionName)
 				err := client.DeleteContent(wikiId, groupId, userId, lang, title, version)
 				if err != nil {
-					writeError(targetBuilder, err.Error(), c)
+					common.WriteError(targetBuilder, err.Error(), c)
 				}
 			} else {
-				writeError(targetBuilder, common.WrongLang, c)
+				common.WriteError(targetBuilder, common.WrongLang, c)
 			}
 			return targetBuilder.String()
 		}),
@@ -284,9 +283,4 @@ func wikiUrlBuilder(base, lang, mode, title string) *strings.Builder {
 	targetBuilder.WriteString(mode)
 	targetBuilder.WriteString(title)
 	return &targetBuilder
-}
-
-func writeError(urlBuilder *strings.Builder, errMsg string, c *gin.Context) {
-	urlBuilder.WriteString(common.QueryError)
-	urlBuilder.WriteString(url.QueryEscape(locale.GetText(errMsg, c)))
 }

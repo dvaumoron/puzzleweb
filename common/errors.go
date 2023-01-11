@@ -20,6 +20,7 @@ package common
 import (
 	"errors"
 	"net/url"
+	"strings"
 
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
@@ -42,6 +43,11 @@ var ErrorDuplicateObject = errors.New("duplicate objectId")
 
 func LogOriginalError(err error) {
 	log.Logger.Warn("Original error.", zap.Error(err))
+}
+
+func WriteError(urlBuilder *strings.Builder, errMsg string, c *gin.Context) {
+	urlBuilder.WriteString(QueryError)
+	urlBuilder.WriteString(url.QueryEscape(locale.GetText(errMsg, c)))
 }
 
 func DefaultErrorRedirect(errMsg string, c *gin.Context) string {

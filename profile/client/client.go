@@ -152,3 +152,28 @@ func GetProfiles(userIds []uint64) (map[uint64]*Profile, error) {
 	}
 	return profiles, err
 }
+
+func Delete(userId uint64) error {
+	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err == nil {
+		defer conn.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		var response *pb.Confirm
+		response, err = pb.NewProfileClient(conn).Delete(ctx, &pb.UserId{Id: userId})
+		if err == nil {
+			if !response.Success {
+				err = common.ErrorUpdate
+			}
+		} else {
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
+		}
+	} else {
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
+	}
+	return err
+}

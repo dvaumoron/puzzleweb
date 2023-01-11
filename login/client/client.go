@@ -181,7 +181,7 @@ func GetUsers(start uint64, end uint64, filter string) (uint64, []*User, error) 
 			users = make([]*User, 0, len(list))
 			for _, user := range list {
 				users = append(users, &User{
-					Id: user.UserId, Login: user.Login,
+					Id: user.Id, Login: user.Login,
 				})
 			}
 		} else {
@@ -193,4 +193,29 @@ func GetUsers(start uint64, end uint64, filter string) (uint64, []*User, error) 
 		err = common.ErrorTechnical
 	}
 	return total, users, err
+}
+
+func DeleteUser(userId uint64) error {
+	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err == nil {
+		defer conn.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		var response *pb.Response
+		response, err = pb.NewLoginClient(conn).Delete(ctx, &pb.UserId{Id: userId})
+		if err == nil {
+			if !response.Success {
+				err = common.ErrorUpdate
+			}
+		} else {
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
+		}
+	} else {
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
+	}
+	return err
 }

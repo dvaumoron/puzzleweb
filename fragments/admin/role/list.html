@@ -1,15 +1,23 @@
 
-<h2>{{.WikiTitle}}</h2>
+<h2>{{.RoleListTitle}}</h2>
 
-<ul>
-    {{range .Versions}}
-        <li>
-            <ul>
-                <li>{{.Number}}</li>
-                <li>{{.Creator.Login}}</li>
-                <li><a href="{{.BaseUrl}}view/{{.Title}}?version={{.Number}}">{{.ViewLinkName}}</a></li>
-                <li><a href="{{.BaseUrl}}delete/{{.Title}}?version={{.Number}}">{{.DeleteLinkName}}</a></li>
-            </ul>
-        <li>
-    {{end}}
-</ul>
+{{range .Groups}}
+    <div>
+        <p>{{.Name}}</p>
+        <ul>
+            {{range .Roles}}
+                <li>
+                    <ul>
+                        <li>{{.Name}}</li>
+                        <li>
+                            {{range .Actions}}
+                                {{.}}
+                            {{end}}
+                        </li>
+                        <li><a href="{{.EditBaseUrl}}{{.Name}}/{{.GroupId}}">{{.EditLinkName}}</a></li>
+                    </ul>
+                <li>
+            {{end}}
+        </ul>
+    </div>
+{{end}}

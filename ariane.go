@@ -63,6 +63,7 @@ func initData(c *gin.Context) gin.H {
 		"CurrentUrl": common.GetCurrentUrl(c),
 		"Ariane":     extractAriane(path, c),
 		"SubPages":   page.extractSubPageNames(c),
+		"Messages":   locale.GetMessages(c),
 	}
 	if errorMsg := c.Query("error"); errorMsg != "" {
 		data[common.ErrorMsgName] = errorMsg

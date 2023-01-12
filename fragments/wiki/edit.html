@@ -1,12 +1,12 @@
 
-<h2>{{.EditTitle}}&nbsp;{{.WikiTitle}}&nbsp;
-    [<a href="{{.WikiBaseUrl}}view/{{.WikiTitle}}">{{.CancelLinkName}}</a>]
+<h2>{{.Messages.EditTitle}}&nbsp;{{.WikiTitle}}&nbsp;
+    [<a href="{{BaseUrl}}view/{{.WikiTitle}}">{{.Messages.CancelLinkName}}</a>]
 </h2>
 
-<form action="{{.WikiBaseUrl}}save/{{.WikiTitle}}" method="POST">
+<form action="{{.BaseUrl}}save/{{.WikiTitle}}" method="POST">
     <div><textarea name="content" rows="20" cols="80">{{.WikiContent}}</textarea></div>
     <div class="hidden">
         <input type="text" name="version" value="{{.WikiVersion}}"/>
     </div>
-    <div><input type="submit" value="{{.SaveLinkName}}"></div>
+    <div><input type="submit" value="{{.Messages.SaveLinkName}}"></div>
 </form>

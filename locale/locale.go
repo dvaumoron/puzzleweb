@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"os"
 	"strings"
+	"unicode"
 
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/log"
@@ -35,6 +36,7 @@ var matcher language.Matcher
 var AllLang []string
 var DefaultLang string
 var messages map[string]map[string]string
+var displayMessages map[string]map[string]string
 
 type Tags struct {
 	list []language.Tag
@@ -81,10 +83,12 @@ func InitMessages() {
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
 				line := scanner.Text()
-				if equal := strings.Index(line, "="); equal > 0 {
-					if key := strings.TrimSpace(line[:equal]); key != "" {
-						if value := strings.TrimSpace(line[equal+1:]); value != "" {
-							messagesLang[key] = value
+				if len(line) != 0 && line[0] != '#' {
+					if equal := strings.Index(line, "="); equal > 0 {
+						if key := strings.TrimSpace(line[:equal]); key != "" {
+							if value := strings.TrimSpace(line[equal+1:]); value != "" {
+								messagesLang[key] = value
+							}
 						}
 					}
 				}
@@ -94,6 +98,25 @@ func InitMessages() {
 					zap.String(pathName, path),
 					zap.Error(err),
 				)
+			}
+		}
+
+		messagesDefaultLang := messages[DefaultLang]
+		for _, lang := range AllLang {
+			displayMessagesLang := map[string]string{}
+			displayMessages[lang] = displayMessagesLang
+			if lang == DefaultLang {
+				for key, value := range messagesDefaultLang {
+					displayMessagesLang[transformKey(key)] = value
+				}
+			} else {
+				messagesLang := messages[lang]
+				for key, value := range messagesLang {
+					if value == "" {
+						value = messagesDefaultLang[key]
+					}
+					displayMessagesLang[transformKey(key)] = value
+				}
 			}
 		}
 	}
@@ -138,6 +161,10 @@ func SetLangCookie(c *gin.Context, lang string) {
 	setLangCookie(c, CheckLang(lang))
 }
 
+func GetMessages(c *gin.Context) map[string]string {
+	return displayMessages[GetLang(c)]
+}
+
 func getText(key, lang string) string {
 	text := messages[lang][key]
 	if text == "" {
@@ -164,4 +191,29 @@ func warnMissingDefault(key, defaultLang string) {
 		zap.String("key", key),
 		zap.String("defaultLocale", defaultLang),
 	)
+}
+
+func transformKey(key string) string {
+	var keyBuilder strings.Builder
+	for _, part := range strings.Split(key, ".") {
+		keyBuilder.WriteString(transformWord(part))
+	}
+	return keyBuilder.String()
+}
+
+func transformWord(word string) string {
+	res := ""
+	if word != "" {
+		first := true
+		chars := make([]rune, 0, len(word))
+		for _, char := range word {
+			if first {
+				first = false
+				char = unicode.ToTitle(char)
+			}
+			chars = append(chars, char)
+		}
+		res = string(chars)
+	}
+	return res
 }

@@ -1,0 +1,28 @@
+# general
+wrong.lang=
+no.element=
+error.not.authorized=
+error.technical.problem=
+error.update=
+welcome=
+edit.title=
+list.link.name=
+view.link.name=
+edit.link.name=
+save.link.name=
+cancel.link.name=
+delete.link.name=
+
+# login
+page.title.login=
+wrong.login=
+login.label=
+password.label=
+login.link.name=
+logout.link.name=
+register.link.name=
+
+# admin
+page.title.admin=
+user.list=
+role.list=

@@ -1,15 +1,17 @@
 
-<h2>{{.UserListTitle}}&nbsp;({{.Total}})</h2>
+<h2>{{.Messages.UserList}}&nbsp;({{.Total}})</h2>
 
 TODO filter
 
 <ul>
     TODO paginate
+    {{$baseUrl := .BaseUrl}}
+    {{$viewLinkName := .Messages.ViewLinkName}}
     {{range .Users}}
         <li>
             <ul>
                 <li>{{.Login}}</li>
-                <li><a href="{{.BaseUrl}}user/view/{{.Id}}">{{.ViewLinkName}}</a></li>
+                <li><a href="{{$baseUrl}}user/view/{{.Id}}">{{$viewLinkName}}</a></li>
             </ul>
         <li>
     {{end}}

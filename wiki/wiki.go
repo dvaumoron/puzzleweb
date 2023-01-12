@@ -26,7 +26,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
-	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/dvaumoron/puzzleweb/wiki/cache"
 	"github.com/dvaumoron/puzzleweb/wiki/client"
@@ -42,15 +41,6 @@ const wikiTitleName = "WikiTitle"
 const wikiVersionName = "WikiVersion"
 const wikiBaseUrlName = "WikiBaseUrl"
 const wikiContentName = "WikiContent"
-
-type VersionDisplay struct {
-	Title          string
-	Number         string
-	Creator        *profileclient.Profile
-	BaseUrl        string
-	ViewLinkName   string
-	DeleteLinkName string
-}
 
 type wikiWidget struct {
 	defaultHandler gin.HandlerFunc
@@ -133,13 +123,10 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 						body, err = content.GetBody()
 						if err == nil {
 							data[wikiTitleName] = title
-							if version == "" {
-								data["EditLinkName"] = locale.GetText("edit.link.name", c)
-							} else {
+							if version != "" {
 								data[wikiVersionName] = fmt.Sprint(content.Version)
 							}
-							data["ListLinkName"] = locale.GetText("list.link.name", c)
-							data[wikiBaseUrlName] = common.GetBaseUrl(2, c)
+							data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 							data[wikiContentName] = body
 						} else {
 							redirect = common.DefaultErrorRedirect(err.Error(), c)
@@ -152,7 +139,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				targetBuilder := wikiUrlBuilder(
 					common.GetBaseUrl(3, c), lang, viewMode, title,
 				)
-				common.WriteError(targetBuilder, common.WrongLang, c)
+				common.WriteError(targetBuilder, common.WrongLangKey, c)
 				redirect = targetBuilder.String()
 			}
 			return viewTmpl, redirect
@@ -167,23 +154,20 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				userId := session.GetUserId(c)
 				content, err := client.LoadContent(wikiId, groupId, userId, lang, title, "")
 				if err == nil {
-					data["EditTitle"] = locale.GetText("edit.title", c)
 					data[wikiTitleName] = title
-					data[wikiBaseUrlName] = common.GetBaseUrl(2, c)
-					data["CancelLinkName"] = locale.GetText("cancel.link.name", c)
+					data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 					if content == nil {
 						data[wikiVersionName] = "0"
 					} else {
 						data[wikiContentName] = content.Markdown
 						data[wikiVersionName] = content.Version
 					}
-					data["SaveLinkName"] = locale.GetText("save.link.name", c)
 				} else {
 					redirect = common.DefaultErrorRedirect(err.Error(), c)
 				}
 			} else {
 				targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
-				common.WriteError(targetBuilder, common.WrongLang, c)
+				common.WriteError(targetBuilder, common.WrongLangKey, c)
 				redirect = targetBuilder.String()
 			}
 			return editTmpl, redirect
@@ -204,7 +188,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 					common.WriteError(targetBuilder, err.Error(), c)
 				}
 			} else {
-				common.WriteError(targetBuilder, common.WrongLang, c)
+				common.WriteError(targetBuilder, common.WrongLangKey, c)
 			}
 			return targetBuilder.String()
 		}),
@@ -219,23 +203,10 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				versions, err := client.GetVersions(wikiId, groupId, userId, lang, title)
 				if err == nil {
 					data[wikiTitleName] = title
+					data[versionsName] = versions
+					data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 					if size := len(versions); size == 0 {
-						data[common.ErrorMsgName] = locale.GetText(common.NoElement, c)
-						data[versionsName] = versions
-					} else {
-						viewLinkName := locale.GetText("view.link.name", c)
-						deleteLinkName := locale.GetText("delete.link.name", c)
-
-						baseUrl := common.GetBaseUrl(2, c)
-						converted := make([]*VersionDisplay, 0, size)
-						for _, version := range versions {
-							converted = append(converted, &VersionDisplay{
-								Title: title, Number: fmt.Sprint(version.Number),
-								Creator: version.Creator, BaseUrl: baseUrl,
-								ViewLinkName: viewLinkName, DeleteLinkName: deleteLinkName,
-							})
-						}
-						data[versionsName] = converted
+						data[common.ErrorMsgName] = locale.GetText(common.NoElementKey, c)
 					}
 				} else {
 					targetBuilder := wikiUrlBuilder(
@@ -248,7 +219,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				targetBuilder := wikiUrlBuilder(
 					common.GetBaseUrl(3, c), lang, listMode, title,
 				)
-				common.WriteError(targetBuilder, common.WrongLang, c)
+				common.WriteError(targetBuilder, common.WrongLangKey, c)
 				redirect = targetBuilder.String()
 			}
 			return listTmpl, redirect
@@ -267,7 +238,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 					common.WriteError(targetBuilder, err.Error(), c)
 				}
 			} else {
-				common.WriteError(targetBuilder, common.WrongLang, c)
+				common.WriteError(targetBuilder, common.WrongLangKey, c)
 			}
 			return targetBuilder.String()
 		}),

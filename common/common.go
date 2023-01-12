@@ -25,6 +25,7 @@ import (
 
 const RedirectName = "Redirect"
 const UserIdName = "UserId"
+const BaseUrlName = "BaseUrl"
 
 type DataAdder func(gin.H, *gin.Context)
 type Redirecter func(*gin.Context) string

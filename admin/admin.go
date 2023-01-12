@@ -18,7 +18,6 @@
 package admin
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -38,13 +37,6 @@ import (
 const RoleNameName = "RoleName"
 const GroupName = "Group"
 const UsersName = "Users"
-
-type UserDisplay struct {
-	Id           string
-	Login        string
-	BaseUrl      string
-	ViewLinkName string
-}
 
 // TODO
 type adminWidget struct {
@@ -198,10 +190,7 @@ func AddAdminPage(site *puzzleweb.Site, name string, args ...string) {
 			err := client.AuthQuery(session.GetUserId(c), client.AdminGroupId, client.ActionAccess)
 
 			redirect := ""
-			if err == nil {
-				data["UserListTitle"] = locale.GetText("user.list", c)
-				data["RoleListTitle"] = locale.GetText("role.list", c)
-			} else {
+			if err != nil {
 				redirect = common.DefaultErrorRedirect(err.Error(), c)
 			}
 			return indexTmpl, redirect
@@ -225,24 +214,12 @@ func AddAdminPage(site *puzzleweb.Site, name string, args ...string) {
 				end := start + pageSize
 				total, users, err = loginclient.GetUsers(start, end, filter)
 
-				data["UserListTitle"] = locale.GetText("user.list", c)
 				if err == nil {
 					data["Total"] = total
+					data[UsersName] = users
+					data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 					if size := len(users); size == 0 {
-						data[common.ErrorMsgName] = locale.GetText(common.NoElement, c)
-						data[UsersName] = users
-					} else {
-						viewLinkName := locale.GetText("view.link.name", c)
-
-						baseUrl := common.GetBaseUrl(2, c)
-						converted := make([]*UserDisplay, 0, size)
-						for _, user := range users {
-							converted = append(converted, &UserDisplay{
-								Id: fmt.Sprint(user.Id), Login: user.Login,
-								BaseUrl: baseUrl, ViewLinkName: viewLinkName,
-							})
-						}
-						data[UsersName] = converted
+						data[common.ErrorMsgName] = locale.GetText(common.NoElementKey, c)
 					}
 				}
 			}

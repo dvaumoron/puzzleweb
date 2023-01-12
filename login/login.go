@@ -81,16 +81,12 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 }
 
 func loginData(loginUrl string, logoutUrl string) common.DataAdder {
-	const loginLinkName = "LoginLinkName"
 	return func(data gin.H, c *gin.Context) {
 		escapedUrl := url.QueryEscape(c.Request.URL.Path)
 		if login := session.Get(c).Load(loginName); login == "" {
-			data[loginLinkName] = locale.GetText("login.link.name", c)
 			data[loginUrlName] = loginUrl + escapedUrl
 		} else {
-			data["Welcome"] = locale.GetText("welcome", c)
 			data[loginName] = login
-			data[loginLinkName] = locale.GetText("logout.link.name", c)
 			data[loginUrlName] = logoutUrl + escapedUrl
 		}
 	}
@@ -119,10 +115,6 @@ func AddLoginPage(site *puzzleweb.Site, name string, args ...string) {
 				errorKey = "&error="
 			}
 			data[prevUrlWithErrorName] = currentUrl.String() + errorKey
-
-			data["LoginLabel"] = locale.GetText("login.label", c)
-			data["PasswordLabel"] = locale.GetText("password.label", c)
-			data["RegisterLinkName"] = locale.GetText("register.link.name", c)
 
 			// To hide the connection link
 			delete(data, loginUrlName)

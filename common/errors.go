@@ -30,8 +30,8 @@ import (
 
 const ErrorMsgName = "ErrorMsg"
 const QueryError = "?error="
-const WrongLang = "wrong.lang"
-const NoElement = "no.element"
+const WrongLangKey = "wrong.lang"
+const NoElementKey = "no.element"
 
 // error displayed to user
 var ErrorNotAuthorized = errors.New("error.not.authorized")

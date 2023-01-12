@@ -2,15 +2,15 @@ login.js
 Body:
 
 <form action="{{.CurrentUrl}}submit" method="POST">
-    <div><label for="Login">{{.LoginLabel}}</label></div>
+    <div><label for="Login">{{.Messages.LoginLabel}}</label></div>
     <div><input type="text" name="Login"/></div>
-    <div><label for="Password">{{.PasswordLabel}}</label></div>
+    <div><label for="Password">{{.Messages.PasswordLabel}}</label></div>
     <div><input type="password" name="Password"/></div>
     <div class="hidden">
         <input type="text" name="Register"/>
         <input type="text" name="Redirect" value="{{.Redirect}}"/>
         <input type="text" name="PrevUrlWithError" value="{{.PrevUrlWithError}}"/>
     </div>
-    <div><input type="submit" value="{{.LoginLinkName}}"/></div>
-    <div><a href="todo">{{.RegisterLinkName}}</a></div>
+    <div><input type="submit" value="{{.Messages.LoginLinkName}}"/></div>
+    <div><a href="todo">{{.Messages.RegisterLinkName}}</a></div>
 </form>

@@ -1,10 +1,10 @@
 
 <h2>
-    {{.EditTitle}}&nbsp;{{.UserName}}&nbsp;
-    [<a href="{{.BaseUrl}}user/view/{{.UserId}}">{{.CancelLinkName}}</a>]
+    {{.Messages.EditTitle}}&nbsp;{{.UserName}}&nbsp;
+    [<a href="{{.BaseUrl}}user/view/{{.UserId}}">{{.Messages.CancelLinkName}}</a>]
 </h2>
 
 <form action="{{.BaseUrl}}user/save/{{.UserId}}" method="POST">
     TODO
-    <div><input type="submit" value="{{.SaveLinkName}}"></div>
+    <div><input type="submit" value="{{.Messages.SaveLinkName}}"></div>
 </form>

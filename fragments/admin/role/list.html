@@ -1,10 +1,13 @@
 
-<h2>{{.RoleListTitle}}</h2>
+<h2>{{.Messages.RoleList}}</h2>
 
+{{$baseUrl := .BaseUrl}}
+{{$editLinkName := .Messages.EditLinkName}}
 {{range .Groups}}
     <div>
         <p>{{.Name}}</p>
         <ul>
+            {{$groupName := .Name}}
             {{range .Roles}}
                 <li>
                     <ul>
@@ -14,7 +17,7 @@
                                 {{.}}
                             {{end}}
                         </li>
-                        <li><a href="{{.EditBaseUrl}}{{.Name}}/{{.GroupName}}">{{.EditLinkName}}</a></li>
+                        <li><a href="{{$baseUrl}}role/edit/{{.Name}}/{{$groupName}}">{{$editLinkName}}</a></li>
                     </ul>
                 <li>
             {{end}}

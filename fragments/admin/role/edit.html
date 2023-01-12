@@ -1,7 +1,7 @@
 
 <h2>
     {{.EditTitle}}&nbsp;{{.Group}}/{{.RoleName}}&nbsp;
-    [<a href="{{.BaseUrl}}role/list">{{.CancelLinkName}}</a>]
+    [<a href="{{.BaseUrl}}role/list">{{.Messages.CancelLinkName}}</a>]
 </h2>
 
 <form action="{{.BaseUrl}}role/save/{{.RoleName}}/{{.Group}}" method="POST">
@@ -9,5 +9,5 @@
     <div><input type="checkbox" name="actions" value="create" checked="{{.Create}}" /></div>
     <div><input type="checkbox" name="actions" value="update" checked="{{.Update}}" /></div>
     <div><input type="checkbox" name="actions" value="delete" checked="{{.Delete}}" /></div>
-    <div><input type="submit" value="{{.SaveLinkName}}"></div>
+    <div><input type="submit" value="{{.Messages.SaveLinkName}}"></div>
 </form>

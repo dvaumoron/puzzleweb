@@ -39,7 +39,6 @@ const listMode = "/list/"
 const titleName = "title"
 const wikiTitleName = "WikiTitle"
 const wikiVersionName = "WikiVersion"
-const wikiBaseUrlName = "WikiBaseUrl"
 const wikiContentName = "WikiContent"
 
 type wikiWidget struct {

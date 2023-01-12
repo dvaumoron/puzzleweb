@@ -31,6 +31,7 @@ import (
 )
 
 const cookieName = "pw_session_id"
+const sessionName = "Session"
 
 func getSessionId(c *gin.Context) (uint64, error) {
 	var sessionId uint64
@@ -83,8 +84,6 @@ func (s *Session) Delete(key string) {
 		s.change = true
 	}
 }
-
-const sessionName = "Session"
 
 func Manage(c *gin.Context) {
 	sessionId, err := getSessionId(c)

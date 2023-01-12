@@ -27,6 +27,7 @@ import (
 
 const defaultSessionTimeOut = 1200
 const defaultPageSize = 50
+const defaultServiceAddr = "localhost:50051"
 
 var Domain string
 var Port string
@@ -39,8 +40,6 @@ var PageSize uint64
 var StaticPath string
 var LocalesPath string
 var TemplatesPath string
-
-const defaultServiceAddr = "localhost:50051"
 
 var SessionServiceAddr string
 var LoginServiceAddr string

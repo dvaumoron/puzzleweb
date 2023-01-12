@@ -31,6 +31,7 @@ import (
 )
 
 const LangName = "lang"
+const pathName = "Path"
 
 var matcher language.Matcher
 var AllLang []string
@@ -49,7 +50,6 @@ func (a *Tags) Add(lang language.Tag) {
 var Availables Tags = Tags{list: make([]language.Tag, 0, 1)}
 
 func InitMessages() {
-	const pathName = "Path"
 	if matcher == nil {
 		list := Availables.list
 		size := len(list)

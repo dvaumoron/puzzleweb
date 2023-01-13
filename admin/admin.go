@@ -278,7 +278,7 @@ func AddAdminPage(site *puzzleweb.Site, name string, args ...string) {
 				if err == nil {
 					data["Total"] = total
 					data[usersName] = users
-					data[common.BaseUrlName] = common.GetBaseUrl(2, c)
+					data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 					if size := len(users); size == 0 {
 						data[common.ErrorMsgName] = locale.GetText(common.NoElementKey, c)
 					}
@@ -300,7 +300,7 @@ func AddAdminPage(site *puzzleweb.Site, name string, args ...string) {
 				if err == nil {
 					var userIdToLogin map[uint64]string
 					userIdToLogin, err = loginclient.GetLogins([]uint64{userId})
-					data[common.BaseUrlName] = common.GetBaseUrl(3, c)
+					data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 					data[common.UserIdName] = userId
 					data[userLoginName] = userIdToLogin[userId]
 					data["IsAdmin"] = adminId != userId

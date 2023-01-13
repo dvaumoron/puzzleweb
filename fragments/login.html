@@ -2,10 +2,14 @@ login.js
 Body:
 
 <form action="{{.CurrentUrl}}submit" method="POST">
-    <div><label for="Login">{{.Messages.LoginLabel}}</label></div>
-    <div><input type="text" name="Login"/></div>
-    <div><label for="Password">{{.Messages.PasswordLabel}}</label></div>
-    <div><input type="password" name="Password"/></div>
+    <div>
+        <label for="Login">{{.Messages.LoginLabel}}</label>
+        <input type="text" name="Login"/>
+    </div>
+    <div>
+        <label for="Password">{{.Messages.PasswordLabel}}</label>
+        <input type="password" name="Password"/>
+    </div>
     <div class="hidden">
         <input type="text" name="Register"/>
         <input type="text" name="Redirect" value="{{.Redirect}}"/>

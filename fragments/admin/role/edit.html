@@ -1,13 +1,37 @@
 
 <h2>
-    {{.EditTitle}}&nbsp;{{.Group}}/{{.RoleName}}&nbsp;
-    [<a href="{{.BaseUrl}}role/list">{{.Messages.CancelLinkName}}</a>]
+    {{if eq .RoleName "new"}}
+        {{.Messages.NewRoleLabel}}&nbsp;{{.Group}}&nbsp;
+    {{else}}
+        {{.Messages.EditLabel}}&nbsp;{{.Group}}/{{.RoleName}}&nbsp;
+    {{end}}
+    [<a href="{{.BaseUrl}}list">{{.Messages.CancelLinkName}}</a>]
 </h2>
 
-<form action="{{.BaseUrl}}role/save/{{.RoleName}}/{{.Group}}" method="POST">
-    <div><input type="checkbox" name="actions" value="access" checked="{{.Access}}" /></div>
-    <div><input type="checkbox" name="actions" value="create" checked="{{.Create}}" /></div>
-    <div><input type="checkbox" name="actions" value="update" checked="{{.Update}}" /></div>
-    <div><input type="checkbox" name="actions" value="delete" checked="{{.Delete}}" /></div>
+<form action="{{.BaseUrl}}save" method="POST">
+    <!-- TODO check that RoleName is not "new" -->
+    <div>
+        <label for="RoleName">{{.Messages.NameLabel}}</label>
+        <input type="text" id="RoleName" name="RoleName" value="{{.RoleName}}"/>
+    </div>
+    <div class="hidden">
+        <input type="text" name="Group" value="{{.Group}}"/>
+    </div>
+    <div>
+        <label for="access">{{.Messages.AccessLabel}}</label>
+        <input type="checkbox" id="access" name="actions" value="access" checked="{{.Access}}" />
+    </div>
+    <div>
+        <label for="create">{{.Messages.CreateLabel}}</label>
+        <input type="checkbox" id="create" name="actions" value="create" checked="{{.Create}}" />
+    </div>
+    <div>
+        <label for="update">{{.Messages.UpdateLabel}}</label>
+        <input type="checkbox" id="update" name="actions" value="update" checked="{{.Update}}" />
+    </div>
+    <div>
+        <label for="delete">{{.Messages.DeleteLabel}}</label>
+        <input type="checkbox" id="delete" name="actions" value="delete" checked="{{.Delete}}" />
+    </div>
     <div><input type="submit" value="{{.Messages.SaveLinkName}}"></div>
 </form>

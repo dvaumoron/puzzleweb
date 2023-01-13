@@ -71,3 +71,11 @@ func CreateRedirectString(target string) gin.HandlerFunc {
 		c.Redirect(http.StatusFound, target)
 	}
 }
+
+func MapToValueSlice[K comparable, V any](objects map[K]V) []V {
+	res := make([]V, 0, len(objects))
+	for _, object := range objects {
+		res = append(res, object)
+	}
+	return res
+}

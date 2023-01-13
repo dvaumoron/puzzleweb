@@ -1,26 +1,30 @@
 
 <h2>{{.Messages.RoleList}}</h2>
 
-{{$baseUrl := .BaseUrl}}
-{{$editLinkName := .Messages.EditLinkName}}
-{{range .Groups}}
-    <div>
-        <p>{{.Name}}</p>
-        <ul>
-            {{$groupName := .Name}}
-            {{range .Roles}}
-                <li>
-                    <ul>
-                        <li>{{.Name}}</li>
-                        <li>
-                            {{range .Actions}}
-                                {{.}}
-                            {{end}}
-                        </li>
-                        <li><a href="{{$baseUrl}}role/edit/{{.Name}}/{{$groupName}}">{{$editLinkName}}</a></li>
-                    </ul>
-                <li>
-            {{end}}
-        </ul>
-    </div>
-{{end}}
+<div>
+    {{$baseUrl := .BaseUrl}}
+    {{$editLinkName := .Messages.EditLinkName}}
+    {{$newLinkName := .Messages.NewLinkName}}
+    {{range .Groups}}
+        <div>
+            <p>{{.DisplayName}}</p>
+            <ul>
+                {{$groupName := .Name}}
+                {{range .Roles}}
+                    <li>
+                        <ul>
+                            <li>{{.Name}}</li>
+                            <li>
+                                {{range .Actions}}
+                                    {{.}}
+                                {{end}}
+                            </li>
+                            <li><a href="{{$baseUrl}}edit/{{.Name}}/{{$groupName}}">{{$editLinkName}}</a></li>
+                        </ul>
+                    <li>
+                {{end}}
+                <li><a href="{{$baseUrl}}edit/new/{{$groupName}}">{{$newLinkName}}</a><li>
+            </ul>
+        </div>
+    {{end}}
+</div>

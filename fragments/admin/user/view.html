@@ -1,10 +1,28 @@
 
 <h2>
-    {{.UserName}}&nbsp;
-    [<a href="{{.BaseUrl}}user/edit/{{.UserId}}">{{.Messages.EditLinkName}}</a>]
-    [<a href="{{.BaseUrl}}user/delete/{{.UserId}}">{{.Messages.DeleteLinkName}}</a>]
+    {{.UserLogin}}&nbsp;
+    {{if .IsAdmin}}
+        [<a href="{{.BaseUrl}}user/edit/{{.UserId}}">{{.Messages.EditLinkName}}</a>]
+        [<a href="{{.BaseUrl}}user/delete/{{.UserId}}">{{.Messages.DeleteLinkName}}</a>]
+    {{end}}
 </h2>
 
 <div>
-    TODO {{.UserRight}}
+    {{range .Groups}}
+        <div>
+            <p>{{.DisplayName}}</p>
+            <ul>
+                {{range .Roles}}
+                    <li>
+                        <span>
+                            {{.Name}}
+                            ({{range .Actions}}
+                                {{.}}
+                            {{end}})
+                        </span>
+                    <li>
+                {{end}}
+            </ul>
+        </div>
+    {{end}}
 </div>

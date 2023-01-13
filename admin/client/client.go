@@ -53,6 +53,14 @@ func RegisterGroup(groupId uint64, name string) {
 	nameToGroupId[name] = groupId
 }
 
+func GetGroupId(groupName string) uint64 {
+	return nameToGroupId[groupName]
+}
+
+func GetGroupName(groupId uint64) string {
+	return groupIdToName[groupId]
+}
+
 type Role struct {
 	Name    string
 	Group   string

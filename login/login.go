@@ -80,19 +80,17 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 	router.GET("/logout", logoutHandler)
 }
 
-func loginData(loginUrl string, logoutUrl string) common.DataAdder {
-	return func(data gin.H, c *gin.Context) {
-		escapedUrl := url.QueryEscape(c.Request.URL.Path)
-		if login := session.Get(c).Load(loginName); login == "" {
-			data[loginUrlName] = loginUrl + escapedUrl
-		} else {
-			data[loginName] = login
-			data[loginUrlName] = logoutUrl + escapedUrl
-		}
+func loginData(data gin.H, c *gin.Context) {
+	escapedUrl := url.QueryEscape(c.Request.URL.Path)
+	if login := session.Get(c).Load(loginName); login == "" {
+		data[loginUrlName] = "/login?redirect=" + escapedUrl
+	} else {
+		data[loginName] = login
+		data[loginUrlName] = "/login/logout?redirect=" + escapedUrl
 	}
 }
 
-func AddLoginPage(site *puzzleweb.Site, name string, args ...string) {
+func AddLoginPage(site *puzzleweb.Site, args ...string) {
 	size := len(args)
 	tmpl := "login.html"
 	if size != 0 && args[0] != "" {
@@ -102,7 +100,7 @@ func AddLoginPage(site *puzzleweb.Site, name string, args ...string) {
 		log.Logger.Info("AddLoginPage should be called with 2 or 3 arguments.")
 	}
 
-	p := puzzleweb.NewHiddenPage(name)
+	p := puzzleweb.NewHiddenPage("login")
 	p.Widget = &loginWidget{
 		displayHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			data[common.RedirectName] = c.Query(common.RedirectName)
@@ -123,10 +121,7 @@ func AddLoginPage(site *puzzleweb.Site, name string, args ...string) {
 		}),
 	}
 
-	baseUrl := "/" + name
-	loginUrl := baseUrl + "?redirect="
-	logoutUrl := baseUrl + "/logout?redirect="
-	site.AddDefaultData(loginData(loginUrl, logoutUrl))
+	site.AddDefaultData(loginData)
 
 	site.AddPage(p)
 }

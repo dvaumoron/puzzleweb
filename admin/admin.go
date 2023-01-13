@@ -98,7 +98,6 @@ func (s sortableRoles) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-// TODO
 type adminWidget struct {
 	displayHanler  gin.HandlerFunc
 	listUserHanler gin.HandlerFunc
@@ -202,7 +201,7 @@ func (w *adminWidget) LoadInto(router gin.IRouter) {
 	router.POST("/role/save", saveRoleHanler)
 }
 
-func AddAdminPage(site *puzzleweb.Site, name string, args ...string) {
+func AddAdminPage(site *puzzleweb.Site, args ...string) {
 	indexTmpl := "admin/index.html"
 	listUserTmpl := "admin/user/list.html"
 	viewUserTmpl := "admin/user/view.html"
@@ -211,7 +210,7 @@ func AddAdminPage(site *puzzleweb.Site, name string, args ...string) {
 	editRoleTmpl := "admin/role/edit.html"
 	switch len(args) {
 	default:
-		log.Logger.Info("AddAdminPage should be called with 2 to 8 arguments.")
+		log.Logger.Info("AddAdminPage should be called with 1 to 7 arguments.")
 		fallthrough
 	case 6:
 		if args[5] != "" {
@@ -245,7 +244,7 @@ func AddAdminPage(site *puzzleweb.Site, name string, args ...string) {
 	case 0:
 	}
 
-	p := puzzleweb.NewHiddenPage(name)
+	p := puzzleweb.NewHiddenPage("admin")
 	p.Widget = &adminWidget{
 		displayHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			err := client.AuthQuery(session.GetUserId(c), client.AdminGroupId, client.ActionAccess)

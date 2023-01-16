@@ -272,7 +272,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 
 				start := pageNumber * pageSize
 				end := start + pageSize
-				total, users, err = loginclient.GetUsers(start, end, filter)
+				total, users, err = loginclient.ListUsers(start, end, filter)
 
 				if err == nil {
 					data["Total"] = total

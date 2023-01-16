@@ -35,6 +35,7 @@ var LogConfig []byte
 
 var SessionTimeOut int
 var PageSize uint64
+var DateFormat string
 
 var StaticPath string
 var LocalesPath string
@@ -47,6 +48,7 @@ var ProfileServiceAddr string
 var SettingsServiceAddr string
 var WikiServiceAddr string
 var MarkdownServiceAddr string
+var ForumServiceAddr string
 
 func init() {
 	err := godotenv.Load()
@@ -90,6 +92,8 @@ func init() {
 		}
 	}
 
+	retrieveWithDefault("DATE_FORMAT", &DateFormat, "TODO")
+
 	retrievePath("STATIC_PATH", &StaticPath, "static")
 	retrievePath("LOCALES_PATH", &LocalesPath, "locales")
 	retrievePath("TEMPLATES_PATH", &TemplatesPath, "templates")
@@ -101,6 +105,7 @@ func init() {
 	requiredFromEnv("SETTINGS_SERVICE_ADDR", &SettingsServiceAddr)
 	requiredFromEnv("WIKI_SERVICE_ADDR", &WikiServiceAddr)
 	requiredFromEnv("MARKDOWN_SERVICE_ADDR", &MarkdownServiceAddr)
+	requiredFromEnv("FORUM_SERVICE_ADDR", &ForumServiceAddr)
 }
 
 func retrieveWithDefault(name string, pValue *string, defaultValue string) {

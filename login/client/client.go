@@ -31,8 +31,9 @@ import (
 )
 
 type User struct {
-	Id    uint64
-	Login string
+	Id          uint64
+	Login       string
+	RegistredAt string
 }
 
 func salt(password string) string {
@@ -85,13 +86,13 @@ func GetLogins(userIds []uint64) (map[uint64]string, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		var response *pb.Logins
-		response, err = pb.NewLoginClient(conn).ListLogins(ctx, &pb.UserIds{Ids: userIds})
+		var response *pb.Users
+		response, err = pb.NewLoginClient(conn).GetUsers(ctx, &pb.UserIds{Ids: userIds})
 
 		if err == nil {
 			logins = map[uint64]string{}
-			for index, value := range response.List {
-				logins[userIds[index]] = value
+			for _, value := range response.List {
+				logins[value.Id] = value.Login
 			}
 		} else {
 			common.LogOriginalError(err)
@@ -160,7 +161,7 @@ func ChangePassword(userId uint64, oldPassword string, newPassword string) error
 	return err
 }
 
-func GetUsers(start uint64, end uint64, filter string) (uint64, []*User, error) {
+func ListUsers(start uint64, end uint64, filter string) (uint64, []*User, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	var total uint64
 	var users []*User

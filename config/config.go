@@ -27,7 +27,6 @@ import (
 
 const defaultSessionTimeOut = 1200
 const defaultPageSize = 50
-const defaultServiceAddr = "localhost:50051"
 
 var Domain string
 var Port string
@@ -56,25 +55,16 @@ func init() {
 		os.Exit(1)
 	}
 
-	Domain = os.Getenv("SITE_DOMAIN")
-	if Domain == "" {
-		Domain = "localhost"
-	}
-
-	Port = os.Getenv("SITE_PORT")
-	if Port == "" {
-		Port = "8080"
-	}
+	retrieveWithDefault("SITE_DOMAIN", &Domain, "localhost")
+	retrieveWithDefault("SITE_PORT", &Port, "8080")
 
 	fileLogConfigPath := os.Getenv("LOG_CONFIG_PATH")
-	if fileLogConfigPath == "" {
-		LogConfig = make([]byte, 0)
-	} else {
+	if fileLogConfigPath != "" {
 		var err error
 		LogConfig, err = os.ReadFile(fileLogConfigPath)
 		if err != nil {
 			fmt.Println("Failed to read logging config file :", err)
-			LogConfig = make([]byte, 0)
+			LogConfig = nil
 		}
 	}
 
@@ -82,10 +72,9 @@ func init() {
 	if sessionTimeOutStr == "" {
 		SessionTimeOut = defaultSessionTimeOut
 	} else {
-		var err error
-		SessionTimeOut, err = strconv.Atoi(sessionTimeOutStr)
-		if err != nil {
-			fmt.Println("Failed to parse SESSION_TIME_OUT")
+		SessionTimeOut, _ = strconv.Atoi(sessionTimeOutStr)
+		if SessionTimeOut == 0 {
+			fmt.Println("Failed to parse SESSION_TIME_OUT, using default")
 			SessionTimeOut = defaultSessionTimeOut
 		}
 	}
@@ -94,68 +83,37 @@ func init() {
 	if pageSizeStr == "" {
 		PageSize = defaultPageSize
 	} else {
-		var err error
-		PageSize, err = strconv.ParseUint(pageSizeStr, 10, 64)
-		if err != nil {
-			fmt.Println("Failed to parse PAGE_SIZE")
+		PageSize, _ = strconv.ParseUint(pageSizeStr, 10, 64)
+		if PageSize == 0 {
+			fmt.Println("Failed to parse PAGE_SIZE, using default")
 			PageSize = defaultPageSize
 		}
 	}
 
-	StaticPath = os.Getenv("STATIC_PATH")
-	if StaticPath == "" {
-		StaticPath = "static"
+	retrievePath("STATIC_PATH", &StaticPath, "static")
+	retrievePath("LOCALES_PATH", &LocalesPath, "locales")
+	retrievePath("TEMPLATES_PATH", &TemplatesPath, "templates")
+
+	requiredFromEnv("SESSION_SERVICE_ADDR", &SessionServiceAddr)
+	requiredFromEnv("LOGIN_SERVICE_ADDR", &LoginServiceAddr)
+	requiredFromEnv("RIGHT_SERVICE_ADDR", &RightServiceAddr)
+	requiredFromEnv("PROFILE_SERVICE_ADDR", &ProfileServiceAddr)
+	requiredFromEnv("SETTINGS_SERVICE_ADDR", &SettingsServiceAddr)
+	requiredFromEnv("WIKI_SERVICE_ADDR", &WikiServiceAddr)
+	requiredFromEnv("MARKDOWN_SERVICE_ADDR", &MarkdownServiceAddr)
+}
+
+func retrieveWithDefault(name string, pValue *string, defaultValue string) {
+	if *pValue = os.Getenv(name); *pValue == "" {
+		*pValue = defaultValue
+	}
+}
+
+func retrievePath(name string, pValue *string, defaultValue string) {
+	if *pValue = os.Getenv(name); *pValue == "" {
+		*pValue = defaultValue
 	} else {
-		StaticPath = checkPath(StaticPath)
-	}
-
-	LocalesPath = os.Getenv("LOCALES_PATH")
-	if LocalesPath == "" {
-		LocalesPath = "locales"
-	} else {
-		LocalesPath = checkPath(LocalesPath)
-	}
-
-	TemplatesPath = os.Getenv("TEMPLATES_PATH")
-	if TemplatesPath == "" {
-		TemplatesPath = "templates"
-	} else {
-		TemplatesPath = checkPath(TemplatesPath)
-	}
-
-	SessionServiceAddr = os.Getenv("SESSION_SERVICE_ADDR")
-	if SessionServiceAddr == "" {
-		SessionServiceAddr = defaultServiceAddr
-	}
-
-	LoginServiceAddr = os.Getenv("LOGIN_SERVICE_ADDR")
-	if LoginServiceAddr == "" {
-		LoginServiceAddr = defaultServiceAddr
-	}
-
-	RightServiceAddr = os.Getenv("RIGHT_SERVICE_ADDR")
-	if RightServiceAddr == "" {
-		RightServiceAddr = defaultServiceAddr
-	}
-
-	ProfileServiceAddr = os.Getenv("PROFILE_SERVICE_ADDR")
-	if ProfileServiceAddr == "" {
-		ProfileServiceAddr = defaultServiceAddr
-	}
-
-	SettingsServiceAddr = os.Getenv("SETTINGS_SERVICE_ADDR")
-	if SettingsServiceAddr == "" {
-		SettingsServiceAddr = defaultServiceAddr
-	}
-
-	WikiServiceAddr = os.Getenv("WIKI_SERVICE_ADDR")
-	if WikiServiceAddr == "" {
-		WikiServiceAddr = defaultServiceAddr
-	}
-
-	MarkdownServiceAddr = os.Getenv("MARKDOWN_SERVICE_ADDR")
-	if MarkdownServiceAddr == "" {
-		MarkdownServiceAddr = defaultServiceAddr
+		*pValue = checkPath(*pValue)
 	}
 }
 
@@ -164,4 +122,12 @@ func checkPath(path string) string {
 		path = path[:last]
 	}
 	return path
+}
+
+func requiredFromEnv(name string, pValue *string) {
+	*pValue = os.Getenv(name)
+	if *pValue == "" {
+		fmt.Println(name, "not found in env")
+		os.Exit(1)
+	}
 }

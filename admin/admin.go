@@ -258,8 +258,8 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 		listUserHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
 			pageNumber, _ := strconv.ParseUint(c.Query("pageNumber"), 10, 64)
-			pageSize, parseErr := strconv.ParseUint(c.Query("pageSize"), 10, 64)
-			if parseErr != nil {
+			pageSize, _ := strconv.ParseUint(c.Query("pageSize"), 10, 64)
+			if pageSize == 0 {
 				pageSize = config.PageSize
 			}
 			filter := c.Query("filter")

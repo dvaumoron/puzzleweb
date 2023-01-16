@@ -47,7 +47,7 @@ func init() {
 		defaultLogConfig()
 	}
 
-	config.LogConfig = make([]byte, 0)
+	config.LogConfig = nil
 }
 
 func defaultLogConfig() {

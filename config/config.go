@@ -92,7 +92,7 @@ func init() {
 		}
 	}
 
-	retrieveWithDefault("DATE_FORMAT", &DateFormat, "TODO")
+	retrieveWithDefault("DATE_FORMAT", &DateFormat, "2/1/2006 15:04:05")
 
 	retrievePath("STATIC_PATH", &StaticPath, "static")
 	retrievePath("LOCALES_PATH", &LocalesPath, "locales")

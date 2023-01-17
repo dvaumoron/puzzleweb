@@ -1,6 +1,6 @@
 
 <h2>
-    {{.UserLogin}}&nbsp;
+    {{.UserLogin}}&nbsp;{{.Messages.RegistredAtLabel}}&nbsp;{{.UserRegistredAt}}&nbsp;
     {{if .IsAdmin}}
         [<a href="{{.BaseUrl}}edit/{{.UserId}}">{{.Messages.EditLinkName}}</a>]
         [<a href="{{.BaseUrl}}delete/{{.UserId}}">{{.Messages.DeleteLinkName}}</a>]

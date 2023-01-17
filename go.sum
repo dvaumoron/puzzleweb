@@ -3,12 +3,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dvaumoron/puzzleforumservice v1.0.1 h1:2dJIfZC7MlO4FBVV2Kk6+DzZ1HKI9bszgHbRKqkQWt4=
-github.com/dvaumoron/puzzleforumservice v1.0.1/go.mod h1:cCNSZOUMidXTNIrNjfTRYduK+A3oa4B6YEGEKbvwkPg=
-github.com/dvaumoron/puzzleforumservice v1.1.0 h1:6H//GdzKUxxYkJSoEw8arsS3HTN4CehAR4gXmtEZ80A=
-github.com/dvaumoron/puzzleforumservice v1.1.0/go.mod h1:cCNSZOUMidXTNIrNjfTRYduK+A3oa4B6YEGEKbvwkPg=
-github.com/dvaumoron/puzzleloginservice v1.5.0 h1:VuOuWzHB7fdzClrp6WSrxrhUoWP5GkNCxrQjTEkuiW0=
-github.com/dvaumoron/puzzleloginservice v1.5.0/go.mod h1:K/m2nN30p+uAJamWT85Vh1Mtea7+ahSz+fnIughCok0=
+github.com/dvaumoron/puzzleforumservice v1.2.0 h1:PGQUQpagSq89rCQ+lyzYxGU1koZF7xlMqoLG53xy7pk=
+github.com/dvaumoron/puzzleforumservice v1.2.0/go.mod h1:cCNSZOUMidXTNIrNjfTRYduK+A3oa4B6YEGEKbvwkPg=
 github.com/dvaumoron/puzzleloginservice v1.6.0 h1:0/JCCUxxPy0XCrSrMoHSkELEPVaJmlouJHHD85x/Z3M=
 github.com/dvaumoron/puzzleloginservice v1.6.0/go.mod h1:K/m2nN30p+uAJamWT85Vh1Mtea7+ahSz+fnIughCok0=
 github.com/dvaumoron/puzzlemarkdownservice v1.0.1 h1:82Iqn7YKrS51vyJJy3m4UMhyIPqo/LzSPxI0rMfZK7Y=
@@ -19,8 +15,6 @@ github.com/dvaumoron/puzzlerightservice v1.3.0 h1:QUWa3H2uSo/Mh7d7vKQjSLZ6Q362oN
 github.com/dvaumoron/puzzlerightservice v1.3.0/go.mod h1:Nj4Jj1ica09zvsATXKDhUqGWLWjAvrkt60V92ObrPvk=
 github.com/dvaumoron/puzzlesessionservice v1.1.0 h1:pQ9HDCaMcj+sFrtsswVkqJ47Pacq8GZUXZnnlA8gGac=
 github.com/dvaumoron/puzzlesessionservice v1.1.0/go.mod h1:VB2EkzytHS7t6A6pCRl/Pu80VnwHcGlRNcXx9Zkmicg=
-github.com/dvaumoron/puzzlewikiservice v1.1.0 h1:1IAsHDgt5zz8a/39K7FG5oxbMrOgUGSj1cEDPHmc8ZM=
-github.com/dvaumoron/puzzlewikiservice v1.1.0/go.mod h1:tPX1ONQbE/Bz19M8JLPmm/6/l5YXQVc2okbS2N9P0ns=
 github.com/dvaumoron/puzzlewikiservice v1.2.0 h1:pXanotFGnxPGEfT765v/6+OMn7I2yQ3vyzOutmHH350=
 github.com/dvaumoron/puzzlewikiservice v1.2.0/go.mod h1:tPX1ONQbE/Bz19M8JLPmm/6/l5YXQVc2okbS2N9P0ns=
 github.com/gin-contrib/sse v0.1.0 h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE=

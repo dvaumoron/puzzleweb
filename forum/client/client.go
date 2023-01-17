@@ -19,6 +19,7 @@ package client
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	pb "github.com/dvaumoron/puzzleforumservice"
@@ -31,9 +32,27 @@ import (
 )
 
 type ForumContent struct {
+	Id      uint64
 	Creator *profileclient.Profile
 	Date    string
 	Text    string
+}
+
+type contentRequestKind func(pb.ForumClient, context.Context, *pb.SearchRequest) (*pb.Contents, error)
+type deleteRequestKind func(pb.ForumClient, context.Context, *pb.IdRequest) (*pb.Confirm, error)
+
+type sortableContents []*pb.Content
+
+func (s sortableContents) Len() int {
+	return len(s)
+}
+
+func (s sortableContents) Less(i, j int) bool {
+	return s[i].CreatedAt > s[j].CreatedAt
+}
+
+func (s sortableContents) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
 
 func CreateThread(groupId uint64, userId uint64, title string, message string) error {
@@ -49,13 +68,13 @@ func CreateThread(groupId uint64, userId uint64, title string, message string) e
 
 			var response *pb.Confirm
 			client := pb.NewForumClient(conn)
-			response, err = client.CreateThread(ctx, &pb.Content{
+			response, err = client.CreateThread(ctx, &pb.CreateRequest{
 				ContainerId: groupId, UserId: userId, Text: title,
 			})
 			if err == nil {
 				if response.Success {
 					var response2 *pb.Confirm
-					response2, err = client.CreateMessage(ctx, &pb.Content{
+					response2, err = client.CreateMessage(ctx, &pb.CreateRequest{
 						ContainerId: response.Id, UserId: userId, Text: message,
 					})
 					if err == nil {
@@ -93,7 +112,7 @@ func CreateMessage(groupId uint64, userId uint64, threadId uint64, message strin
 			defer cancel()
 
 			var response *pb.Confirm
-			response, err = pb.NewForumClient(conn).CreateMessage(ctx, &pb.Content{
+			response, err = pb.NewForumClient(conn).CreateMessage(ctx, &pb.CreateRequest{
 				ContainerId: threadId, UserId: userId, Text: message,
 			})
 			if err == nil {
@@ -112,8 +131,72 @@ func CreateMessage(groupId uint64, userId uint64, threadId uint64, message strin
 	return err
 }
 
-func GetThreads(groupId uint64, userId uint64, start uint64, end uint64, filter string) error {
+func GetThread(groupId uint64, userId uint64, threadId uint64) (*ForumContent, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
+	var content *ForumContent
+	if err == nil {
+		var conn *grpc.ClientConn
+		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err == nil {
+			defer conn.Close()
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+
+			var response *pb.Content
+			response, err = pb.NewForumClient(conn).GetThread(ctx, &pb.IdRequest{
+				ContainerId: groupId, Id: threadId,
+			})
+			if err == nil {
+				creatorId := response.UserId
+				var users map[uint64]*profileclient.Profile
+				users, err = profileclient.GetProfiles([]uint64{creatorId})
+				if err == nil {
+					content = convertContent(response, users[creatorId])
+				}
+			} else {
+				common.LogOriginalError(err)
+				err = common.ErrorTechnical
+			}
+		} else {
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
+		}
+	}
+	return content, err
+}
+
+func GetThreads(groupId uint64, userId uint64, start uint64, end uint64, filter string) ([]*ForumContent, error) {
+	return searchContent(
+		groupId, userId, getThreads,
+		&pb.SearchRequest{ContainerId: groupId, Start: start, End: end, Filter: filter},
+	)
+}
+
+func GetMessages(groupId uint64, userId uint64, threadId uint64, start uint64, end uint64) ([]*ForumContent, error) {
+	return searchContent(
+		groupId, userId, getMessages,
+		&pb.SearchRequest{ContainerId: threadId, Start: start, End: end},
+	)
+}
+
+func DeleteThread(groupId uint64, userId uint64, threadId uint64) error {
+	return deleteContent(
+		groupId, userId, deleteThread,
+		&pb.IdRequest{ContainerId: groupId, Id: threadId},
+	)
+}
+
+func DeleteMessage(groupId uint64, userId uint64, threadId uint64, messageId uint64) error {
+	return deleteContent(
+		groupId, userId, deleteMessage,
+		&pb.IdRequest{ContainerId: threadId, Id: messageId},
+	)
+}
+
+func searchContent(groupId uint64, userId uint64, kind contentRequestKind, search *pb.SearchRequest) ([]*ForumContent, error) {
+	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
+	var contents []*ForumContent
 	if err == nil {
 		var conn *grpc.ClientConn
 		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -124,11 +207,49 @@ func GetThreads(groupId uint64, userId uint64, start uint64, end uint64, filter 
 			defer cancel()
 
 			var response *pb.Contents
-			response, err = pb.NewForumClient(conn).GetThreads(ctx, &pb.Search{
-				ContainerId: groupId, Start: start, End: end,
-			})
+			response, err = kind(pb.NewForumClient(conn), ctx, search)
 			if err == nil {
+				list := response.List
+				if len(list) != 0 {
+					contents, err = sortConvertContents(list)
+				}
+			} else {
+				common.LogOriginalError(err)
+				err = common.ErrorTechnical
+			}
+		} else {
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
+		}
+	}
+	return contents, err
+}
 
+func getThreads(client pb.ForumClient, ctx context.Context, search *pb.SearchRequest) (*pb.Contents, error) {
+	return client.GetThreads(ctx, search)
+}
+
+func getMessages(client pb.ForumClient, ctx context.Context, search *pb.SearchRequest) (*pb.Contents, error) {
+	return client.GetMessages(ctx, search)
+}
+
+func deleteContent(groupId uint64, userId uint64, kind deleteRequestKind, request *pb.IdRequest) error {
+	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionDelete)
+	if err == nil {
+		var conn *grpc.ClientConn
+		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err == nil {
+			defer conn.Close()
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+
+			var response *pb.Confirm
+			response, err = kind(pb.NewForumClient(conn), ctx, request)
+			if err == nil {
+				if !response.Success {
+					err = common.ErrorUpdate
+				}
 			} else {
 				common.LogOriginalError(err)
 				err = common.ErrorTechnical
@@ -141,31 +262,39 @@ func GetThreads(groupId uint64, userId uint64, start uint64, end uint64, filter 
 	return err
 }
 
-func GetMessages(groupId uint64, userId uint64, threadId uint64, start uint64, end uint64) error {
-	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
+func deleteThread(client pb.ForumClient, ctx context.Context, request *pb.IdRequest) (*pb.Confirm, error) {
+	return client.DeleteThread(ctx, request)
+}
+
+func deleteMessage(client pb.ForumClient, ctx context.Context, request *pb.IdRequest) (*pb.Confirm, error) {
+	return client.DeleteMessage(ctx, request)
+}
+
+func sortConvertContents(list []*pb.Content) ([]*ForumContent, error) {
+	sort.Sort(sortableContents(list))
+
+	size := len(list)
+	// no duplicate check, there is one in GetProfiles
+	userIds := make([]uint64, 0, size)
+	for _, content := range list {
+		userIds = append(userIds, content.UserId)
+	}
+
+	users, err := profileclient.GetProfiles(userIds)
+	var contents []*ForumContent
 	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Contents
-			response, err = pb.NewForumClient(conn).GetMessages(ctx, &pb.Search{
-				ContainerId: threadId, Start: start, End: end,
-			})
-			if err == nil {
-
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
+		contents = make([]*ForumContent, 0, size)
+		for _, content := range list {
+			contents = append(contents, convertContent(content, users[content.UserId]))
 		}
 	}
-	return err
+	return contents, err
+}
+
+func convertContent(content *pb.Content, creator *profileclient.Profile) *ForumContent {
+	createdAt := time.Unix(content.CreatedAt, 0)
+	return &ForumContent{
+		Id: content.Id, Creator: creator,
+		Date: createdAt.Format(config.DateFormat), Text: content.Text,
+	}
 }

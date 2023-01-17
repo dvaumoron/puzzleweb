@@ -77,9 +77,9 @@ func VerifyOrRegister(login string, password string, register bool) (uint64, boo
 }
 
 // You should remove duplicate id in list
-func GetLogins(userIds []uint64) (map[uint64]string, error) {
+func GetUsers(userIds []uint64) (map[uint64]*User, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var logins map[uint64]string
+	var logins map[uint64]*User
 	if err == nil {
 		defer conn.Close()
 
@@ -90,9 +90,9 @@ func GetLogins(userIds []uint64) (map[uint64]string, error) {
 		response, err = pb.NewLoginClient(conn).GetUsers(ctx, &pb.UserIds{Ids: userIds})
 
 		if err == nil {
-			logins = map[uint64]string{}
+			logins = map[uint64]*User{}
 			for _, value := range response.List {
-				logins[value.Id] = value.Login
+				logins[value.Id] = convertUser(value)
 			}
 		} else {
 			common.LogOriginalError(err)
@@ -181,9 +181,7 @@ func ListUsers(start uint64, end uint64, filter string) (uint64, []*User, error)
 			list := response.List
 			users = make([]*User, 0, len(list))
 			for _, user := range list {
-				users = append(users, &User{
-					Id: user.Id, Login: user.Login,
-				})
+				users = append(users, convertUser(user))
 			}
 		} else {
 			common.LogOriginalError(err)
@@ -220,4 +218,9 @@ func DeleteUser(userId uint64) error {
 		err = common.ErrorTechnical
 	}
 	return err
+}
+
+func convertUser(user *pb.User) *User {
+	RegistredAt := time.Unix(user.RegistredAt, 0)
+	return &User{Id: user.Id, Login: user.Login, RegistredAt: RegistredAt.Format(config.DateFormat)}
 }

@@ -21,7 +21,7 @@ type empty = struct{}
 
 type Set[V comparable] map[V]empty
 
-func MakeSet[V comparable](values ...V) Set[V] {
+func MakeSet[V comparable](values []V) Set[V] {
 	set := Set[V]{}
 	for _, value := range values {
 		set[value] = empty{}

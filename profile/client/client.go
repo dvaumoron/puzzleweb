@@ -30,10 +30,11 @@ import (
 )
 
 type Profile struct {
-	UserId uint64
-	Login  string
-	Desc   string
-	Info   map[string]string
+	UserId      uint64
+	Login       string
+	RegistredAt string
+	Desc        string
+	Info        map[string]string
 }
 
 func UpdateProfile(userId uint64, desc string, info map[string]string) error {
@@ -120,7 +121,8 @@ func GetProfiles(userIds []uint64) (map[uint64]*Profile, error) {
 	if err == nil {
 		defer conn.Close()
 
-		userIds = common.MakeSet(userIds...).Slice()
+		// duplicate removal
+		userIds = common.MakeSet(userIds).Slice()
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
@@ -130,14 +132,15 @@ func GetProfiles(userIds []uint64) (map[uint64]*Profile, error) {
 			Ids: userIds,
 		})
 		if err == nil {
-			var logins map[uint64]string
-			logins, err = client.GetLogins(userIds)
+			var users map[uint64]*client.User
+			users, err = client.GetUsers(userIds)
 			if err == nil {
 				profiles = map[uint64]*Profile{}
 				for _, profile := range response.List {
 					userId := profile.UserId
+					user := users[userId]
 					profiles[userId] = &Profile{
-						UserId: userId, Login: logins[userId],
+						UserId: userId, Login: user.Login, RegistredAt: user.RegistredAt,
 						Desc: profile.Desc, Info: profile.Info,
 					}
 				}

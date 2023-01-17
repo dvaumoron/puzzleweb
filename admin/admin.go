@@ -297,11 +297,13 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 				var roles []*client.Role
 				roles, err = client.GetUserRoles(adminId, userId)
 				if err == nil {
-					var userIdToLogin map[uint64]string
-					userIdToLogin, err = loginclient.GetLogins([]uint64{userId})
+					var userIdToLogin map[uint64]*loginclient.User
+					userIdToLogin, err = loginclient.GetUsers([]uint64{userId})
+					user := userIdToLogin[userId]
 					data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 					data[common.UserIdName] = userId
-					data[userLoginName] = userIdToLogin[userId]
+					data[userLoginName] = user.Login
+					data["UserRegistredAt"] = user.RegistredAt
 					data["IsAdmin"] = adminId != userId
 					data[groupsName] = displayGroups(roles, c)
 				}
@@ -323,12 +325,14 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 					var userRoles []*client.Role
 					userRoles, err = client.GetUserRoles(adminId, userId)
 					if err == nil {
-						var userIdToLogin map[uint64]string
-						userIdToLogin, err = loginclient.GetLogins([]uint64{userId})
-						data[common.BaseUrlName] = common.GetBaseUrl(2, c)
-						data[common.UserIdName] = userId
-						data[userLoginName] = userIdToLogin[userId]
-						data[groupsName] = displayEditGroups(userRoles, allRoles, c)
+						var userIdToLogin map[uint64]*loginclient.User
+						userIdToLogin, err = loginclient.GetUsers([]uint64{userId})
+						if err == nil {
+							data[common.BaseUrlName] = common.GetBaseUrl(2, c)
+							data[common.UserIdName] = userId
+							data[userLoginName] = userIdToLogin[userId].Login
+							data[groupsName] = displayEditGroups(userRoles, allRoles, c)
+						}
 					}
 				}
 			}
@@ -367,7 +371,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 				var actions []pb.RightAction
 				actions, err = client.GetActions(adminId, roleName, group)
 				if err == nil {
-					actionSet := common.MakeSet(actions...)
+					actionSet := common.MakeSet(actions)
 					setActionChecked(data, actionSet, client.ActionAccess, "Access")
 					setActionChecked(data, actionSet, client.ActionCreate, "Create")
 					setActionChecked(data, actionSet, client.ActionUpdate, "Update")
@@ -415,7 +419,7 @@ func rolesAppender(group *GroupDisplay, role *client.Role, c *gin.Context) {
 // convert a RightAction slice in a displayable string slice,
 // always in the same order : access, create, update, delete
 func displayActions(actions []pb.RightAction, c *gin.Context) []string {
-	actionSet := common.MakeSet(actions...)
+	actionSet := common.MakeSet(actions)
 	res := make([]string, len(actions))
 	if actionSet.Contains(client.ActionAccess) {
 		res = append(res, locale.GetText(accessKey, c))

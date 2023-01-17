@@ -216,7 +216,7 @@ func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {
 		if err == nil {
 			list := response.List
 			if len(list) != 0 {
-				versions, err = sortConvertVersion(list)
+				versions, err = sortConvertVersions(list)
 			}
 		} else {
 			common.LogOriginalError(err)
@@ -274,15 +274,16 @@ func maxVersion(list []*pb.Version) *pb.Version {
 	return res
 }
 
-func sortConvertVersion(list []*pb.Version) ([]Version, error) {
+func sortConvertVersions(list []*pb.Version) ([]Version, error) {
 	size := len(list)
 	valueSet := make([]*pb.Version, maxVersion(list).Number)
-	userIdSet := common.MakeSet[uint64]()
+	// no duplicate check, there is one in GetProfiles
+	userIds := make([]uint64, 0, size)
 	for _, value := range list {
 		valueSet[value.Number] = value
-		userIdSet.Add(value.UserId)
+		userIds = append(userIds, value.UserId)
 	}
-	profiles, err := profileclient.GetProfiles(userIdSet.Slice())
+	profiles, err := profileclient.GetProfiles(userIds)
 	var newList []Version
 	if err == nil {
 		newList = make([]Version, 0, size)

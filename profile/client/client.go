@@ -24,7 +24,7 @@ import (
 	pb "github.com/dvaumoron/puzzleprofileservice"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/login/client"
+	loginclient "github.com/dvaumoron/puzzleweb/login/client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -132,8 +132,8 @@ func GetProfiles(userIds []uint64) (map[uint64]*Profile, error) {
 			Ids: userIds,
 		})
 		if err == nil {
-			var users map[uint64]*client.User
-			users, err = client.GetUsers(userIds)
+			var users map[uint64]*loginclient.User
+			users, err = loginclient.GetUsers(userIds)
 			if err == nil {
 				profiles = map[uint64]*Profile{}
 				for _, profile := range response.List {

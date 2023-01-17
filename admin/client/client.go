@@ -19,6 +19,8 @@ package client
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"time"
 
 	pb "github.com/dvaumoron/puzzlerightservice"
@@ -46,7 +48,8 @@ var nameToGroupId = map[string]uint64{PublicName: PublicGroupId, AdminName: Admi
 func RegisterGroup(groupId uint64, name string) {
 	for usedId := range groupIdToName {
 		if groupId == usedId {
-			panic(common.ErrorDuplicateObject)
+			fmt.Println("duplicate objectId")
+			os.Exit(1)
 		}
 	}
 	groupIdToName[groupId] = name

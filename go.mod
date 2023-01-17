@@ -3,6 +3,7 @@ module github.com/dvaumoron/puzzleweb
 go 1.19
 
 require (
+	github.com/dvaumoron/puzzleblogservice v1.0.0
 	github.com/dvaumoron/puzzleforumservice v1.2.0
 	github.com/dvaumoron/puzzleloginservice v1.6.0
 	github.com/dvaumoron/puzzlemarkdownservice v1.0.1

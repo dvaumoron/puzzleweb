@@ -20,7 +20,7 @@ package puzzleweb
 import (
 	"strings"
 
-	"github.com/dvaumoron/puzzleweb/admin/client"
+	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/session"
@@ -64,7 +64,7 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
 		redirect := ""
-		err := client.AuthQuery(session.GetUserId(c), groupId, client.ActionAccess)
+		err := rightclient.AuthQuery(session.GetUserId(c), groupId, rightclient.ActionAccess)
 		if err == nil {
 			if lang := locale.GetLang(c); lang != locale.DefaultLang {
 				var builder strings.Builder
@@ -80,7 +80,7 @@ func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 	}
 }
 
-func newStaticWidget(groupId uint64, tmpl string) Widget {
+func newStaticWidget(groupId uint64, tmpl string) *staticWidget {
 	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(groupId, tmpl))}
 }
 

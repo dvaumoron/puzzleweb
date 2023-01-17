@@ -49,6 +49,7 @@ var SettingsServiceAddr string
 var WikiServiceAddr string
 var MarkdownServiceAddr string
 var ForumServiceAddr string
+var BlogServiceAddr string
 
 func init() {
 	err := godotenv.Load()
@@ -106,6 +107,7 @@ func init() {
 	requiredFromEnv("WIKI_SERVICE_ADDR", &WikiServiceAddr)
 	requiredFromEnv("MARKDOWN_SERVICE_ADDR", &MarkdownServiceAddr)
 	requiredFromEnv("FORUM_SERVICE_ADDR", &ForumServiceAddr)
+	requiredFromEnv("BLOG_SERVICE_ADDR", &BlogServiceAddr)
 }
 
 func retrieveWithDefault(name string, pValue *string, defaultValue string) {

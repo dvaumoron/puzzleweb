@@ -38,9 +38,6 @@ var ErrorNotAuthorized = errors.New("error.not.authorized")
 var ErrorTechnical = errors.New("error.technical.problem")
 var ErrorUpdate = errors.New("error.update")
 
-// initialization error
-var ErrorDuplicateObject = errors.New("duplicate objectId")
-
 func LogOriginalError(err error) {
 	log.Logger.Warn("Original error.", zap.Error(err))
 }

@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dvaumoron/puzzleweb/admin/client"
+	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
@@ -61,7 +61,7 @@ func NewSite(args ...string) *Site {
 
 	site := &Site{
 		engine: engine,
-		root:   NewStaticPage("root", client.PublicGroupId, rootTmpl),
+		root:   NewStaticPage("root", rightclient.PublicGroupId, rootTmpl),
 	}
 
 	engine.Use(session.Manage, func(c *gin.Context) {

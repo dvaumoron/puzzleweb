@@ -103,7 +103,7 @@ func DeleteContent(wikiId uint64, groupId uint64, userId uint64, lang string, ti
 	return err
 }
 
-func buildRef(lang, title string) string {
+func buildRef(lang string, title string) string {
 	var refBuilder strings.Builder
 	refBuilder.WriteString(lang)
 	refBuilder.WriteString("/")

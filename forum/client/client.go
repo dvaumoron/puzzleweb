@@ -19,6 +19,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
 
@@ -55,7 +56,7 @@ func (s sortableContents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func CreateThread(groupId uint64, userId uint64, title string, message string) error {
+func CreateThread(forumId uint64, groupId uint64, userId uint64, title string, message string) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate)
 	if err == nil {
 		var conn *grpc.ClientConn
@@ -69,7 +70,7 @@ func CreateThread(groupId uint64, userId uint64, title string, message string) e
 			var response *pb.Confirm
 			client := pb.NewForumClient(conn)
 			response, err = client.CreateThread(ctx, &pb.CreateRequest{
-				ContainerId: groupId, UserId: userId, Text: title,
+				ContainerId: forumId, UserId: userId, Text: title,
 			})
 			if err == nil {
 				if response.Success {
@@ -86,6 +87,37 @@ func CreateThread(groupId uint64, userId uint64, title string, message string) e
 						err = common.ErrorTechnical
 					}
 				} else {
+					err = common.ErrorUpdate
+				}
+			} else {
+				common.LogOriginalError(err)
+				err = common.ErrorTechnical
+			}
+		} else {
+			common.LogOriginalError(err)
+			err = common.ErrorTechnical
+		}
+	}
+	return err
+}
+
+func CreateCommentThread(objectId uint64, groupId uint64, userId uint64, elemTitle string) error {
+	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate)
+	if err == nil {
+		var conn *grpc.ClientConn
+		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err == nil {
+			defer conn.Close()
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+
+			var response *pb.Confirm
+			response, err = pb.NewForumClient(conn).CreateThread(ctx, &pb.CreateRequest{
+				ContainerId: objectId, UserId: userId, Text: elemTitle,
+			})
+			if err == nil {
+				if !response.Success {
 					err = common.ErrorUpdate
 				}
 			} else {
@@ -131,7 +163,7 @@ func CreateMessage(groupId uint64, userId uint64, threadId uint64, message strin
 	return err
 }
 
-func GetThread(groupId uint64, userId uint64, threadId uint64) (*ForumContent, error) {
+func GetThread(forumId uint64, groupId uint64, userId uint64, threadId uint64) (*ForumContent, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
 	var content *ForumContent
 	if err == nil {
@@ -145,7 +177,7 @@ func GetThread(groupId uint64, userId uint64, threadId uint64) (*ForumContent, e
 
 			var response *pb.Content
 			response, err = pb.NewForumClient(conn).GetThread(ctx, &pb.IdRequest{
-				ContainerId: groupId, Id: threadId,
+				ContainerId: forumId, Id: threadId,
 			})
 			if err == nil {
 				creatorId := response.UserId
@@ -166,11 +198,25 @@ func GetThread(groupId uint64, userId uint64, threadId uint64) (*ForumContent, e
 	return content, err
 }
 
-func GetThreads(groupId uint64, userId uint64, start uint64, end uint64, filter string) ([]*ForumContent, error) {
+func GetThreads(forumId uint64, groupId uint64, userId uint64, start uint64, end uint64, filter string) ([]*ForumContent, error) {
 	return searchContent(
 		groupId, userId, getThreads,
-		&pb.SearchRequest{ContainerId: groupId, Start: start, End: end, Filter: filter},
+		&pb.SearchRequest{ContainerId: forumId, Start: start, End: end, Filter: filter},
 	)
+}
+
+func GetCommentThreadId(objectId uint64, groupId uint64, userId uint64, elemTitle string) (uint64, error) {
+	contents, err := GetThreads(objectId, groupId, userId, 0, 1, elemTitle)
+	var threadId uint64
+	if err != nil {
+		if len(contents) == 0 {
+			common.LogOriginalError(fmt.Errorf("no comment thread found : %d, %s", objectId, elemTitle))
+			err = common.ErrorTechnical
+		} else {
+			threadId = contents[0].Id
+		}
+	}
+	return threadId, err
 }
 
 func GetMessages(groupId uint64, userId uint64, threadId uint64, start uint64, end uint64) ([]*ForumContent, error) {
@@ -180,10 +226,10 @@ func GetMessages(groupId uint64, userId uint64, threadId uint64, start uint64, e
 	)
 }
 
-func DeleteThread(groupId uint64, userId uint64, threadId uint64) error {
+func DeleteThread(forumId uint64, groupId uint64, userId uint64, threadId uint64) error {
 	return deleteContent(
 		groupId, userId, deleteThread,
-		&pb.IdRequest{ContainerId: groupId, Id: threadId},
+		&pb.IdRequest{ContainerId: forumId, Id: threadId},
 	)
 }
 

@@ -1,4 +1,4 @@
-# Puzzleweb
+# PuzzleWeb
 
 <img src="https://github.com/dvaumoron/puzzleweb/raw/main/static/logo/puzzlelogo.jpg" width="100">
 
@@ -13,3 +13,5 @@ Backed by microservices called with [gRPC](https://grpc.io/), those services def
 - [puzzlewikiservice](https://github.com/dvaumoron/puzzlewikiservice)
 - [puzzleforumservice](https://github.com/dvaumoron/puzzleforumservice)
 - [puzzlemarkdownservice](https://github.com/dvaumoron/puzzlemarkdownservice)
+
+The [PuzzleTest](https://github.com/dvaumoron/puzzletest) project show how to use PuzzleWeb.

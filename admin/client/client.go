@@ -45,15 +45,15 @@ const AdminGroupId = 1  // groupId corresponding to role administration
 var groupIdToName = map[uint64]string{PublicGroupId: PublicName, AdminGroupId: AdminName}
 var nameToGroupId = map[string]uint64{PublicName: PublicGroupId, AdminName: AdminGroupId}
 
-func RegisterGroup(groupId uint64, name string) {
+func RegisterGroup(groupId uint64, groupName string) {
 	for usedId := range groupIdToName {
 		if groupId == usedId {
-			fmt.Println("duplicate objectId")
+			fmt.Println("duplicate groupId")
 			os.Exit(1)
 		}
 	}
-	groupIdToName[groupId] = name
-	nameToGroupId[name] = groupId
+	groupIdToName[groupId] = groupName
+	nameToGroupId[groupName] = groupId
 }
 
 func GetGroupId(groupName string) uint64 {

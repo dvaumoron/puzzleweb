@@ -27,7 +27,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/login/client"
 	"github.com/dvaumoron/puzzleweb/session"
-	"github.com/dvaumoron/puzzleweb/settings"
+	settingsclient "github.com/dvaumoron/puzzleweb/settings/client"
 	"github.com/gin-gonic/gin"
 )
 
@@ -58,7 +58,7 @@ var submitHandler = common.CreateRedirect(func(c *gin.Context) string {
 		s.Store(loginName, login)
 		s.Store(common.UserIdName, fmt.Sprint(userId))
 
-		locale.SetLangCookie(c, settings.Get(userId, c)[locale.LangName])
+		locale.SetLangCookie(c, settingsclient.Get(userId, c)[locale.LangName])
 
 		target = c.PostForm(common.RedirectName)
 	} else {

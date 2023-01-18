@@ -32,14 +32,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// TODO cache & markdown apply
 type BlogPost struct {
-	PostId   uint64
-	Creator  *profileclient.Profile
-	Date     string
-	Title    string
-	Markdown string
-	Content  template.HTML
+	PostId  uint64
+	Creator *profileclient.Profile
+	Date    string
+	Title   string
+	content template.HTML // markdown apply is done before storage
 }
 
 type sortableContents []*pb.Content
@@ -211,5 +209,5 @@ func convertPost(post *pb.Content, creator *profileclient.Profile) *BlogPost {
 	createdAt := time.Unix(post.CreatedAt, 0)
 	return &BlogPost{
 		PostId: post.PostId, Creator: creator, Date: createdAt.Format(config.DateFormat),
-		Title: post.Title, Markdown: post.Text}
+		Title: post.Title, content: template.HTML(post.Text)}
 }

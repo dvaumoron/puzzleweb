@@ -16,3 +16,35 @@
  *
  */
 package blog
+
+import (
+	"github.com/dvaumoron/puzzleweb"
+	"github.com/gin-gonic/gin"
+)
+
+type blogWidget struct {
+	listHandler    gin.HandlerFunc
+	viewHandler    gin.HandlerFunc
+	commentHandler gin.HandlerFunc
+	createHandler  gin.HandlerFunc
+	previewHandler gin.HandlerFunc
+	saveHandler    gin.HandlerFunc
+	deleteHandler  gin.HandlerFunc
+}
+
+func (w *blogWidget) LoadInto(router gin.IRouter) {
+	router.GET("/", w.listHandler)
+	router.GET("/view/:postId", w.viewHandler)
+	router.POST("/comment/:postId", w.commentHandler)
+	router.GET("/create/", w.createHandler)
+	router.POST("/preview/", w.previewHandler)
+	router.POST("/save/", w.saveHandler)
+	router.GET("/delete/:postId", w.deleteHandler)
+}
+
+func NewBlogPage(blogName string, groupId uint64, blogId uint64, args ...string) *puzzleweb.Page {
+	// TODO
+	p := puzzleweb.NewPage(blogName)
+	p.Widget = &blogWidget{}
+	return p
+}

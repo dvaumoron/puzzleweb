@@ -16,3 +16,28 @@
  *
  */
 package settings
+
+import (
+	"github.com/dvaumoron/puzzleweb"
+	"github.com/gin-gonic/gin"
+)
+
+type settingsWidget struct {
+	editHandler gin.HandlerFunc
+}
+
+// TODO
+var saveHandler gin.HandlerFunc
+
+func (w *settingsWidget) LoadInto(router gin.IRouter) {
+	router.GET("/edit/", w.editHandler)
+	router.POST("/save/", saveHandler)
+}
+
+func AddSettingsPage(site *puzzleweb.Site, args ...string) {
+	// TODO
+	p := puzzleweb.NewPage("settings")
+	p.Widget = &settingsWidget{}
+
+	site.AddPage(p)
+}

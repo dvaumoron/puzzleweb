@@ -10,7 +10,7 @@
 
 <form action="{{.BaseUrl}}save" method="POST">
     <!-- TODO check that RoleName is not "new" -->
-    <div>
+    <div {{if ne .RoleName "new"}} class="hidden" {{end}}>
         <label for="RoleName">{{.Messages.NameLabel}}</label>
         <input type="text" id="RoleName" name="RoleName" value="{{.RoleName}}"/>
     </div>

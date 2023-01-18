@@ -16,3 +16,30 @@
  *
  */
 package profile
+
+import (
+	"github.com/dvaumoron/puzzleweb"
+	"github.com/gin-gonic/gin"
+)
+
+type profileWidget struct {
+	viewHandler gin.HandlerFunc
+	editHandler gin.HandlerFunc
+}
+
+// TODO
+var saveHandler gin.HandlerFunc
+
+func (w *profileWidget) LoadInto(router gin.IRouter) {
+	router.GET("/view/:UserId", w.viewHandler)
+	router.GET("/edit/", w.editHandler)
+	router.POST("/save/", saveHandler)
+}
+
+func AddProfilePage(site *puzzleweb.Site, args ...string) {
+	// TODO
+	p := puzzleweb.NewPage("profile")
+	p.Widget = &profileWidget{}
+
+	site.AddPage(p)
+}

@@ -16,3 +16,35 @@
  *
  */
 package forum
+
+import (
+	"github.com/dvaumoron/puzzleweb"
+	"github.com/gin-gonic/gin"
+)
+
+type forumWidget struct {
+	listThreadHandler    gin.HandlerFunc
+	createThreadHandler  gin.HandlerFunc
+	saveThreadHandler    gin.HandlerFunc
+	deleteThreadHandler  gin.HandlerFunc
+	viewThreadHandler    gin.HandlerFunc
+	saveMessageHandler   gin.HandlerFunc
+	deleteMessageHandler gin.HandlerFunc
+}
+
+func (w *forumWidget) LoadInto(router gin.IRouter) {
+	router.GET("/", w.listThreadHandler)
+	router.GET("/create/", w.createThreadHandler)
+	router.POST("/save/", w.saveThreadHandler)
+	router.GET("/delete/:threadId", w.deleteThreadHandler)
+	router.GET("/view/:threadId", w.viewThreadHandler)
+	router.POST("/message/save/:threadId", w.saveMessageHandler)
+	router.GET("/message/delete/:threadId/:messageId", w.deleteMessageHandler)
+}
+
+func NewForumPage(forumName string, groupId uint64, forumId uint64, args ...string) *puzzleweb.Page {
+	// TODO
+	p := puzzleweb.NewPage(forumName)
+	p.Widget = &forumWidget{}
+	return p
+}

@@ -99,15 +99,15 @@ func (s sortableRoles) Swap(i, j int) {
 }
 
 type adminWidget struct {
-	displayHanler  gin.HandlerFunc
-	listUserHanler gin.HandlerFunc
-	viewUserHanler gin.HandlerFunc
-	editUserHanler gin.HandlerFunc
-	listRoleHanler gin.HandlerFunc
-	editRoleHanler gin.HandlerFunc
+	displayHandler  gin.HandlerFunc
+	listUserHandler gin.HandlerFunc
+	viewUserHandler gin.HandlerFunc
+	editUserHandler gin.HandlerFunc
+	listRoleHandler gin.HandlerFunc
+	editRoleHandler gin.HandlerFunc
 }
 
-var saveUserHanler = common.CreateRedirect(func(c *gin.Context) string {
+var saveUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 	adminId := session.GetUserId(c)
 	userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
 	if err == nil {
@@ -133,7 +133,7 @@ var saveUserHanler = common.CreateRedirect(func(c *gin.Context) string {
 	return targetBuilder.String()
 })
 
-var deleteUserHanler = common.CreateRedirect(func(c *gin.Context) string {
+var deleteUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 	adminId := session.GetUserId(c)
 	userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
 	if err == nil {
@@ -157,7 +157,7 @@ var deleteUserHanler = common.CreateRedirect(func(c *gin.Context) string {
 	return targetBuilder.String()
 })
 
-var saveRoleHanler = common.CreateRedirect(func(c *gin.Context) string {
+var saveRoleHandler = common.CreateRedirect(func(c *gin.Context) string {
 	adminId := session.GetUserId(c)
 	roleName := c.PostForm(roleNameName)
 	err := errorBadName
@@ -190,15 +190,15 @@ var saveRoleHanler = common.CreateRedirect(func(c *gin.Context) string {
 })
 
 func (w *adminWidget) LoadInto(router gin.IRouter) {
-	router.GET("/", w.displayHanler)
-	router.GET("/user/list", w.listUserHanler)
-	router.GET("/user/view/:UserId", w.viewUserHanler)
-	router.GET("/user/edit/:UserId", w.editUserHanler)
-	router.POST("/user/save/:UserId", saveUserHanler)
-	router.GET("/user/delete/:UserId", deleteUserHanler)
-	router.GET("/role/list", w.listRoleHanler)
-	router.GET("/role/edit/:RoleName/:Group", w.editRoleHanler)
-	router.POST("/role/save", saveRoleHanler)
+	router.GET("/", w.displayHandler)
+	router.GET("/user/list", w.listUserHandler)
+	router.GET("/user/view/:UserId", w.viewUserHandler)
+	router.GET("/user/edit/:UserId", w.editUserHandler)
+	router.POST("/user/save/:UserId", saveUserHandler)
+	router.GET("/user/delete/:UserId", deleteUserHandler)
+	router.GET("/role/list", w.listRoleHandler)
+	router.GET("/role/edit/:RoleName/:Group", w.editRoleHandler)
+	router.POST("/role/save", saveRoleHandler)
 }
 
 func AddAdminPage(site *puzzleweb.Site, args ...string) {
@@ -246,7 +246,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 
 	p := puzzleweb.NewHiddenPage("admin")
 	p.Widget = &adminWidget{
-		displayHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		displayHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			err := client.AuthQuery(session.GetUserId(c), client.AdminGroupId, client.ActionAccess)
 
 			redirect := ""
@@ -255,7 +255,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			}
 			return indexTmpl, redirect
 		}),
-		listUserHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		listUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
 			pageNumber, _ := strconv.ParseUint(c.Query("pageNumber"), 10, 64)
 			pageSize, _ := strconv.ParseUint(c.Query("pageSize"), 10, 64)
@@ -290,7 +290,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			}
 			return listUserTmpl, redirect
 		}),
-		viewUserHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		viewUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
 			userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
 			if err == nil {
@@ -315,7 +315,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			}
 			return viewUserTmpl, redirect
 		}),
-		editUserHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		editUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
 			userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
 			if err == nil {
@@ -343,7 +343,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			}
 			return editUserTmpl, redirect
 		}),
-		listRoleHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		listRoleHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
 			allRoles, err := client.GetAllRoles(adminId)
 			if err == nil {
@@ -357,7 +357,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			}
 			return listRoleTmpl, redirect
 		}),
-		editRoleHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		editRoleHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
 			roleName := c.PostForm(roleNameName)
 			group := c.PostForm(groupName)

@@ -36,7 +36,7 @@ const loginUrlName = "LoginUrl"
 const prevUrlWithErrorName = "PrevUrlWithError"
 
 type loginWidget struct {
-	displayHanler gin.HandlerFunc
+	displayHandler gin.HandlerFunc
 }
 
 var submitHandler = common.CreateRedirect(func(c *gin.Context) string {
@@ -75,7 +75,7 @@ var logoutHandler = common.CreateRedirect(func(c *gin.Context) string {
 })
 
 func (w *loginWidget) LoadInto(router gin.IRouter) {
-	router.GET("/", w.displayHanler)
+	router.GET("/", w.displayHandler)
 	router.POST("/submit", submitHandler)
 	router.GET("/logout", logoutHandler)
 }
@@ -102,7 +102,7 @@ func AddLoginPage(site *puzzleweb.Site, args ...string) {
 
 	p := puzzleweb.NewHiddenPage("login")
 	p.Widget = &loginWidget{
-		displayHanler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		displayHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			data[common.RedirectName] = c.Query(common.RedirectName)
 
 			currentUrl := c.Request.URL

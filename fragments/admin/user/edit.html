@@ -12,24 +12,24 @@
                 {{$groupName := .Name}}
                 {{range .Roles}}
                     <li>
-                        <label for="{{.Name}}/{{$groupName}}">
+                        <label>
                             {{.Name}}
                             ({{range .Actions}}
                                 {{.}}
                             {{end}})
+                            <input type="checkbox" name="roles" value="{{.Name}}/{{$groupName}}" checked="true"/>
                         </label>
-                        <input type="checkbox"  id="{{.Name}}/{{$groupName}}" name="roles" value="{{.Name}}/{{$groupName}}" checked="true" />
                     </li>
                 {{end}}
                 {{range .AddableRoles}}
                     <li>
-                        <label for="{{.Name}}/{{$groupName}}">
+                        <label>
                             {{.Name}}
                             ({{range .Actions}}
                                 {{.}}
                             {{end}})
+                            <input type="checkbox" name="roles" value="{{.Name}}/{{$groupName}}"/>
                         </label>
-                        <input type="checkbox" id="{{.Name}}/{{$groupName}}" name="roles" value="{{.Name}}/{{$groupName}}" />
                     </li>
                 {{end}}
             </ul>

@@ -8,30 +8,41 @@
     [<a href="{{.BaseUrl}}list">{{.Messages.CancelLinkName}}</a>]
 </h2>
 
-<form action="{{.BaseUrl}}save" method="POST">
-    <!-- TODO check that RoleName is not "new" -->
+<form id="editRoleForm" action="{{.BaseUrl}}save" method="POST">
     <div {{if ne .RoleName "new"}} class="hidden" {{end}}>
-        <label for="RoleName">{{.Messages.NameLabel}}</label>
-        <input type="text" id="RoleName" name="RoleName" value="{{.RoleName}}"/>
+        <label>
+            {{.Messages.NameLabel}}
+            <input type="text" id="editRoleNameField" name="RoleName" value="{{.RoleName}}"/>
+        </label>
     </div>
     <div class="hidden">
+        {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+        <span id="errorBadRoleNameMessage">{{.Messages.ErrorBadRoleName}}</span>
         <input type="text" name="Group" value="{{.Group}}"/>
     </div>
     <div>
-        <label for="access">{{.Messages.AccessLabel}}</label>
-        <input type="checkbox" id="access" name="actions" value="access" checked="{{.Access}}" />
+        <label>
+            {{.Messages.AccessLabel}}
+            <input type="checkbox" name="actions" value="access" checked="{{.Access}}"/>
+        </label>
     </div>
     <div>
-        <label for="create">{{.Messages.CreateLabel}}</label>
-        <input type="checkbox" id="create" name="actions" value="create" checked="{{.Create}}" />
+        <label>
+            {{.Messages.CreateLabel}}
+            <input type="checkbox" name="actions" value="create" checked="{{.Create}}"/>
+        </label>
     </div>
     <div>
-        <label for="update">{{.Messages.UpdateLabel}}</label>
-        <input type="checkbox" id="update" name="actions" value="update" checked="{{.Update}}" />
+        <label>
+            {{.Messages.UpdateLabel}}
+            <input type="checkbox" name="actions" value="update" checked="{{.Update}}"/>
+        </label>
     </div>
     <div>
-        <label for="delete">{{.Messages.DeleteLabel}}</label>
-        <input type="checkbox" id="delete" name="actions" value="delete" checked="{{.Delete}}" />
+        <label>
+            {{.Messages.DeleteLabel}}
+            <input type="checkbox" name="actions" value="delete" checked="{{.Delete}}"/>
+        </label>
     </div>
-    <div><input type="submit" value="{{.Messages.SaveLinkName}}"></div>
+    <div><button type="button" id="saveRoleButton">{{.Messages.SaveLinkName}}</button></div>
 </form>

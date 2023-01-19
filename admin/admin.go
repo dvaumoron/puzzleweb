@@ -180,6 +180,7 @@ var saveRoleHandler = common.CreateRedirect(func(c *gin.Context) string {
 		}
 		err = client.UpdateRole(adminId, &client.Role{Name: roleName, Group: group, Actions: actions})
 	}
+
 	var targetBuilder strings.Builder
 	targetBuilder.WriteString(common.GetBaseUrl(2, c))
 	targetBuilder.WriteString("role/list")

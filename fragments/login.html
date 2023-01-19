@@ -1,20 +1,21 @@
-login.js
-Body:
-
-<form action="{{.CurrentUrl}}submit" method="POST">
+<form id="loginForm" action="{{.CurrentUrl}}submit" method="POST">
     <div>
-        <label for="Login">{{.Messages.LoginLabel}}</label>
-        <input type="text" name="Login"/>
+        <label>
+            {{.Messages.LoginLabel}}
+            <input type="text" name="Login"/>
+        </label>
     </div>
     <div>
-        <label for="Password">{{.Messages.PasswordLabel}}</label>
-        <input type="password" name="Password"/>
+        <label>
+            {{.Messages.PasswordLabel}}
+            <input type="password" name="Password"/>
+        </label>
     </div>
     <div class="hidden">
-        <input type="text" name="Register"/>
+        <input type="text" id="loginRegisterField" name="Register"/>
         <input type="text" name="Redirect" value="{{.Redirect}}"/>
         <input type="text" name="PrevUrlWithError" value="{{.PrevUrlWithError}}"/>
     </div>
-    <div><input type="submit" value="{{.Messages.LoginLinkName}}"/></div>
-    <div><a href="todo">{{.Messages.RegisterLinkName}}</a></div>
+    <div><button type="submit">{{.Messages.LoginLinkName}}</button></div>
+    <div><button type="button" id="loginRegisterButton">{{.Messages.RegisterLinkName}}</button></div>
 </form>

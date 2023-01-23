@@ -58,144 +58,133 @@ func (s sortableContents) Swap(i, j int) {
 
 func CreateThread(forumId uint64, groupId uint64, userId uint64, title string, message string) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate)
-	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Confirm
-			client := pb.NewForumClient(conn)
-			response, err = client.CreateThread(ctx, &pb.CreateRequest{
-				ContainerId: forumId, UserId: userId, Text: title,
-			})
-			if err == nil {
-				if response.Success {
-					var response2 *pb.Confirm
-					response2, err = client.CreateMessage(ctx, &pb.CreateRequest{
-						ContainerId: response.Id, UserId: userId, Text: message,
-					})
-					if err == nil {
-						if !response2.Success {
-							err = common.ErrorUpdate
-						}
-					} else {
-						common.LogOriginalError(err)
-						err = common.ErrorTechnical
-					}
-				} else {
-					err = common.ErrorUpdate
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return err
 	}
-	return err
+
+	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	client := pb.NewForumClient(conn)
+	response, err := client.CreateThread(ctx, &pb.CreateRequest{
+		ContainerId: forumId, UserId: userId, Text: title,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+
+	response, err = client.CreateMessage(ctx, &pb.CreateRequest{
+		ContainerId: response.Id, UserId: userId, Text: message,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func CreateCommentThread(objectId uint64, groupId uint64, userId uint64, elemTitle string) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate)
-	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Confirm
-			response, err = pb.NewForumClient(conn).CreateThread(ctx, &pb.CreateRequest{
-				ContainerId: objectId, UserId: userId, Text: elemTitle,
-			})
-			if err == nil {
-				if !response.Success {
-					err = common.ErrorUpdate
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return err
 	}
-	return err
+
+	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewForumClient(conn).CreateThread(ctx, &pb.CreateRequest{
+		ContainerId: objectId, UserId: userId, Text: elemTitle,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func CreateMessage(groupId uint64, userId uint64, threadId uint64, message string) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionUpdate)
-	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Confirm
-			response, err = pb.NewForumClient(conn).CreateMessage(ctx, &pb.CreateRequest{
-				ContainerId: threadId, UserId: userId, Text: message,
-			})
-			if err == nil {
-				if !response.Success {
-					err = common.ErrorUpdate
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return err
 	}
-	return err
+
+	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewForumClient(conn).CreateMessage(ctx, &pb.CreateRequest{
+		ContainerId: threadId, UserId: userId, Text: message,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func GetThread(forumId uint64, groupId uint64, userId uint64, threadId uint64) (*ForumContent, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
-	var content *ForumContent
-	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Content
-			response, err = pb.NewForumClient(conn).GetThread(ctx, &pb.IdRequest{
-				ContainerId: forumId, Id: threadId,
-			})
-			if err == nil {
-				creatorId := response.UserId
-				var users map[uint64]*profileclient.Profile
-				users, err = profileclient.GetProfiles([]uint64{creatorId})
-				if err == nil {
-					content = convertContent(response, users[creatorId])
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return nil, err
 	}
-	return content, err
+
+	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewForumClient(conn).GetThread(ctx, &pb.IdRequest{
+		ContainerId: forumId, Id: threadId,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+
+	creatorId := response.UserId
+	users, err := profileclient.GetProfiles([]uint64{creatorId})
+	if err != nil {
+		return nil, err
+	}
+	return convertContent(response, users[creatorId]), nil
 }
 
 func GetThreads(forumId uint64, groupId uint64, userId uint64, start uint64, end uint64, filter string) ([]*ForumContent, error) {
@@ -207,16 +196,14 @@ func GetThreads(forumId uint64, groupId uint64, userId uint64, start uint64, end
 
 func GetCommentThreadId(objectId uint64, groupId uint64, userId uint64, elemTitle string) (uint64, error) {
 	contents, err := GetThreads(objectId, groupId, userId, 0, 1, elemTitle)
-	var threadId uint64
 	if err != nil {
-		if len(contents) == 0 {
-			common.LogOriginalError(fmt.Errorf("no comment thread found : %d, %s", objectId, elemTitle))
-			err = common.ErrorTechnical
-		} else {
-			threadId = contents[0].Id
-		}
+		return 0, err
 	}
-	return threadId, err
+	if len(contents) == 0 {
+		common.LogOriginalError(fmt.Errorf("no comment thread found : %d, %s", objectId, elemTitle))
+		return 0, common.ErrorTechnical
+	}
+	return contents[0].Id, nil
 }
 
 func GetMessages(groupId uint64, userId uint64, threadId uint64, start uint64, end uint64) ([]*ForumContent, error) {
@@ -242,33 +229,30 @@ func DeleteMessage(groupId uint64, userId uint64, threadId uint64, messageId uin
 
 func searchContent(groupId uint64, userId uint64, kind contentRequestKind, search *pb.SearchRequest) ([]*ForumContent, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
-	var contents []*ForumContent
-	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Contents
-			response, err = kind(pb.NewForumClient(conn), ctx, search)
-			if err == nil {
-				list := response.List
-				if len(list) != 0 {
-					contents, err = sortConvertContents(list)
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return nil, err
 	}
-	return contents, err
+
+	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := kind(pb.NewForumClient(conn), ctx, search)
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+	list := response.List
+	if len(list) == 0 {
+		return nil, nil
+	}
+	return sortConvertContents(list)
 }
 
 func getThreads(client pb.ForumClient, ctx context.Context, search *pb.SearchRequest) (*pb.Contents, error) {
@@ -281,31 +265,29 @@ func getMessages(client pb.ForumClient, ctx context.Context, search *pb.SearchRe
 
 func deleteContent(groupId uint64, userId uint64, kind deleteRequestKind, request *pb.IdRequest) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionDelete)
-	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Confirm
-			response, err = kind(pb.NewForumClient(conn), ctx, request)
-			if err == nil {
-				if !response.Success {
-					err = common.ErrorUpdate
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return err
 	}
-	return err
+
+	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := kind(pb.NewForumClient(conn), ctx, request)
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func deleteThread(client pb.ForumClient, ctx context.Context, request *pb.IdRequest) (*pb.Confirm, error) {
@@ -327,14 +309,15 @@ func sortConvertContents(list []*pb.Content) ([]*ForumContent, error) {
 	}
 
 	users, err := profileclient.GetProfiles(userIds)
-	var contents []*ForumContent
-	if err == nil {
-		contents = make([]*ForumContent, 0, size)
-		for _, content := range list {
-			contents = append(contents, convertContent(content, users[content.UserId]))
-		}
+	if err != nil {
+		return nil, err
 	}
-	return contents, err
+
+	contents := make([]*ForumContent, 0, size)
+	for _, content := range list {
+		contents = append(contents, convertContent(content, users[content.UserId]))
+	}
+	return contents, nil
 }
 
 func convertContent(content *pb.Content, creator *profileclient.Profile) *ForumContent {

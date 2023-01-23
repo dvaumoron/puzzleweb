@@ -135,15 +135,17 @@ func Run(sites ...SiteConfig) error {
 
 func profilePicHandler(c *gin.Context) {
 	userId, err := strconv.ParseUint(c.Query(common.UserIdName), 10, 64)
-	if err == nil {
-		var data []byte
-		data, err = profileclient.GetPicture(userId)
-		if err == nil {
-			c.Data(http.StatusFound, http.DetectContentType(data), data)
-			return
-		}
+	if err != nil {
+		c.AbortWithError(http.StatusNotFound, err)
+		return
 	}
-	c.AbortWithError(http.StatusNotFound, err)
+
+	data, err := profileclient.GetPicture(userId)
+	if err != nil {
+		c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	c.Data(http.StatusFound, http.DetectContentType(data), data)
 }
 
 func checkPort(port string) string {

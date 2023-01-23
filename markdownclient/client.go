@@ -31,26 +31,19 @@ import (
 
 func Apply(text string) (template.HTML, error) {
 	conn, err := grpc.Dial(config.MarkdownServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var html template.HTML
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var markdownHtml *pb.MarkdownHtml
-		markdownHtml, err = pb.NewMarkdownClient(conn).Apply(ctx,
-			&pb.MarkdownText{Text: text},
-		)
-		if err == nil {
-			html = template.HTML(markdownHtml.Html)
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return "", common.ErrorTechnical
 	}
-	return html, err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	markdownHtml, err := pb.NewMarkdownClient(conn).Apply(ctx, &pb.MarkdownText{Text: text})
+	if err != nil {
+		common.LogOriginalError(err)
+		return "", common.ErrorTechnical
+	}
+	return template.HTML(markdownHtml.Html), nil
 }

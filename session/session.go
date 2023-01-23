@@ -34,27 +34,24 @@ const cookieName = "pw_session_id"
 const sessionName = "Session"
 
 func getSessionId(c *gin.Context) (uint64, error) {
-	var sessionId uint64
 	cookie, err := c.Cookie(cookieName)
-	if err == nil {
-		sessionId, err = strconv.ParseUint(cookie, 10, 64)
-		if err != nil {
-			log.Logger.Info("Failed to parse session cookie.", zap.Error(err))
-			sessionId, err = generateSessionCookie(c)
-		}
-	} else {
-		sessionId, err = generateSessionCookie(c)
+	if err != nil {
+		return generateSessionCookie(c)
 	}
-	return sessionId, err
+	sessionId, err := strconv.ParseUint(cookie, 10, 64)
+	if err != nil {
+		log.Logger.Info("Failed to parse session cookie.", zap.Error(err))
+		return generateSessionCookie(c)
+	}
+	return sessionId, nil
 }
 
 func generateSessionCookie(c *gin.Context) (uint64, error) {
 	sessionId, err := client.Generate()
 	if err == nil {
 		c.SetCookie(
-			cookieName, fmt.Sprint(sessionId),
-			config.SessionTimeOut, "/",
-			config.Domain, true, true,
+			cookieName, fmt.Sprint(sessionId), config.SessionTimeOut,
+			"/", config.Domain, true, true,
 		)
 	}
 	return sessionId, err
@@ -87,26 +84,25 @@ func (s *Session) Delete(key string) {
 
 func Manage(c *gin.Context) {
 	sessionId, err := getSessionId(c)
-	if err == nil {
-		session, err := client.GetSession(sessionId)
-		if err != nil {
-			logSessionError(c, "Failed to retrieve session.", sessionId, err)
-			return
-		}
-
-		c.Set(sessionName, &Session{session: session, change: false})
-		c.Next()
-
-		if s := Get(c); s.change {
-			err = client.UpdateSession(sessionId, s.session)
-			if err != nil {
-				logSessionError(c, "Failed to save session.", sessionId, err)
-				return
-			}
-		}
-	} else {
+	if err != nil {
 		log.Logger.Error("Failed to generate sessionId.", zap.Error(err))
 		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	session, err := client.GetSession(sessionId)
+	if err != nil {
+		logSessionError(c, "Failed to retrieve session.", sessionId, err)
+		return
+	}
+
+	c.Set(sessionName, &Session{session: session, change: false})
+	c.Next()
+
+	if s := Get(c); s.change {
+		if err := client.UpdateSession(sessionId, s.session); err != nil {
+			logSessionError(c, "Failed to save session.", sessionId, err)
+		}
 	}
 }
 
@@ -117,10 +113,9 @@ func logSessionError(c *gin.Context, msg string, sessionId uint64, err error) {
 
 func Get(c *gin.Context) *Session {
 	var typed *Session
-	untyped, ok := c.Get(sessionName)
-	if ok {
-		typed = untyped.(*Session)
-	} else {
+	untyped, _ := c.Get(sessionName)
+	typed, ok := untyped.(*Session)
+	if !ok {
 		log.Logger.Error("There is no session in context.")
 		typed = &Session{session: map[string]string{}, change: true}
 		c.Set(sessionName, typed)
@@ -133,7 +128,7 @@ func GetUserId(c *gin.Context) uint64 {
 	userId, err := strconv.ParseUint(userIdStr, 10, 64)
 	if err != nil {
 		log.Logger.Info("Failed to parse userId.", zap.Error(err))
-		userId = 0
+		return 0
 	}
 	return userId
 }

@@ -63,20 +63,18 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 
 func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
-		redirect := ""
 		err := rightclient.AuthQuery(session.GetUserId(c), groupId, rightclient.ActionAccess)
-		if err == nil {
-			if lang := locale.GetLang(c); lang != locale.DefaultLang {
-				var builder strings.Builder
-				builder.WriteString(lang)
-				builder.WriteString("/")
-				builder.WriteString(tmpl)
-				tmpl = builder.String()
-			}
-		} else {
-			redirect = common.DefaultErrorRedirect(err.Error(), c)
+		if err != nil {
+			return "", common.DefaultErrorRedirect(err.Error(), c)
 		}
-		return tmpl, redirect
+		if lang := locale.GetLang(c); lang != locale.DefaultLang {
+			var builder strings.Builder
+			builder.WriteString(lang)
+			builder.WriteString("/")
+			builder.WriteString(tmpl)
+			tmpl = builder.String()
+		}
+		return tmpl, ""
 	}
 }
 
@@ -130,18 +128,22 @@ func (current *Page) extractPageAndPath(path string) (*Page, []string) {
 }
 
 func (p *Page) extractSubPageNames(c *gin.Context) []PageDesc {
-	var pageDescs []PageDesc
 	sw, ok := p.Widget.(*staticWidget)
 	if ok {
-		pages := sw.subPages
-		if size := len(pages); size != 0 {
-			url := common.GetCurrentUrl(c)
-			pageDescs = make([]PageDesc, 0, size)
-			for _, page := range pages {
-				if page.visible {
-					pageDescs = append(pageDescs, makePageDesc(page.name, url+page.name, c))
-				}
-			}
+		return nil
+	}
+
+	pages := sw.subPages
+	size := len(pages)
+	if size == 0 {
+		return nil
+	}
+
+	url := common.GetCurrentUrl(c)
+	pageDescs := make([]PageDesc, 0, size)
+	for _, page := range pages {
+		if page.visible {
+			pageDescs = append(pageDescs, makePageDesc(page.name, url+page.name, c))
 		}
 	}
 	return pageDescs

@@ -30,28 +30,23 @@ import (
 
 func Generate() (uint64, error) {
 	conn, err := grpc.Dial(config.SessionServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var id uint64
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.SessionId
-		response, err = pb.NewSessionClient(conn).Generate(
-			ctx, &pb.SessionInfo{Info: map[string]string{}},
-		)
-		if err == nil {
-			id = response.Id
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return 0, common.ErrorTechnical
 	}
-	return id, err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewSessionClient(conn).Generate(
+		ctx, &pb.SessionInfo{Info: map[string]string{}},
+	)
+	if err != nil {
+		common.LogOriginalError(err)
+		return 0, common.ErrorTechnical
+	}
+	return response.Id, nil
 }
 
 func GetSession(id uint64) (map[string]string, error) {
@@ -64,28 +59,25 @@ func GetSettings(id uint64) (map[string]string, error) {
 
 func get(addr string, id uint64) (map[string]string, error) {
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	info := map[string]string{}
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.SessionInfo
-		response, err = pb.NewSessionClient(conn).GetSessionInfo(
-			ctx, &pb.SessionId{Id: id},
-		)
-		if err == nil {
-			info = response.Info
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return nil, common.ErrorTechnical
+
 	}
-	return info, err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewSessionClient(conn).GetSessionInfo(
+		ctx, &pb.SessionId{Id: id},
+	)
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+
+	}
+	return response.Info, nil
 }
 
 func UpdateSession(id uint64, session map[string]string) error {
@@ -98,28 +90,24 @@ func UpdateSettings(id uint64, settings map[string]string) error {
 
 func update(addr string, id uint64, info map[string]string) error {
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err == nil {
-		defer conn.Close()
-		client := pb.NewSessionClient(conn)
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var strErr *pb.SessionError
-		strErr, err = client.UpdateSessionInfo(ctx, &pb.SessionUpdate{Id: id, Info: info})
-
-		if err == nil {
-			if strErr.Err != "" {
-				common.LogOriginalError(err)
-				err = common.ErrorUpdate
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return common.ErrorTechnical
 	}
-	return err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	client := pb.NewSessionClient(conn)
+	strErr, err := client.UpdateSessionInfo(ctx, &pb.SessionUpdate{Id: id, Info: info})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if strErr.Err != "" {
+		common.LogOriginalError(err)
+		return common.ErrorUpdate
+	}
+	return nil
 }

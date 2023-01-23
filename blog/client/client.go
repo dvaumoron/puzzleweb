@@ -56,132 +56,122 @@ func (s sortableContents) Swap(i, j int) {
 
 func CreatePost(blogId uint64, groupId uint64, userId uint64, title string, content string) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate)
-	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Confirm
-			response, err = pb.NewBlogClient(conn).CreatePost(ctx, &pb.CreateRequest{
-				BlogId: blogId, UserId: userId, Title: title, Text: content,
-			})
-			if err == nil {
-				if !response.Success {
-					err = common.ErrorUpdate
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return err
 	}
-	return err
+
+	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewBlogClient(conn).CreatePost(ctx, &pb.CreateRequest{
+		BlogId: blogId, UserId: userId, Title: title, Text: content,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func GetPost(blogId uint64, groupId uint64, userId uint64, postId uint64) (*BlogPost, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
-	var post *BlogPost
-	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Content
-			response, err = pb.NewBlogClient(conn).GetPost(ctx, &pb.IdRequest{
-				BlogId: blogId, PostId: postId,
-			})
-			if err == nil {
-				creatorId := response.UserId
-				var users map[uint64]*profileclient.Profile
-				users, err = profileclient.GetProfiles([]uint64{creatorId})
-				if err == nil {
-					post = convertPost(response, users[creatorId])
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return nil, err
 	}
-	return post, err
+
+	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewBlogClient(conn).GetPost(ctx, &pb.IdRequest{
+		BlogId: blogId, PostId: postId,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+
+	creatorId := response.UserId
+	users, err := profileclient.GetProfiles([]uint64{creatorId})
+	if err != nil {
+		return nil, err
+	}
+	return convertPost(response, users[creatorId]), nil
 }
 
 func GetPosts(blogId uint64, groupId uint64, userId uint64, start uint64, end uint64, filter string) ([]*BlogPost, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
-	var posts []*BlogPost
-	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Contents
-			response, err = pb.NewBlogClient(conn).GetPosts(ctx, &pb.SearchRequest{
-				BlogId: blogId, Start: start, End: end, Filter: filter,
-			})
-			if err == nil {
-				list := response.List
-				if len(list) != 0 {
-					posts, err = sortConvertPosts(list)
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return nil, err
 	}
-	return posts, err
+
+	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewBlogClient(conn).GetPosts(ctx, &pb.SearchRequest{
+		BlogId: blogId, Start: start, End: end, Filter: filter,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+	list := response.List
+	if len(list) == 0 {
+		return nil, nil
+	}
+	return sortConvertPosts(list)
 }
 
 func DeletePost(blogId uint64, groupId uint64, userId uint64, postId uint64) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
-	if err == nil {
-		var conn *grpc.ClientConn
-		conn, err = grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err == nil {
-			defer conn.Close()
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			var response *pb.Confirm
-			response, err = pb.NewBlogClient(conn).DeletePost(ctx, &pb.IdRequest{
-				BlogId: blogId, PostId: postId,
-			})
-			if err == nil {
-				if !response.Success {
-					err = common.ErrorUpdate
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return err
 	}
-	return err
+
+	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewBlogClient(conn).DeletePost(ctx, &pb.IdRequest{
+		BlogId: blogId, PostId: postId,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func sortConvertPosts(list []*pb.Content) ([]*BlogPost, error) {
@@ -195,19 +185,21 @@ func sortConvertPosts(list []*pb.Content) ([]*BlogPost, error) {
 	}
 
 	users, err := profileclient.GetProfiles(userIds)
-	var contents []*BlogPost
-	if err == nil {
-		contents = make([]*BlogPost, 0, size)
-		for _, content := range list {
-			contents = append(contents, convertPost(content, users[content.UserId]))
-		}
+	if err != nil {
+		return nil, err
 	}
-	return contents, err
+
+	contents := make([]*BlogPost, 0, size)
+	for _, content := range list {
+		contents = append(contents, convertPost(content, users[content.UserId]))
+	}
+	return contents, nil
 }
 
 func convertPost(post *pb.Content, creator *profileclient.Profile) *BlogPost {
 	createdAt := time.Unix(post.CreatedAt, 0)
 	return &BlogPost{
 		PostId: post.PostId, Creator: creator, Date: createdAt.Format(config.DateFormat),
-		Title: post.Title, content: template.HTML(post.Text)}
+		Title: post.Title, content: template.HTML(post.Text),
+	}
 }

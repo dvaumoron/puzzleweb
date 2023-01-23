@@ -45,182 +45,155 @@ func salt(password string) string {
 
 func VerifyOrRegister(login string, password string, register bool) (uint64, bool, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var id uint64
-	success := false
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Response
-		client := pb.NewLoginClient(conn)
-		request := &pb.LoginRequest{Login: login, Salted: salt(password)}
-		if register {
-			response, err = client.Register(ctx, request)
-		} else {
-			response, err = client.Verify(ctx, request)
-		}
-
-		if err == nil {
-			id = response.Id
-			success = response.Success
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return 0, false, common.ErrorTechnical
 	}
-	return id, success, err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	client := pb.NewLoginClient(conn)
+	request := &pb.LoginRequest{Login: login, Salted: salt(password)}
+	var response *pb.Response
+	if register {
+		response, err = client.Register(ctx, request)
+	} else {
+		response, err = client.Verify(ctx, request)
+	}
+
+	if err != nil {
+		common.LogOriginalError(err)
+		return 0, false, common.ErrorTechnical
+	}
+	return response.Id, response.Success, nil
 }
 
 // You should remove duplicate id in list
 func GetUsers(userIds []uint64) (map[uint64]*User, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var logins map[uint64]*User
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Users
-		response, err = pb.NewLoginClient(conn).GetUsers(ctx, &pb.UserIds{Ids: userIds})
-
-		if err == nil {
-			logins = map[uint64]*User{}
-			for _, value := range response.List {
-				logins[value.Id] = convertUser(value)
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return nil, common.ErrorTechnical
 	}
-	return logins, err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewLoginClient(conn).GetUsers(ctx, &pb.UserIds{Ids: userIds})
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+
+	logins := map[uint64]*User{}
+	for _, value := range response.List {
+		logins[value.Id] = convertUser(value)
+	}
+	return logins, nil
 }
 
 func ChangeLogin(userId uint64, newLogin string, password string) error {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Response
-		response, err = pb.NewLoginClient(conn).ChangeLogin(ctx, &pb.ChangeLoginRequest{
-			UserId: userId, NewLogin: newLogin, Salted: salt(password),
-		})
-
-		if err == nil {
-			if !response.Success {
-				err = common.ErrorUpdate
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return common.ErrorTechnical
 	}
-	return err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewLoginClient(conn).ChangeLogin(ctx, &pb.ChangeLoginRequest{
+		UserId: userId, NewLogin: newLogin, Salted: salt(password),
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func ChangePassword(userId uint64, oldPassword string, newPassword string) error {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Response
-		response, err = pb.NewLoginClient(conn).ChangePassword(ctx, &pb.ChangePasswordRequest{
-			UserId: userId, OldSalted: salt(oldPassword), NewSalted: salt(newPassword),
-		})
-
-		if err == nil {
-			if !response.Success {
-				err = common.ErrorUpdate
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return common.ErrorTechnical
 	}
-	return err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewLoginClient(conn).ChangePassword(ctx, &pb.ChangePasswordRequest{
+		UserId: userId, OldSalted: salt(oldPassword), NewSalted: salt(newPassword),
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func ListUsers(start uint64, end uint64, filter string) (uint64, []*User, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var total uint64
-	var users []*User
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Users
-		response, err = pb.NewLoginClient(conn).ListUsers(ctx, &pb.RangeRequest{
-			Start: start, End: end, Filter: filter,
-		})
-
-		if err == nil {
-			total = response.Total
-			list := response.List
-			users = make([]*User, 0, len(list))
-			for _, user := range list {
-				users = append(users, convertUser(user))
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return 0, nil, common.ErrorTechnical
 	}
-	return total, users, err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewLoginClient(conn).ListUsers(ctx, &pb.RangeRequest{
+		Start: start, End: end, Filter: filter,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return 0, nil, common.ErrorTechnical
+	}
+
+	list := response.List
+	users := make([]*User, 0, len(list))
+	for _, user := range list {
+		users = append(users, convertUser(user))
+	}
+	return response.Total, users, nil
 }
 
 // no right check
 func DeleteUser(userId uint64) error {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Response
-		response, err = pb.NewLoginClient(conn).Delete(ctx, &pb.UserId{Id: userId})
-		if err == nil {
-			if !response.Success {
-				err = common.ErrorUpdate
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return common.ErrorTechnical
 	}
-	return err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewLoginClient(conn).Delete(ctx, &pb.UserId{Id: userId})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func convertUser(user *pb.User) *User {
-	RegistredAt := time.Unix(user.RegistredAt, 0)
-	return &User{Id: user.Id, Login: user.Login, RegistredAt: RegistredAt.Format(config.DateFormat)}
+	registredAt := time.Unix(user.RegistredAt, 0)
+	return &User{Id: user.Id, Login: user.Login, RegistredAt: registredAt.Format(config.DateFormat)}
 }

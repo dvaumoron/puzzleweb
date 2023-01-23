@@ -35,19 +35,19 @@ func init() {
 	}
 
 	var cfg zap.Config
-	var err error = json.Unmarshal(config.LogConfig, &cfg)
-	if err == nil {
-		Logger, err = cfg.Build()
-		if err != nil {
-			fmt.Println("Failed to init logging with config file :", err)
-			defaultLogConfig()
-		}
-	} else {
+	err := json.Unmarshal(config.LogConfig, &cfg)
+	config.LogConfig = nil
+	if err != nil {
 		fmt.Println("Failed to parse logging config file :", err)
 		defaultLogConfig()
+		return
 	}
 
-	config.LogConfig = nil
+	Logger, err = cfg.Build()
+	if err != nil {
+		fmt.Println("Failed to init logging with config file :", err)
+		defaultLogConfig()
+	}
 }
 
 func defaultLogConfig() {

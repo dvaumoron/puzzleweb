@@ -52,19 +52,17 @@ var submitHandler = common.CreateRedirect(func(c *gin.Context) string {
 		errorMsg = locale.GetText("wrong.login", c)
 	}
 
-	target := ""
-	if errorMsg == "" {
-		s := session.Get(c)
-		s.Store(loginName, login)
-		s.Store(common.UserIdName, fmt.Sprint(userId))
-
-		locale.SetLangCookie(c, settingsclient.Get(userId, c)[locale.LangName])
-
-		target = c.PostForm(common.RedirectName)
-	} else {
-		target = c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
+	if errorMsg != "" {
+		return c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
 	}
-	return target
+
+	s := session.Get(c)
+	s.Store(loginName, login)
+	s.Store(common.UserIdName, fmt.Sprint(userId))
+
+	locale.SetLangCookie(c, settingsclient.Get(userId, c)[locale.LangName])
+
+	return c.PostForm(common.RedirectName)
 })
 
 var logoutHandler = common.CreateRedirect(func(c *gin.Context) string {

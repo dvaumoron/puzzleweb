@@ -42,65 +42,57 @@ type Version struct {
 
 func LoadContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, versionStr string) (*cache.WikiContent, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
-	var content *cache.WikiContent
-	if err == nil {
-		var version uint64
-		if versionStr != "" {
-			version, err = strconv.ParseUint(versionStr, 10, 64)
-			if err != nil {
-				log.Logger.Info("Failed to parse wiki version, falling to last.",
-					zap.Error(err),
-				)
-				version = 0
-			}
-		}
-
-		content, err = loadContent(wikiId, buildRef(lang, title), version)
+	if err != nil {
+		return nil, err
 	}
-	return content, err
+
+	var version uint64
+	if versionStr != "" {
+		version, err = strconv.ParseUint(versionStr, 10, 64)
+		if err != nil {
+			log.Logger.Info("Failed to parse wiki version, falling to last.",
+				zap.Error(err),
+			)
+			version = 0
+		}
+	}
+	return loadContent(wikiId, buildRef(lang, title), version)
 }
 
 func StoreContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, last string, markdown string) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate)
-	if err == nil {
-		var version uint64
-		version, err = strconv.ParseUint(last, 10, 64)
-		if err == nil {
-			err = storeContent(wikiId, userId, buildRef(lang, title), version, markdown)
-		} else {
-			log.Logger.Warn("Failed to parse wiki last version.",
-				zap.Error(err),
-			)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return err
 	}
-	return err
+
+	version, err := strconv.ParseUint(last, 10, 64)
+	if err != nil {
+		log.Logger.Warn("Failed to parse wiki last version.", zap.Error(err))
+		return common.ErrorTechnical
+	}
+	return storeContent(wikiId, userId, buildRef(lang, title), version, markdown)
 }
 
 func GetVersions(wikiId uint64, groupId uint64, userId uint64, lang string, title string) ([]Version, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
-	var versions []Version
-	if err == nil {
-		versions, err = getVersions(wikiId, buildRef(lang, title))
+	if err != nil {
+		return nil, err
 	}
-	return versions, err
+	return getVersions(wikiId, buildRef(lang, title))
 }
 
 func DeleteContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, versionStr string) error {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionDelete)
-	if err == nil {
-		var version uint64
-		version, err = strconv.ParseUint(versionStr, 10, 64)
-		if err == nil {
-			err = deleteContent(wikiId, buildRef(lang, title), version)
-		} else {
-			log.Logger.Warn("Failed to parse wiki version to delete.",
-				zap.Error(err),
-			)
-			err = common.ErrorTechnical
-		}
+	if err != nil {
+		return err
 	}
-	return err
+
+	version, err := strconv.ParseUint(versionStr, 10, 64)
+	if err != nil {
+		log.Logger.Warn("Failed to parse wiki version to delete.", zap.Error(err))
+		return common.ErrorTechnical
+	}
+	return deleteContent(wikiId, buildRef(lang, title), version)
 }
 
 func buildRef(lang string, title string) string {
@@ -113,162 +105,147 @@ func buildRef(lang string, title string) string {
 
 func loadContent(wikiId uint64, wikiRef string, version uint64) (*cache.WikiContent, error) {
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var content *cache.WikiContent
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		client := pb.NewWikiClient(conn)
-		if version == 0 {
-			var versions *pb.Versions
-			versions, err = client.ListVersions(ctx, &pb.VersionRequest{
-				WikiId: wikiId, WikiRef: wikiRef,
-			})
-			if err == nil {
-				lastVersion := maxVersion(versions.List)
-				if lastVersion == nil {
-					content, err = innerLoadContent(ctx, client, wikiId, wikiRef, 0)
-				} else {
-					content = cache.Load(wikiId, wikiRef)
-					if content == nil || lastVersion.Number != content.Version {
-						content, err = innerLoadContent(ctx, client, wikiId, wikiRef, 0)
-					}
-				}
-			} else {
-				common.LogOriginalError(err)
-				err = common.ErrorTechnical
-			}
-		} else {
-			content, err = innerLoadContent(ctx, client, wikiId, wikiRef, version)
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return nil, common.ErrorTechnical
 	}
-	return content, err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	client := pb.NewWikiClient(conn)
+	if version != 0 {
+		return innerLoadContent(ctx, client, wikiId, wikiRef, version)
+	}
+
+	versions, err := client.ListVersions(ctx, &pb.VersionRequest{
+		WikiId: wikiId, WikiRef: wikiRef,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+
+	if lastVersion := maxVersion(versions.List); lastVersion != nil {
+		content := cache.Load(wikiId, wikiRef)
+		if content != nil && lastVersion.Number == content.Version {
+			return content, nil
+		}
+	}
+	return innerLoadContent(ctx, client, wikiId, wikiRef, 0)
 }
 
-func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, wikiRef string, version uint64) (*cache.WikiContent, error) {
+func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, wikiRef string, askedVersion uint64) (*cache.WikiContent, error) {
 	response, err := client.Load(ctx, &pb.WikiRequest{
-		WikiId: wikiId, WikiRef: wikiRef, Version: version,
+		WikiId: wikiId, WikiRef: wikiRef, Version: askedVersion,
 	})
-	var content *cache.WikiContent
-	if err == nil {
-		content = &cache.WikiContent{
-			Version: response.Version, Markdown: response.Text,
-		}
-		if version == 0 {
-			cache.Store(wikiId, wikiRef, content)
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return nil, common.ErrorTechnical
 	}
-	return content, err
+	version := response.Version
+	if version == 0 { // no stored wiki page
+		return nil, nil
+	}
+
+	content := &cache.WikiContent{Version: version, Markdown: response.Text}
+	if askedVersion == 0 {
+		cache.Store(wikiId, wikiRef, content)
+	}
+	return content, nil
 }
 
 func storeContent(wikiId uint64, userId uint64, wikiRef string, last uint64, markdown string) error {
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Confirm
-		response, err = pb.NewWikiClient(conn).Store(ctx, &pb.ContentRequest{
-			WikiId: wikiId, WikiRef: wikiRef, Last: last, Text: markdown, UserId: userId,
-		})
-		if err == nil {
-			if response.Success {
-				cache.Store(wikiId, wikiRef, &cache.WikiContent{
-					Version: response.Version, Markdown: markdown,
-				})
-			} else {
-				err = common.ErrorUpdate
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return common.ErrorTechnical
 	}
-	return err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewWikiClient(conn).Store(ctx, &pb.ContentRequest{
+		WikiId: wikiId, WikiRef: wikiRef, Last: last, Text: markdown, UserId: userId,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+
+	cache.Store(wikiId, wikiRef, &cache.WikiContent{
+		Version: response.Version, Markdown: markdown,
+	})
+	return nil
 }
 
 func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var versions []Version
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Versions
-		response, err = pb.NewWikiClient(conn).ListVersions(ctx, &pb.VersionRequest{
-			WikiId: wikiId, WikiRef: wikiRef,
-		})
-		if err == nil {
-			list := response.List
-			if len(list) != 0 {
-				versions, err = sortConvertVersions(list)
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return nil, common.ErrorTechnical
 	}
-	return versions, err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewWikiClient(conn).ListVersions(ctx, &pb.VersionRequest{
+		WikiId: wikiId, WikiRef: wikiRef,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+	list := response.List
+	if len(list) == 0 {
+		return nil, nil
+	}
+	return sortConvertVersions(list)
 }
 
 func deleteContent(wikiId uint64, wikiRef string, version uint64) error {
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Confirm
-		response, err = pb.NewWikiClient(conn).Delete(ctx, &pb.WikiRequest{
-			WikiId: wikiId, WikiRef: wikiRef, Version: version,
-		})
-		if err == nil {
-			if response.Success {
-				content := cache.Load(wikiId, wikiRef)
-				if content != nil && version == content.Version {
-					cache.Store(wikiId, wikiRef, nil)
-				}
-			} else {
-				err = common.ErrorUpdate
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return common.ErrorTechnical
 	}
-	return err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewWikiClient(conn).Delete(ctx, &pb.WikiRequest{
+		WikiId: wikiId, WikiRef: wikiRef, Version: version,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+
+	content := cache.Load(wikiId, wikiRef)
+	if content != nil && version == content.Version {
+		cache.Store(wikiId, wikiRef, nil)
+	}
+	return nil
 }
 
 func maxVersion(list []*pb.Version) *pb.Version {
 	var res *pb.Version
 	if len(list) != 0 {
 		res = list[0]
-	}
-	for _, current := range list {
-		if current.Number > res.Number {
-			res = current
+		for _, current := range list {
+			if current.Number > res.Number {
+				res = current
+			}
 		}
 	}
 	return res
@@ -276,6 +253,10 @@ func maxVersion(list []*pb.Version) *pb.Version {
 
 func sortConvertVersions(list []*pb.Version) ([]Version, error) {
 	size := len(list)
+	if size == 0 {
+		return nil, nil
+	}
+
 	valueSet := make([]*pb.Version, maxVersion(list).Number)
 	// no duplicate check, there is one in GetProfiles
 	userIds := make([]uint64, 0, size)
@@ -284,14 +265,15 @@ func sortConvertVersions(list []*pb.Version) ([]Version, error) {
 		userIds = append(userIds, value.UserId)
 	}
 	profiles, err := profileclient.GetProfiles(userIds)
-	var newList []Version
-	if err == nil {
-		newList = make([]Version, 0, size)
-		for _, value := range valueSet {
-			if value != nil {
-				newList = append(newList, Version{Number: value.Number, Creator: profiles[value.UserId]})
-			}
+	if err != nil {
+		return nil, err
+	}
+
+	newList := make([]Version, 0, size)
+	for _, value := range valueSet {
+		if value != nil {
+			newList = append(newList, Version{Number: value.Number, Creator: profiles[value.UserId]})
 		}
 	}
-	return newList, err
+	return newList, nil
 }

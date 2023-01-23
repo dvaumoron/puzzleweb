@@ -39,119 +39,106 @@ type Profile struct {
 
 func UpdateProfile(userId uint64, desc string, info map[string]string) error {
 	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Confirm
-		response, err = pb.NewProfileClient(conn).UpdateProfile(ctx, &pb.UserProfile{
-			UserId: userId, Desc: desc, Info: info,
-		})
-		if err == nil {
-			if !response.Success {
-				err = common.ErrorUpdate
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return common.ErrorTechnical
 	}
-	return err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewProfileClient(conn).UpdateProfile(ctx, &pb.UserProfile{
+		UserId: userId, Desc: desc, Info: info,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func UpdatePicture(userId uint64, data []byte) error {
 	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Confirm
-		response, err = pb.NewProfileClient(conn).UpdatePicture(ctx, &pb.Picture{
-			UserId: userId, Data: data,
-		})
-		if err == nil {
-			if !response.Success {
-				err = common.ErrorUpdate
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return common.ErrorTechnical
 	}
-	return err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewProfileClient(conn).UpdatePicture(ctx, &pb.Picture{
+		UserId: userId, Data: data,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }
 
 func GetPicture(userId uint64) ([]byte, error) {
 	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var data []byte
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Picture
-		response, err = pb.NewProfileClient(conn).GetPicture(ctx, &pb.UserId{Id: userId})
-		if err == nil {
-			data = response.Data
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return nil, common.ErrorTechnical
 	}
-	return data, err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewProfileClient(conn).GetPicture(ctx, &pb.UserId{Id: userId})
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+	return response.Data, nil
 }
 
 func GetProfiles(userIds []uint64) (map[uint64]*Profile, error) {
 	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var profiles map[uint64]*Profile
-	if err == nil {
-		defer conn.Close()
-
-		// duplicate removal
-		userIds = common.MakeSet(userIds).Slice()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.UserProfiles
-		response, err = pb.NewProfileClient(conn).ListProfiles(ctx, &pb.UserIds{
-			Ids: userIds,
-		})
-		if err == nil {
-			var users map[uint64]*loginclient.User
-			users, err = loginclient.GetUsers(userIds)
-			if err == nil {
-				profiles = map[uint64]*Profile{}
-				for _, profile := range response.List {
-					userId := profile.UserId
-					user := users[userId]
-					profiles[userId] = &Profile{
-						UserId: userId, Login: user.Login, RegistredAt: user.RegistredAt,
-						Desc: profile.Desc, Info: profile.Info,
-					}
-				}
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return nil, common.ErrorTechnical
+	}
+	defer conn.Close()
+
+	// duplicate removal
+	userIds = common.MakeSet(userIds).Slice()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewProfileClient(conn).ListProfiles(ctx, &pb.UserIds{
+		Ids: userIds,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return nil, common.ErrorTechnical
+	}
+
+	users, err := loginclient.GetUsers(userIds)
+	if err != nil {
+		return nil, err
+	}
+
+	profiles := map[uint64]*Profile{}
+	for _, profile := range response.List {
+		userId := profile.UserId
+		user := users[userId]
+		profiles[userId] = &Profile{
+			UserId: userId, Login: user.Login, RegistredAt: user.RegistredAt,
+			Desc: profile.Desc, Info: profile.Info,
+		}
 	}
 	return profiles, err
 }
@@ -159,25 +146,22 @@ func GetProfiles(userIds []uint64) (map[uint64]*Profile, error) {
 // no right check
 func Delete(userId uint64) error {
 	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err == nil {
-		defer conn.Close()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		var response *pb.Confirm
-		response, err = pb.NewProfileClient(conn).Delete(ctx, &pb.UserId{Id: userId})
-		if err == nil {
-			if !response.Success {
-				err = common.ErrorUpdate
-			}
-		} else {
-			common.LogOriginalError(err)
-			err = common.ErrorTechnical
-		}
-	} else {
+	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		return common.ErrorTechnical
 	}
-	return err
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewProfileClient(conn).Delete(ctx, &pb.UserId{Id: userId})
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrorTechnical
+	}
+	if !response.Success {
+		return common.ErrorUpdate
+	}
+	return nil
 }

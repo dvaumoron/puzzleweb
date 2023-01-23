@@ -129,7 +129,7 @@ func (current *Page) extractPageAndPath(path string) (*Page, []string) {
 
 func (p *Page) extractSubPageNames(c *gin.Context) []PageDesc {
 	sw, ok := p.Widget.(*staticWidget)
-	if ok {
+	if !ok {
 		return nil
 	}
 

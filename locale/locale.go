@@ -32,6 +32,7 @@ import (
 
 const LangName = "lang"
 const pathName = "Path"
+const keyName = "key"
 
 var matcher language.Matcher
 var AllLang []string
@@ -50,73 +51,74 @@ func (a *Tags) Add(lang language.Tag) {
 var Availables Tags = Tags{list: make([]language.Tag, 0, 1)}
 
 func InitMessages() {
-	if matcher == nil {
-		list := Availables.list
-		size := len(list)
-		if size == 0 {
-			log.Logger.Fatal("No locales declared.")
-		}
-		AllLang = make([]string, 0, size)
-		for _, langTag := range list {
-			AllLang = append(AllLang, langTag.String())
-		}
-		DefaultLang = AllLang[0]
-		matcher = language.NewMatcher(list)
-		messages = map[string]map[string]string{}
-		for _, lang := range AllLang {
-			messagesLang := map[string]string{}
-			messages[lang] = messagesLang
+	if matcher != nil {
+		return
+	}
+	list := Availables.list
+	size := len(list)
+	if size == 0 {
+		log.Logger.Fatal("No locales declared.")
+	}
+	AllLang = make([]string, 0, size)
+	for _, langTag := range list {
+		AllLang = append(AllLang, langTag.String())
+	}
+	DefaultLang = AllLang[0]
+	matcher = language.NewMatcher(list)
+	messages = map[string]map[string]string{}
+	for _, lang := range AllLang {
+		messagesLang := map[string]string{}
+		messages[lang] = messagesLang
 
-			var pathBuilder strings.Builder
-			pathBuilder.WriteString(config.LocalesPath)
-			pathBuilder.WriteString("/message_")
-			pathBuilder.WriteString(lang)
-			pathBuilder.WriteString(".property")
-			path := pathBuilder.String()
-			file, err := os.Open(path)
-			if err != nil {
-				log.Logger.Fatal("Failed to load locale file.",
-					zap.String(pathName, path),
-					zap.Error(err),
-				)
-			}
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				line := scanner.Text()
-				if len(line) != 0 && line[0] != '#' {
-					if equal := strings.Index(line, "="); equal > 0 {
-						if key := strings.TrimSpace(line[:equal]); key != "" {
-							if value := strings.TrimSpace(line[equal+1:]); value != "" {
-								messagesLang[key] = value
-							}
+		var pathBuilder strings.Builder
+		pathBuilder.WriteString(config.LocalesPath)
+		pathBuilder.WriteString("/message_")
+		pathBuilder.WriteString(lang)
+		pathBuilder.WriteString(".property")
+		path := pathBuilder.String()
+		file, err := os.Open(path)
+		if err != nil {
+			log.Logger.Fatal("Failed to load locale file.",
+				zap.String(pathName, path),
+				zap.Error(err),
+			)
+		}
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if len(line) != 0 && line[0] != '#' {
+				if equal := strings.Index(line, "="); equal > 0 {
+					if key := strings.TrimSpace(line[:equal]); key != "" {
+						if value := strings.TrimSpace(line[equal+1:]); value != "" {
+							messagesLang[key] = value
 						}
 					}
 				}
 			}
-			if err = scanner.Err(); err != nil {
-				log.Logger.Error("Error reading locale file.",
-					zap.String(pathName, path),
-					zap.Error(err),
-				)
-			}
 		}
+		if err = scanner.Err(); err != nil {
+			log.Logger.Error("Error reading locale file.",
+				zap.String(pathName, path),
+				zap.Error(err),
+			)
+		}
+	}
 
-		messagesDefaultLang := messages[DefaultLang]
-		for _, lang := range AllLang {
-			displayMessagesLang := map[string]string{}
-			displayMessages[lang] = displayMessagesLang
-			if lang == DefaultLang {
-				for key, value := range messagesDefaultLang {
-					displayMessagesLang[transformKey(key)] = value
+	messagesDefaultLang := messages[DefaultLang]
+	for _, lang := range AllLang {
+		displayMessagesLang := map[string]string{}
+		displayMessages[lang] = displayMessagesLang
+		if lang == DefaultLang {
+			for key, value := range messagesDefaultLang {
+				displayMessagesLang[transformKey(key)] = value
+			}
+		} else {
+			messagesLang := messages[lang]
+			for key, value := range messagesLang {
+				if value == "" {
+					value = messagesDefaultLang[key]
 				}
-			} else {
-				messagesLang := messages[lang]
-				for key, value := range messagesLang {
-					if value == "" {
-						value = messagesDefaultLang[key]
-					}
-					displayMessagesLang[transformKey(key)] = value
-				}
+				displayMessagesLang[transformKey(key)] = value
 			}
 		}
 	}
@@ -128,13 +130,11 @@ func GetText(key string, c *gin.Context) string {
 
 func GetLang(c *gin.Context) string {
 	lang, err := c.Cookie(LangName)
-	if err == nil {
-		lang = CheckLang(lang)
-	} else {
+	if err != nil {
 		tag, _ := language.MatchStrings(matcher, c.GetHeader("Accept-Language"))
-		lang = setLangCookie(c, tag.String())
+		return setLangCookie(c, tag.String())
 	}
-	return lang
+	return CheckLang(lang)
 }
 
 func CheckLang(lang string) string {
@@ -165,32 +165,29 @@ func GetMessages(c *gin.Context) map[string]string {
 	return displayMessages[GetLang(c)]
 }
 
-func getText(key, lang string) string {
-	text := messages[lang][key]
-	if text == "" {
-		if lang == DefaultLang {
-			warnMissingDefault(key, DefaultLang)
-			text = key
-		} else {
-			log.Logger.Warn("Missing key, falling to default locale.",
-				zap.String("key", key),
-				zap.String("currentLocale", lang),
-			)
-			text = messages[DefaultLang][key]
-			if text == "" {
-				warnMissingDefault(key, DefaultLang)
-				text = key
-			}
-		}
+func getText(key string, lang string) string {
+	if text := messages[lang][key]; text != "" {
+		return text
 	}
-	return text
+	if lang == DefaultLang {
+		return warnMissingDefault(key, DefaultLang)
+	}
+
+	log.Logger.Warn("Missing key, falling to default locale.",
+		zap.String("key", key), zap.String("currentLocale", lang),
+	)
+
+	if text := messages[DefaultLang][key]; text != "" {
+		return text
+	}
+	return warnMissingDefault(key, DefaultLang)
 }
 
-func warnMissingDefault(key, defaultLang string) {
+func warnMissingDefault(key string, defaultLang string) string {
 	log.Logger.Warn("Missing key in default locale.",
-		zap.String("key", key),
-		zap.String("defaultLocale", defaultLang),
+		zap.String(keyName, key), zap.String("defaultLocale", defaultLang),
 	)
+	return key
 }
 
 func transformKey(key string) string {
@@ -202,18 +199,18 @@ func transformKey(key string) string {
 }
 
 func transformWord(word string) string {
-	res := ""
-	if word != "" {
-		first := true
-		chars := make([]rune, 0, len(word))
-		for _, char := range word {
-			if first {
-				first = false
-				char = unicode.ToTitle(char)
-			}
-			chars = append(chars, char)
-		}
-		res = string(chars)
+	if word == "" {
+		return ""
 	}
-	return res
+
+	first := true
+	chars := make([]rune, 0, len(word))
+	for _, char := range word {
+		if first {
+			first = false
+			char = unicode.ToTitle(char)
+		}
+		chars = append(chars, char)
+	}
+	return string(chars)
 }

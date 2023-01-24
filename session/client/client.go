@@ -19,6 +19,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	pb "github.com/dvaumoron/puzzlesessionservice"
@@ -106,7 +107,7 @@ func update(addr string, id uint64, info map[string]string) error {
 		return common.ErrorTechnical
 	}
 	if strErr.Err != "" {
-		common.LogOriginalError(err)
+		common.LogOriginalError(errors.New(strErr.Err))
 		return common.ErrorUpdate
 	}
 	return nil

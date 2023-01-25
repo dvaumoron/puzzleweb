@@ -38,7 +38,7 @@ func (w *profileWidget) LoadInto(router gin.IRouter) {
 
 func AddProfilePage(site *puzzleweb.Site, args ...string) {
 	// TODO
-	p := puzzleweb.NewPage("profile")
+	p := puzzleweb.NewHiddenPage("profile")
 	p.Widget = &profileWidget{}
 
 	site.AddPage(p)

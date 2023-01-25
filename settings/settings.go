@@ -36,7 +36,7 @@ func (w *settingsWidget) LoadInto(router gin.IRouter) {
 
 func AddSettingsPage(site *puzzleweb.Site, args ...string) {
 	// TODO
-	p := puzzleweb.NewPage("settings")
+	p := puzzleweb.NewHiddenPage("settings")
 	p.Widget = &settingsWidget{}
 
 	site.AddPage(p)

@@ -263,6 +263,9 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 		listUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
 			pageNumber, _ := strconv.ParseUint(c.Query("pageNumber"), 10, 64)
+			if pageNumber == 0 {
+				pageNumber = 1
+			}
 			pageSize, _ := strconv.ParseUint(c.Query("pageSize"), 10, 64)
 			if pageSize == 0 {
 				pageSize = config.PageSize
@@ -274,7 +277,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 				return "", common.DefaultErrorRedirect(err.Error(), c)
 			}
 
-			start := pageNumber * pageSize
+			start := (pageNumber - 1) * pageSize
 			end := start + pageSize
 			total, users, err := loginclient.ListUsers(start, end, filter)
 			if err != nil {
@@ -282,6 +285,12 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			}
 
 			data["Total"] = total
+			if pageNumber != 1 {
+				data["PreviousPageNumber"] = pageNumber - 1
+			}
+			if end < total {
+				data["NextPageNumber"] = pageNumber + 1
+			}
 			data[usersName] = users
 			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 			if size := len(users); size == 0 {

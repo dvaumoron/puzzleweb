@@ -15,9 +15,9 @@
                 <p>
                     {{if .Login}}
                         {{.Messages.WelcomeLabel}}&nbsp;{{.Login}}&nbsp;
-                        <a href="{{.LoginUrl}}">{{.Messages.LoginLinkName}}</a>
+                        <a href="{{.LoginUrl}}">{{.Messages.LoginLinkLabel}}</a>
                     {{else}}
-                        <a href="{{.LoginUrl}}">{{.Messages.LogoutLinkName}}</a>
+                        <a href="{{.LoginUrl}}">{{.Messages.LogoutLinkLabel}}</a>
                     {{end}}
                 </p>
             {{end}}

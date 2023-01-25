@@ -1,7 +1,7 @@
 
 <h2>
     {{.Messages.EditLabel}}&nbsp;{{.UserLogin}}&nbsp;
-    [<a href="{{.BaseUrl}}view/{{.UserId}}">{{.Messages.CancelLinkName}}</a>]
+    [<a href="{{.BaseUrl}}view/{{.UserId}}">{{.Messages.CancelLinkLabel}}</a>]
 </h2>
 
 <form action="{{.BaseUrl}}save/{{.UserId}}" method="POST">
@@ -35,5 +35,5 @@
             </ul>
         </div>
     {{end}}
-    <div><input type="submit" value="{{.Messages.SaveLinkName}}"></div>
+    <div><input type="submit" value="{{.Messages.SaveLinkLabel}}"></div>
 </form>

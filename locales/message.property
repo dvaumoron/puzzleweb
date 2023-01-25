@@ -10,22 +10,25 @@ group.label.public=
 name.label=
 edit.label=
 registred.at.label=
-list.link.name=
-view.link.name=
-new.link.name=
-edit.link.name=
-save.link.name=
-cancel.link.name=
-delete.link.name=
+list.link.label=
+filter.link.label=
+previous.page.link.label=
+next.page.link.label=
+view.link.label=
+new.link.label=
+edit.link.label=
+save.link.label=
+cancel.link.label=
+delete.link.label=
 
 # login
 page.title.login=
 wrong.login=
 login.label=
 password.label=
-login.link.name=
-logout.link.name=
-register.link.name=
+login.link.label=
+logout.link.label=
+register.link.label=
 
 # admin
 page.title.admin=

@@ -5,7 +5,7 @@
     {{else}}
         {{.Messages.EditLabel}}&nbsp;{{.Group}}/{{.RoleName}}&nbsp;
     {{end}}
-    [<a href="{{.BaseUrl}}list">{{.Messages.CancelLinkName}}</a>]
+    [<a href="{{.BaseUrl}}list">{{.Messages.CancelLinkLabel}}</a>]
 </h2>
 
 <form id="editRoleForm" action="{{.BaseUrl}}save" method="POST">
@@ -44,5 +44,5 @@
             <input type="checkbox" name="actions" value="delete" checked="{{.Delete}}"/>
         </label>
     </div>
-    <div><button type="button" id="saveRoleButton">{{.Messages.SaveLinkName}}</button></div>
+    <div><button type="button" id="saveRoleButton">{{.Messages.SaveLinkLabel}}</button></div>
 </form>

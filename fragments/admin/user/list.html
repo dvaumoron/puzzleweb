@@ -1,17 +1,45 @@
 
 <h2>{{.Messages.UserList}}&nbsp;({{.Total}})</h2>
 
-TODO filter
+{{/* a form without attribute do a get on the same page */}}
+<form>
+    <div>
+        <label>
+            {{.Messages.FilterLabel}}
+            <input type="text" name="filter"/>
+        </label>
+    </div>
+    <div><button type="submit">{{.Messages.FilterLinkLabel}}</button></div>
+</form>
+
+<div class="pagination">
+    {{if .PreviousPageNumber}}
+        <form>
+            <div class="hidden">
+                <input type="text" name="pageNumber" value="{{.PreviousPageNumber}}"/>
+            </div>
+            <div><button type="submit">{{.Messages.PreviousPageLinkLabel}}</button></div>
+        </form>
+    {{end}}
+
+    {{if .NextPageNumber}}
+        <form>
+            <div class="hidden">
+                <input type="text" name="pageNumber" value="{{.NextPageNumber}}"/>
+            </div>
+            <div><button type="submit">{{.Messages.NextPageLinkLabel}}</button></div>
+        </form>
+    {{end}}
+</div>
 
 <ul>
-    TODO paginate
     {{$baseUrl := .BaseUrl}}
-    {{$viewLinkName := .Messages.ViewLinkName}}
+    {{$viewLinkLabel := .Messages.ViewLinkLabel}}
     {{range .Users}}
         <li>
             <ul>
                 <li>{{.Login}}</li>
-                <li><a href="{{$baseUrl}}view/{{.Id}}">{{$viewLinkName}}</a></li>
+                <li><a href="{{$baseUrl}}view/{{.Id}}">{{$viewLinkLabel}}</a></li>
             </ul>
         <li>
     {{end}}

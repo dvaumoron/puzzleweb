@@ -2,8 +2,8 @@
 <h2>
     {{.UserLogin}}&nbsp;{{.Messages.RegistredAtLabel}}&nbsp;{{.UserRegistredAt}}&nbsp;
     {{if .IsAdmin}}
-        [<a href="{{.BaseUrl}}edit/{{.UserId}}">{{.Messages.EditLinkName}}</a>]
-        [<a href="{{.BaseUrl}}delete/{{.UserId}}">{{.Messages.DeleteLinkName}}</a>]
+        [<a href="{{.BaseUrl}}edit/{{.UserId}}">{{.Messages.EditLinkLabel}}</a>]
+        [<a href="{{.BaseUrl}}delete/{{.UserId}}">{{.Messages.DeleteLinkLabel}}</a>]
     {{end}}
 </h2>
 

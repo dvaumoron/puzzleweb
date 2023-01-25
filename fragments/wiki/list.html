@@ -4,15 +4,15 @@
 <ul>
     {{$baseUrl := .BaseUrl}}
     {{$wikiTitle := .WikiTitle}}
-    {{$viewLinkName := .Messages.ViewLinkName}}
-    {{$deleteLinkName := .Messages.DeleteLinkName}}
+    {{$viewLinkLabel := .Messages.ViewLinkLabel}}
+    {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
     {{range .Versions}}
         <li>
             <ul>
                 <li>{{.Number}}</li>
                 <li>{{.Creator.Login}}</li>
-                <li><a href="{{$baseUrl}}view/{{$wikiTitle}}?version={{.Number}}">{{$viewLinkName}}</a></li>
-                <li><a href="{{$baseUrl}}delete/{{$wikiTitle}}?version={{.Number}}">{{$deleteLinkName}}</a></li>
+                <li><a href="{{$baseUrl}}view/{{$wikiTitle}}?version={{.Number}}">{{$viewLinkLabel}}</a></li>
+                <li><a href="{{$baseUrl}}delete/{{$wikiTitle}}?version={{.Number}}">{{$deleteLinkLabel}}</a></li>
             </ul>
         <li>
     {{end}}

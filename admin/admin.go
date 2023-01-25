@@ -110,7 +110,10 @@ type adminWidget struct {
 var saveUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 	adminId := session.GetUserId(c)
 	userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
-	if err == nil {
+	if err != nil {
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
+	} else {
 		rolesStr := c.PostFormArray("roles")
 		roles := make([]*client.Role, 0, len(rolesStr))
 		for _, roleStr := range rolesStr {
@@ -136,7 +139,10 @@ var saveUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 var deleteUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 	adminId := session.GetUserId(c)
 	userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
-	if err == nil {
+	if err != nil {
+		common.LogOriginalError(err)
+		err = common.ErrorTechnical
+	} else {
 		// an empty slice delete the user right
 		// only the first service call do a right check
 		err = client.UpdateUser(adminId, userId, []*client.Role{})
@@ -264,78 +270,79 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			filter := c.Query("filter")
 
 			err := client.AuthQuery(adminId, client.AdminGroupId, client.ActionAccess)
-			if err == nil {
-				var total uint64
-				var users []*loginclient.User
-
-				start := pageNumber * pageSize
-				end := start + pageSize
-				total, users, err = loginclient.ListUsers(start, end, filter)
-
-				if err == nil {
-					data["Total"] = total
-					data[usersName] = users
-					data[common.BaseUrlName] = common.GetBaseUrl(1, c)
-					if size := len(users); size == 0 {
-						data[common.ErrorMsgName] = locale.GetText(common.NoElementKey, c)
-					}
-				}
-			}
-
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error(), c)
+			}
+
+			start := pageNumber * pageSize
+			end := start + pageSize
+			total, users, err := loginclient.ListUsers(start, end, filter)
+			if err != nil {
+				return "", common.DefaultErrorRedirect(err.Error(), c)
+			}
+
+			data["Total"] = total
+			data[usersName] = users
+			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
+			if size := len(users); size == 0 {
+				data[common.ErrorMsgName] = locale.GetText(common.NoElementKey, c)
 			}
 			return listUserTmpl, ""
 		}),
 		viewUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
 			userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
-			if err == nil {
-				var roles []*client.Role
-				roles, err = client.GetUserRoles(adminId, userId)
-				if err == nil {
-					var userIdToLogin map[uint64]*loginclient.User
-					userIdToLogin, err = loginclient.GetUsers([]uint64{userId})
-					user := userIdToLogin[userId]
-					data[common.BaseUrlName] = common.GetBaseUrl(2, c)
-					data[common.UserIdName] = userId
-					data[userLoginName] = user.Login
-					data["UserRegistredAt"] = user.RegistredAt
-					data["IsAdmin"] = adminId != userId
-					data[groupsName] = displayGroups(roles, c)
-				}
+			if err != nil {
+				common.LogOriginalError(err)
+				return "", common.DefaultErrorRedirect(common.ErrorTechnical.Error(), c)
 			}
 
+			roles, err := client.GetUserRoles(adminId, userId)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error(), c)
 			}
+
+			userIdToLogin, err := loginclient.GetUsers([]uint64{userId})
+			if err != nil {
+				return "", common.DefaultErrorRedirect(err.Error(), c)
+			}
+
+			user := userIdToLogin[userId]
+			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
+			data[common.UserIdName] = userId
+			data[userLoginName] = user.Login
+			data["UserRegistredAt"] = user.RegistredAt
+			data["IsAdmin"] = adminId != userId
+			data[groupsName] = displayGroups(roles, c)
 			return viewUserTmpl, ""
 		}),
 		editUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
 			userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
-			if err == nil {
-				var allRoles []*client.Role
-				allRoles, err = client.GetAllRoles(adminId)
-				if err == nil {
-					var userRoles []*client.Role
-					userRoles, err = client.GetUserRoles(adminId, userId)
-					if err == nil {
-						var userIdToLogin map[uint64]*loginclient.User
-						userIdToLogin, err = loginclient.GetUsers([]uint64{userId})
-						if err == nil {
-							data[common.BaseUrlName] = common.GetBaseUrl(2, c)
-							data[common.UserIdName] = userId
-							data[userLoginName] = userIdToLogin[userId].Login
-							data[groupsName] = displayEditGroups(userRoles, allRoles, c)
-						}
-					}
-				}
+			if err != nil {
+				common.LogOriginalError(err)
+				return "", common.DefaultErrorRedirect(common.ErrorTechnical.Error(), c)
 			}
 
+			allRoles, err := client.GetAllRoles(adminId)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error(), c)
 			}
+
+			userRoles, err := client.GetUserRoles(adminId, userId)
+			if err != nil {
+				return "", common.DefaultErrorRedirect(err.Error(), c)
+			}
+
+			userIdToLogin, err := loginclient.GetUsers([]uint64{userId})
+			if err != nil {
+				return "", common.DefaultErrorRedirect(err.Error(), c)
+			}
+
+			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
+			data[common.UserIdName] = userId
+			data[userLoginName] = userIdToLogin[userId].Login
+			data[groupsName] = displayEditGroups(userRoles, allRoles, c)
 			return editUserTmpl, ""
 		}),
 		listRoleHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
@@ -358,22 +365,19 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			data[roleNameName] = roleName
 			data[groupName] = group
 
-			var err error
 			if roleName != "new" {
-				var actions []pb.RightAction
-				actions, err = client.GetActions(adminId, roleName, group)
-				if err == nil {
-					actionSet := common.MakeSet(actions)
-					setActionChecked(data, actionSet, client.ActionAccess, "Access")
-					setActionChecked(data, actionSet, client.ActionCreate, "Create")
-					setActionChecked(data, actionSet, client.ActionUpdate, "Update")
-					setActionChecked(data, actionSet, client.ActionDelete, "Delete")
+				actions, err := client.GetActions(adminId, roleName, group)
+				if err != nil {
+					return "", common.DefaultErrorRedirect(err.Error(), c)
 				}
+
+				actionSet := common.MakeSet(actions)
+				setActionChecked(data, actionSet, client.ActionAccess, "Access")
+				setActionChecked(data, actionSet, client.ActionCreate, "Create")
+				setActionChecked(data, actionSet, client.ActionUpdate, "Update")
+				setActionChecked(data, actionSet, client.ActionDelete, "Delete")
 			}
 
-			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error(), c)
-			}
 			return editRoleTmpl, ""
 		}),
 	}

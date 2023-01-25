@@ -4,6 +4,7 @@
 <div>
     {{$baseUrl := .BaseUrl}}
     {{$editLinkName := .Messages.EditLinkName}}
+    {{$deleteLinkName := .Messages.DeleteLinkName}}
     {{$newLinkName := .Messages.NewLinkName}}
     {{range .Groups}}
         <div>
@@ -20,7 +21,16 @@
                                 {{end}}
                             </li>
                             <li><a href="{{$baseUrl}}edit/{{.Name}}/{{$groupName}}">{{$editLinkName}}</a></li>
-                            <!-- TODO delete role link (empty action form) -->
+                            <li>
+                                <!-- delete role link (use an empty action form) -->
+                                <form action="{{.BaseUrl}}save" method="POST">
+                                    <div class="hidden">
+                                        <input type="text" name="RoleName" value="{{.Name}}"/>
+                                        <input type="text" name="Group" value="{{$groupName}}"/>
+                                    </div>
+                                    <div><button type="submit">{{$deleteLinkName}}</button></div>
+                                </form>
+                            </li>
                         </ul>
                     <li>
                 {{end}}

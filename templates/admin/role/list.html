@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Title - {{.PageTitle}}</title>
+        <link rel="stylesheet" type="text/css" href="/static/main.css"/>
+        <script type="text/javascript" src="/static/js/wasm_exec.js"/>
+        <script type="text/javascript" src="/static/js/main.js"/>
+    </head>
+    <body>
+        <header>
+            <h1>{{.PageTitle}}</h1>
+            {{if .LoginUrl}}
+                <p>
+                    {{if .Login}}
+                        {{.Messages.WelcomeLabel}}&nbsp;{{.Login}}&nbsp;
+                        <a href="{{.LoginUrl}}">{{.Messages.LoginLinkLabel}}</a>
+                    {{else}}
+                        <a href="{{.LoginUrl}}">{{.Messages.LogoutLinkLabel}}</a>
+                    {{end}}
+                </p>
+            {{end}}
+            {{with .ErrorMsg}}
+                <div class="error">{{.}}</div>
+            {{end}}
+            <p>
+                {{range .Ariane}}
+                    /&nbsp;<a href="{{.Url}}">{{.Name}}</a>&nbsp;
+                {{end}}
+            </p>
+            <ul>
+                {{range .SubPages}}
+                    <li><a href="{{.Url}}">{{.Name}}</a></li>
+                {{end}}
+            </ul>
+        </header>
+        <main>
+            <h2>{{.Messages.RoleList}}</h2>
+            <div>
+                {{$baseUrl := .BaseUrl}}
+                {{$editLinkLabel := .Messages.EditLinkLabel}}
+                {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
+                {{$newLinkLabel := .Messages.NewLinkLabel}}
+                {{range .Groups}}
+                    <div>
+                        <p>{{.DisplayName}}</p>
+                        <ul>
+                            {{$groupName := .Name}}
+                            {{range .Roles}}
+                                <li>
+                                    <ul>
+                                        <li>{{.Name}}</li>
+                                        <li>
+                                            {{range .Actions}}
+                                                {{.}}
+                                            {{end}}
+                                        </li>
+                                        <li><a href="{{$baseUrl}}edit/{{.Name}}/{{$groupName}}">{{$editLinkLabel}}</a></li>
+                                        <li>
+                                            <!-- delete role link (use an empty action form) -->
+                                            <form action="{{.BaseUrl}}save" method="POST">
+                                                <div class="hidden">
+                                                    <input type="text" name="RoleName" value="{{.Name}}"/>
+                                                    <input type="text" name="Group" value="{{$groupName}}"/>
+                                                </div>
+                                                <div><button type="submit">{{$deleteLinkLabel}}</button></div>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                <li>
+                            {{end}}
+                            <li><a href="{{$baseUrl}}edit/new/{{$groupName}}">{{$newLinkLabel}}</a><li>
+                        </ul>
+                    </div>
+                {{end}}
+            </div>
+        </main>
+        <footer>
+        </footer>
+    </body>
+</html>

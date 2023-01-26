@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Title - {{.PageTitle}}</title>
+        <link rel="stylesheet" type="text/css" href="/static/main.css"/>
+        <script type="text/javascript" src="/static/js/wasm_exec.js"/>
+        <script type="text/javascript" src="/static/js/main.js"/>
+    </head>
+    <body>
+        <header>
+            <h1>{{.PageTitle}}</h1>
+            {{if .LoginUrl}}
+                <p>
+                    {{if .Login}}
+                        {{.Messages.WelcomeLabel}}&nbsp;{{.Login}}&nbsp;
+                        <a href="{{.LoginUrl}}">{{.Messages.LoginLinkLabel}}</a>
+                    {{else}}
+                        <a href="{{.LoginUrl}}">{{.Messages.LogoutLinkLabel}}</a>
+                    {{end}}
+                </p>
+            {{end}}
+            {{with .ErrorMsg}}
+                <div class="error">{{.}}</div>
+            {{end}}
+            <p>
+                {{range .Ariane}}
+                    /&nbsp;<a href="{{.Url}}">{{.Name}}</a>&nbsp;
+                {{end}}
+            </p>
+            <ul>
+                {{range .SubPages}}
+                    <li><a href="{{.Url}}">{{.Name}}</a></li>
+                {{end}}
+            </ul>
+        </header>
+        <main>
+            <h2>
+                {{if eq .RoleName "new"}}
+                    {{.Messages.NewRoleLabel}}&nbsp;{{.Group}}&nbsp;
+                {{else}}
+                    {{.Messages.EditLabel}}&nbsp;{{.Group}}/{{.RoleName}}&nbsp;
+                {{end}}
+                [<a href="{{.BaseUrl}}list">{{.Messages.CancelLinkLabel}}</a>]
+            </h2>
+            <form id="editRoleForm" action="{{.BaseUrl}}save" method="POST">
+                <div {{if ne .RoleName "new"}} class="hidden" {{end}}>
+                    <label>
+                        {{.Messages.NameLabel}}
+                        <input type="text" id="editRoleNameField" name="RoleName" value="{{.RoleName}}"/>
+                    </label>
+                </div>
+                <div class="hidden">
+                    {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+                    <span id="errorBadRoleNameMessage">{{.Messages.ErrorBadRoleName}}</span>
+                    <input type="text" name="Group" value="{{.Group}}"/>
+                </div>
+                <div>
+                    <label>
+                        {{.Messages.AccessLabel}}
+                        <input type="checkbox" name="actions" value="access" checked="{{.Access}}"/>
+                    </label>
+                </div>
+                <div>
+                    <label>
+                        {{.Messages.CreateLabel}}
+                        <input type="checkbox" name="actions" value="create" checked="{{.Create}}"/>
+                    </label>
+                </div>
+                <div>
+                    <label>
+                        {{.Messages.UpdateLabel}}
+                        <input type="checkbox" name="actions" value="update" checked="{{.Update}}"/>
+                    </label>
+                </div>
+                <div>
+                    <label>
+                        {{.Messages.DeleteLabel}}
+                        <input type="checkbox" name="actions" value="delete" checked="{{.Delete}}"/>
+                    </label>
+                </div>
+                <div><button type="button" id="saveRoleButton">{{.Messages.SaveLinkLabel}}</button></div>
+            </form>
+        </main>
+        <footer>
+        </footer>
+    </body>
+</html>

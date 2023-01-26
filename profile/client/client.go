@@ -104,7 +104,7 @@ func GetPicture(userId uint64) ([]byte, error) {
 	return response.Data, nil
 }
 
-func GetProfiles(userIds []uint64) (map[uint64]*Profile, error) {
+func GetProfiles(userIds []uint64) (map[uint64]Profile, error) {
 	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
@@ -131,11 +131,11 @@ func GetProfiles(userIds []uint64) (map[uint64]*Profile, error) {
 		return nil, err
 	}
 
-	profiles := map[uint64]*Profile{}
+	profiles := map[uint64]Profile{}
 	for _, profile := range response.List {
 		userId := profile.UserId
 		user := users[userId]
-		profiles[userId] = &Profile{
+		profiles[userId] = Profile{
 			UserId: userId, Login: user.Login, RegistredAt: user.RegistredAt,
 			Desc: profile.Desc, Info: profile.Info,
 		}

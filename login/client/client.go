@@ -43,11 +43,11 @@ func salt(password string) string {
 	return hex.EncodeToString(sha512Hasher.Sum(nil))
 }
 
-func VerifyOrRegister(login string, password string, register bool) (uint64, bool, error) {
+func VerifyOrRegister(login string, password string, register bool) (bool, uint64, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return 0, false, common.ErrorTechnical
+		return false, 0, common.ErrorTechnical
 	}
 	defer conn.Close()
 
@@ -65,9 +65,9 @@ func VerifyOrRegister(login string, password string, register bool) (uint64, boo
 
 	if err != nil {
 		common.LogOriginalError(err)
-		return 0, false, common.ErrorTechnical
+		return false, 0, common.ErrorTechnical
 	}
-	return response.Id, response.Success, nil
+	return response.Success, response.Id, nil
 }
 
 // You should remove duplicate id in list

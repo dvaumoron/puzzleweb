@@ -44,7 +44,7 @@ var submitHandler = common.CreateRedirect(func(c *gin.Context) string {
 	password := c.PostForm("Password")
 	register := c.PostForm("Register") == "true"
 
-	userId, success, err := client.VerifyOrRegister(login, password, register)
+	success, userId, err := client.VerifyOrRegister(login, password, register)
 	errorMsg := ""
 	if err != nil {
 		errorMsg = err.Error()

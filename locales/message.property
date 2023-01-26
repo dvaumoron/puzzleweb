@@ -24,6 +24,7 @@ delete.link.label=
 # login
 page.title.login=
 wrong.login=
+existing.login=
 login.label=
 password.label=
 login.link.label=

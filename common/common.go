@@ -34,7 +34,7 @@ type TemplateRedirecter func(gin.H, *gin.Context) (string, string)
 func GetCurrentUrl(c *gin.Context) string {
 	path := c.Request.URL.Path
 	if path[len(path)-1] != '/' {
-		path = path + "/"
+		path += "/"
 	}
 	return path
 }

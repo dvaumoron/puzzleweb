@@ -291,6 +291,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			if end < total {
 				data["NextPageNumber"] = pageNumber + 1
 			}
+			data["Filter"] = filter
 			data[usersName] = users
 			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 			if size := len(users); size == 0 {

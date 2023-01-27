@@ -102,6 +102,9 @@ func (p *Page) AddSubPage(page *Page) {
 }
 
 func (p *Page) getSubPage(name string) *Page {
+	if name == "" {
+		return nil
+	}
 	sw, ok := p.Widget.(*staticWidget)
 	if ok {
 		for _, sub := range sw.subPages {
@@ -127,7 +130,7 @@ func (current *Page) extractPageAndPath(path string) (*Page, []string) {
 	return current, names
 }
 
-func (p *Page) extractSubPageNames(c *gin.Context) []PageDesc {
+func (p *Page) extractSubPageNames(url string, c *gin.Context) []PageDesc {
 	sw, ok := p.Widget.(*staticWidget)
 	if !ok {
 		return nil
@@ -139,7 +142,6 @@ func (p *Page) extractSubPageNames(c *gin.Context) []PageDesc {
 		return nil
 	}
 
-	url := common.GetCurrentUrl(c)
 	pageDescs := make([]PageDesc, 0, size)
 	for _, page := range pages {
 		if page.visible {

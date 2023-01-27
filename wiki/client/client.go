@@ -37,7 +37,7 @@ import (
 
 type Version struct {
 	Number  uint64
-	Creator *profileclient.Profile
+	Creator profileclient.Profile
 }
 
 func LoadContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, versionStr string) (*cache.WikiContent, error) {

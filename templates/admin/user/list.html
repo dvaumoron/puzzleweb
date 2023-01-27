@@ -36,29 +36,37 @@
         </header>
         <main>
             <h2>{{.Messages.UserList}}&nbsp;({{.Total}})</h2>
-            {{/* a form without attribute do a get on the same page */}}
-            <form>
+            <form action="{{.CurrentUrl}}" method="GET">
                 <div>
                     <label>
                         {{.Messages.FilterLabel}}
                         <input type="text" name="filter"/>
                     </label>
                 </div>
+                <div class="hidden">
+                    <input type="text" name="pageNumber" value="1"/>
+                </div>
                 <div><button type="submit">{{.Messages.FilterLinkLabel}}</button></div>
             </form>
             <div class="pagination">
                 {{if .PreviousPageNumber}}
-                    <form>
+                    <form action="{{.CurrentUrl}}" method="GET">
                         <div class="hidden">
                             <input type="text" name="pageNumber" value="{{.PreviousPageNumber}}"/>
+                            {{if .Filter}}
+                                <input type="text" name="filter" value="{{.Filter}}"/>
+                            {{end}}
                         </div>
                         <div><button type="submit">{{.Messages.PreviousPageLinkLabel}}</button></div>
                     </form>
                 {{end}}
                 {{if .NextPageNumber}}
-                    <form>
+                    <form action="{{.CurrentUrl}}" method="GET">
                         <div class="hidden">
                             <input type="text" name="pageNumber" value="{{.NextPageNumber}}"/>
+                            {{if .Filter}}
+                                <input type="text" name="filter" value="{{.Filter}}"/>
+                            {{end}}
                         </div>
                         <div><button type="submit">{{.Messages.NextPageLinkLabel}}</button></div>
                     </form>

@@ -57,12 +57,13 @@ func getSite(c *gin.Context) *Site {
 
 func initData(c *gin.Context) gin.H {
 	site := getSite(c)
-	page, path := site.root.extractPageAndPath(c.Request.URL.Path)
+	currentUrl := common.GetCurrentUrl(c)
+	page, path := site.root.extractPageAndPath(currentUrl)
 	data := gin.H{
 		"PageTitle":  getPageTitle(page.name, c),
-		"CurrentUrl": common.GetCurrentUrl(c),
+		"CurrentUrl": currentUrl,
 		"Ariane":     extractAriane(path, c),
-		"SubPages":   page.extractSubPageNames(c),
+		"SubPages":   page.extractSubPageNames(currentUrl, c),
 		"Messages":   locale.GetMessages(c),
 	}
 	if errorMsg := c.Query("error"); errorMsg != "" {

@@ -34,20 +34,20 @@ type TemplateRedirecter func(gin.H, *gin.Context) (string, string)
 func GetCurrentUrl(c *gin.Context) string {
 	path := c.Request.URL.Path
 	if path[len(path)-1] != '/' {
-		path += "/"
+		path = path + "/"
 	}
 	return path
 }
 
 func GetBaseUrl(levelToErase uint8, c *gin.Context) string {
 	res := GetCurrentUrl(c)
-	i := len(res) - 2
+	i := len(res) - 1
 	var count uint8
 	for count < levelToErase {
+		i--
 		if res[i] == '/' {
 			count++
 		}
-		i--
 	}
 	return res[:i+1]
 }

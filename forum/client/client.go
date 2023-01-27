@@ -34,7 +34,7 @@ import (
 
 type ForumContent struct {
 	Id      uint64
-	Creator *profileclient.Profile
+	Creator profileclient.Profile
 	Date    string
 	Text    string
 }
@@ -320,7 +320,7 @@ func sortConvertContents(list []*pb.Content) ([]*ForumContent, error) {
 	return contents, nil
 }
 
-func convertContent(content *pb.Content, creator *profileclient.Profile) *ForumContent {
+func convertContent(content *pb.Content, creator profileclient.Profile) *ForumContent {
 	createdAt := time.Unix(content.CreatedAt, 0)
 	return &ForumContent{
 		Id: content.Id, Creator: creator,

@@ -234,7 +234,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 	return p
 }
 
-func wikiUrlBuilder(base, lang, mode, title string) *strings.Builder {
+func wikiUrlBuilder(base string, lang string, mode string, title string) *strings.Builder {
 	targetBuilder := new(strings.Builder)
 	targetBuilder.WriteString(base)
 	targetBuilder.WriteString(lang)

@@ -40,7 +40,7 @@ type ForumContent struct {
 }
 
 type contentRequestKind func(pb.ForumClient, context.Context, *pb.SearchRequest) (*pb.Contents, error)
-type deleteRequestKind func(pb.ForumClient, context.Context, *pb.IdRequest) (*pb.Confirm, error)
+type deleteRequestKind func(pb.ForumClient, context.Context, *pb.IdRequest) (*pb.Response, error)
 
 type sortableContents []*pb.Content
 
@@ -290,11 +290,11 @@ func deleteContent(groupId uint64, userId uint64, kind deleteRequestKind, reques
 	return nil
 }
 
-func deleteThread(client pb.ForumClient, ctx context.Context, request *pb.IdRequest) (*pb.Confirm, error) {
+func deleteThread(client pb.ForumClient, ctx context.Context, request *pb.IdRequest) (*pb.Response, error) {
 	return client.DeleteThread(ctx, request)
 }
 
-func deleteMessage(client pb.ForumClient, ctx context.Context, request *pb.IdRequest) (*pb.Confirm, error) {
+func deleteMessage(client pb.ForumClient, ctx context.Context, request *pb.IdRequest) (*pb.Response, error) {
 	return client.DeleteMessage(ctx, request)
 }
 

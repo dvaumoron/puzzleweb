@@ -3,20 +3,20 @@ module github.com/dvaumoron/puzzleweb
 go 1.19
 
 require (
-	github.com/dvaumoron/puzzleblogservice v1.0.0
-	github.com/dvaumoron/puzzleforumservice v1.2.0
+	github.com/dvaumoron/puzzleblogservice v1.1.0
+	github.com/dvaumoron/puzzleforumservice v1.3.0
 	github.com/dvaumoron/puzzleloginservice v1.6.0
 	github.com/dvaumoron/puzzlemarkdownservice v1.0.1
-	github.com/dvaumoron/puzzleprofileservice v1.1.0
+	github.com/dvaumoron/puzzleprofileservice v1.2.0
 	github.com/dvaumoron/puzzlerightservice v1.3.0
 	github.com/dvaumoron/puzzlesessionservice v1.2.0
-	github.com/dvaumoron/puzzlewikiservice v1.2.0
+	github.com/dvaumoron/puzzlewikiservice v1.3.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/joho/godotenv v1.4.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.5.0
-	google.golang.org/grpc v1.52.0
+	google.golang.org/grpc v1.52.3
 )
 
 require (

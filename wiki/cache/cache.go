@@ -33,23 +33,30 @@ type WikiContent struct {
 
 // Lazy loading for markdown application on body.
 func (content *WikiContent) GetBody() (template.HTML, error) {
-	var err error
 	content.bodyMutex.RLock()
 	body := content.body
 	content.bodyMutex.RUnlock()
-	if body == "" {
-		if markdown := content.Markdown; markdown != "" {
-			content.bodyMutex.Lock()
-			if body = content.body; body == "" {
-				body, err = markdownclient.Apply(markdown)
-				if err == nil {
-					content.body = body
-				}
-			}
-			content.bodyMutex.Unlock()
-		}
+	if body != "" {
+		return body, nil
 	}
-	return body, err
+	markdown := content.Markdown
+	if markdown == "" {
+		return "", nil
+	}
+
+	content.bodyMutex.Lock()
+	defer content.bodyMutex.Unlock()
+	if body = content.body; body != "" {
+		return body, nil
+	}
+
+	body, err := markdownclient.Apply(markdown)
+	if err != nil {
+		return "", err
+	}
+
+	content.body = body
+	return body, nil
 }
 
 type wikiCache struct {

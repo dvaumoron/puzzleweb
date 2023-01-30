@@ -78,7 +78,7 @@ func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
 	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -90,10 +90,10 @@ func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorNotAuthorized
+		return common.ErrNotAuthorized
 	}
 	return nil
 }
@@ -110,7 +110,7 @@ func GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAc
 	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -123,10 +123,10 @@ func GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAc
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	if !response.Success {
-		return nil, common.ErrorNotAuthorized
+		return nil, common.ErrNotAuthorized
 	}
 
 	actions, err := client.RoleRight(ctx, &pb.RoleRequest{
@@ -134,7 +134,7 @@ func GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAc
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	return actions.List, nil
 }
@@ -143,7 +143,7 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -156,10 +156,10 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorNotAuthorized
+		return common.ErrNotAuthorized
 	}
 
 	converted := make([]*pb.RoleRequest, 0, len(roles))
@@ -174,10 +174,10 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }
@@ -186,7 +186,7 @@ func UpdateRole(adminId uint64, role *Role) error {
 	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -199,10 +199,10 @@ func UpdateRole(adminId uint64, role *Role) error {
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorNotAuthorized
+		return common.ErrNotAuthorized
 	}
 
 	response, err = client.UpdateRole(ctx, &pb.Role{
@@ -211,10 +211,10 @@ func UpdateRole(adminId uint64, role *Role) error {
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }
@@ -223,7 +223,7 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -240,10 +240,10 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	if !response.Success {
-		return nil, common.ErrorNotAuthorized
+		return nil, common.ErrNotAuthorized
 	}
 	return getUserRoles(client, ctx, userId)
 }
@@ -252,7 +252,7 @@ func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
 	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -265,16 +265,16 @@ func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	if !response.Success {
-		return nil, common.ErrorNotAuthorized
+		return nil, common.ErrNotAuthorized
 	}
 
 	roles, err := client.ListRoles(ctx, &pb.ObjectIds{Ids: groupIds})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	return convertRolesFromRequest(roles.List), nil
 }
@@ -283,7 +283,7 @@ func getUserRoles(client pb.RightClient, ctx context.Context, userId uint64) ([]
 	roles, err := client.ListUserRoles(ctx, &pb.UserId{Id: userId})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	return convertRolesFromRequest(roles.List), nil
 }

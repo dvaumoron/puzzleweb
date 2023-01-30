@@ -63,7 +63,7 @@ func CreatePost(blogId uint64, groupId uint64, userId uint64, title string, cont
 	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -75,10 +75,10 @@ func CreatePost(blogId uint64, groupId uint64, userId uint64, title string, cont
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }
@@ -92,7 +92,7 @@ func GetPost(blogId uint64, groupId uint64, userId uint64, postId uint64) (*Blog
 	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -104,7 +104,7 @@ func GetPost(blogId uint64, groupId uint64, userId uint64, postId uint64) (*Blog
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 
 	creatorId := response.UserId
@@ -124,7 +124,7 @@ func GetPosts(blogId uint64, groupId uint64, userId uint64, start uint64, end ui
 	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -136,7 +136,7 @@ func GetPosts(blogId uint64, groupId uint64, userId uint64, start uint64, end ui
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	list := response.List
 	if len(list) == 0 {
@@ -154,7 +154,7 @@ func DeletePost(blogId uint64, groupId uint64, userId uint64, postId uint64) err
 	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -166,10 +166,10 @@ func DeletePost(blogId uint64, groupId uint64, userId uint64, postId uint64) err
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }

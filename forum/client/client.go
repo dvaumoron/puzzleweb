@@ -65,7 +65,7 @@ func CreateThread(forumId uint64, groupId uint64, userId uint64, title string, m
 	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -78,10 +78,10 @@ func CreateThread(forumId uint64, groupId uint64, userId uint64, title string, m
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 
 	response, err = client.CreateMessage(ctx, &pb.CreateRequest{
@@ -89,10 +89,10 @@ func CreateThread(forumId uint64, groupId uint64, userId uint64, title string, m
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }
@@ -106,7 +106,7 @@ func CreateCommentThread(objectId uint64, groupId uint64, userId uint64, elemTit
 	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -118,10 +118,10 @@ func CreateCommentThread(objectId uint64, groupId uint64, userId uint64, elemTit
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }
@@ -135,7 +135,7 @@ func CreateMessage(groupId uint64, userId uint64, threadId uint64, message strin
 	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -147,10 +147,10 @@ func CreateMessage(groupId uint64, userId uint64, threadId uint64, message strin
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }
@@ -164,7 +164,7 @@ func GetThread(forumId uint64, groupId uint64, userId uint64, threadId uint64) (
 	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -176,7 +176,7 @@ func GetThread(forumId uint64, groupId uint64, userId uint64, threadId uint64) (
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 
 	creatorId := response.UserId
@@ -201,7 +201,7 @@ func GetCommentThreadId(objectId uint64, groupId uint64, userId uint64, elemTitl
 	}
 	if len(contents) == 0 {
 		common.LogOriginalError(fmt.Errorf("no comment thread found : %d, %s", objectId, elemTitle))
-		return 0, common.ErrorTechnical
+		return 0, common.ErrTechnical
 	}
 	return contents[0].Id, nil
 }
@@ -236,7 +236,7 @@ func searchContent(groupId uint64, userId uint64, kind contentRequestKind, searc
 	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -246,7 +246,7 @@ func searchContent(groupId uint64, userId uint64, kind contentRequestKind, searc
 	response, err := kind(pb.NewForumClient(conn), ctx, search)
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	list := response.List
 	if len(list) == 0 {
@@ -272,7 +272,7 @@ func deleteContent(groupId uint64, userId uint64, kind deleteRequestKind, reques
 	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -282,10 +282,10 @@ func deleteContent(groupId uint64, userId uint64, kind deleteRequestKind, reques
 	response, err := kind(pb.NewForumClient(conn), ctx, request)
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }

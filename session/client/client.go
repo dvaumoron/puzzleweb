@@ -19,7 +19,6 @@ package client
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	pb "github.com/dvaumoron/puzzlesessionservice"
@@ -33,7 +32,7 @@ func Generate() (uint64, error) {
 	conn, err := grpc.Dial(config.SessionServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return 0, common.ErrorTechnical
+		return 0, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -45,7 +44,7 @@ func Generate() (uint64, error) {
 	)
 	if err != nil {
 		common.LogOriginalError(err)
-		return 0, common.ErrorTechnical
+		return 0, common.ErrTechnical
 	}
 	return response.Id, nil
 }
@@ -62,7 +61,7 @@ func get(addr string, id uint64) (map[string]string, error) {
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 
 	}
 	defer conn.Close()
@@ -75,7 +74,7 @@ func get(addr string, id uint64) (map[string]string, error) {
 	)
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 
 	}
 	return response.Info, nil
@@ -93,7 +92,7 @@ func update(addr string, id uint64, info map[string]string) error {
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -101,14 +100,13 @@ func update(addr string, id uint64, info map[string]string) error {
 	defer cancel()
 
 	client := pb.NewSessionClient(conn)
-	strErr, err := client.UpdateSessionInfo(ctx, &pb.SessionUpdate{Id: id, Info: info})
+	response, err := client.UpdateSessionInfo(ctx, &pb.SessionUpdate{Id: id, Info: info})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
-	if strErr.Err != "" {
-		common.LogOriginalError(errors.New(strErr.Err))
-		return common.ErrorUpdate
+	if !response.Success {
+		return common.ErrUpdate
 	}
 	return nil
 }

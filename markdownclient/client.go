@@ -33,7 +33,7 @@ func Apply(text string) (template.HTML, error) {
 	conn, err := grpc.Dial(config.MarkdownServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return "", common.ErrorTechnical
+		return "", common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -43,7 +43,7 @@ func Apply(text string) (template.HTML, error) {
 	markdownHtml, err := pb.NewMarkdownClient(conn).Apply(ctx, &pb.MarkdownText{Text: text})
 	if err != nil {
 		common.LogOriginalError(err)
-		return "", common.ErrorTechnical
+		return "", common.ErrTechnical
 	}
 	return template.HTML(markdownHtml.Html), nil
 }

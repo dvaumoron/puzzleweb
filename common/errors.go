@@ -34,9 +34,9 @@ const WrongLangKey = "wrong.lang"
 const NoElementKey = "no.element"
 
 // error displayed to user
-var ErrorNotAuthorized = errors.New("error.not.authorized")
-var ErrorTechnical = errors.New("error.technical.problem")
-var ErrorUpdate = errors.New("error.update")
+var ErrNotAuthorized = errors.New("error.not.authorized")
+var ErrTechnical = errors.New("error.technical.problem")
+var ErrUpdate = errors.New("error.update")
 
 func LogOriginalError(err error) {
 	log.Logger.Warn("Original error.", zap.Error(err))

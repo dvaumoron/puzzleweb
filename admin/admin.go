@@ -112,7 +112,7 @@ var saveUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 	userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
 	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		err = common.ErrTechnical
 	} else {
 		rolesStr := c.PostFormArray("roles")
 		roles := make([]*client.Role, 0, len(rolesStr))
@@ -141,7 +141,7 @@ var deleteUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 	userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
 	if err != nil {
 		common.LogOriginalError(err)
-		err = common.ErrorTechnical
+		err = common.ErrTechnical
 	} else {
 		// an empty slice delete the user right
 		// only the first service call do a right check
@@ -304,7 +304,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
 			if err != nil {
 				common.LogOriginalError(err)
-				return "", common.DefaultErrorRedirect(common.ErrorTechnical.Error(), c)
+				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error(), c)
 			}
 
 			roles, err := client.GetUserRoles(adminId, userId)
@@ -331,7 +331,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			userId, err := strconv.ParseUint(c.Param(common.UserIdName), 10, 64)
 			if err != nil {
 				common.LogOriginalError(err)
-				return "", common.DefaultErrorRedirect(common.ErrorTechnical.Error(), c)
+				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error(), c)
 			}
 
 			allRoles, err := client.GetAllRoles(adminId)

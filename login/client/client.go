@@ -20,7 +20,7 @@ package client
 import (
 	"context"
 	"crypto/sha512"
-	"encoding/hex"
+	"encoding/base64"
 	"time"
 
 	pb "github.com/dvaumoron/puzzleloginservice"
@@ -40,14 +40,14 @@ func salt(password string) string {
 	// TODO improve the security
 	sha512Hasher := sha512.New()
 	sha512Hasher.Write([]byte(password))
-	return hex.EncodeToString(sha512Hasher.Sum(nil))
+	return base64.StdEncoding.EncodeToString(sha512Hasher.Sum(nil))
 }
 
 func VerifyOrRegister(login string, password string, register bool) (bool, uint64, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return false, 0, common.ErrorTechnical
+		return false, 0, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -65,7 +65,7 @@ func VerifyOrRegister(login string, password string, register bool) (bool, uint6
 
 	if err != nil {
 		common.LogOriginalError(err)
-		return false, 0, common.ErrorTechnical
+		return false, 0, common.ErrTechnical
 	}
 	return response.Success, response.Id, nil
 }
@@ -75,7 +75,7 @@ func GetUsers(userIds []uint64) (map[uint64]User, error) {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -85,7 +85,7 @@ func GetUsers(userIds []uint64) (map[uint64]User, error) {
 	response, err := pb.NewLoginClient(conn).GetUsers(ctx, &pb.UserIds{Ids: userIds})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 
 	logins := map[uint64]User{}
@@ -99,7 +99,7 @@ func ChangeLogin(userId uint64, newLogin string, password string) error {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -111,10 +111,10 @@ func ChangeLogin(userId uint64, newLogin string, password string) error {
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }
@@ -123,7 +123,7 @@ func ChangePassword(userId uint64, oldPassword string, newPassword string) error
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -135,10 +135,10 @@ func ChangePassword(userId uint64, oldPassword string, newPassword string) error
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }
@@ -147,7 +147,7 @@ func ListUsers(start uint64, end uint64, filter string) (uint64, []User, error) 
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return 0, nil, common.ErrorTechnical
+		return 0, nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -159,7 +159,7 @@ func ListUsers(start uint64, end uint64, filter string) (uint64, []User, error) 
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return 0, nil, common.ErrorTechnical
+		return 0, nil, common.ErrTechnical
 	}
 
 	list := response.List
@@ -175,7 +175,7 @@ func DeleteUser(userId uint64) error {
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -185,10 +185,10 @@ func DeleteUser(userId uint64) error {
 	response, err := pb.NewLoginClient(conn).Delete(ctx, &pb.UserId{Id: userId})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 	return nil
 }

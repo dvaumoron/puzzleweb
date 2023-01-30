@@ -68,7 +68,7 @@ func StoreContent(wikiId uint64, groupId uint64, userId uint64, lang string, tit
 	version, err := strconv.ParseUint(last, 10, 64)
 	if err != nil {
 		log.Logger.Warn("Failed to parse wiki last version.", zap.Error(err))
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	return storeContent(wikiId, userId, buildRef(lang, title), version, markdown)
 }
@@ -90,7 +90,7 @@ func DeleteContent(wikiId uint64, groupId uint64, userId uint64, lang string, ti
 	version, err := strconv.ParseUint(versionStr, 10, 64)
 	if err != nil {
 		log.Logger.Warn("Failed to parse wiki version to delete.", zap.Error(err))
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	return deleteContent(wikiId, buildRef(lang, title), version)
 }
@@ -107,7 +107,7 @@ func loadContent(wikiId uint64, wikiRef string, version uint64) (*cache.WikiCont
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -124,7 +124,7 @@ func loadContent(wikiId uint64, wikiRef string, version uint64) (*cache.WikiCont
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 
 	if lastVersion := maxVersion(versions.List); lastVersion != nil {
@@ -142,7 +142,7 @@ func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, 
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	version := response.Version
 	if version == 0 { // no stored wiki page
@@ -160,7 +160,7 @@ func storeContent(wikiId uint64, userId uint64, wikiRef string, last uint64, mar
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -172,10 +172,10 @@ func storeContent(wikiId uint64, userId uint64, wikiRef string, last uint64, mar
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 
 	cache.Store(wikiId, wikiRef, &cache.WikiContent{
@@ -188,7 +188,7 @@ func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -200,7 +200,7 @@ func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrorTechnical
+		return nil, common.ErrTechnical
 	}
 	list := response.List
 	if len(list) == 0 {
@@ -213,7 +213,7 @@ func deleteContent(wikiId uint64, wikiRef string, version uint64) error {
 	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -225,10 +225,10 @@ func deleteContent(wikiId uint64, wikiRef string, version uint64) error {
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrorTechnical
+		return common.ErrTechnical
 	}
 	if !response.Success {
-		return common.ErrorUpdate
+		return common.ErrUpdate
 	}
 
 	content := cache.Load(wikiId, wikiRef)

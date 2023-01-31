@@ -42,6 +42,7 @@ var LocalesPath string
 var TemplatesPath string
 
 var SessionServiceAddr string
+var SaltServiceAddr string
 var LoginServiceAddr string
 var RightServiceAddr string
 var ProfileServiceAddr string
@@ -100,6 +101,7 @@ func init() {
 	TemplatesPath = retrievePath("TEMPLATES_PATH", "templates")
 
 	SessionServiceAddr = requiredFromEnv("SESSION_SERVICE_ADDR")
+	SaltServiceAddr = requiredFromEnv("SALT_SERVICE_ADDR")
 	LoginServiceAddr = requiredFromEnv("LOGIN_SERVICE_ADDR")
 	RightServiceAddr = requiredFromEnv("RIGHT_SERVICE_ADDR")
 	ProfileServiceAddr = requiredFromEnv("PROFILE_SERVICE_ADDR")

@@ -19,11 +19,10 @@ package client
 
 import (
 	"context"
-	"crypto/sha512"
-	"encoding/base64"
 	"time"
 
 	pb "github.com/dvaumoron/puzzleloginservice"
+	saltclient "github.com/dvaumoron/puzzlesaltclient"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"google.golang.org/grpc"
@@ -36,14 +35,13 @@ type User struct {
 	RegistredAt string
 }
 
-func salt(password string) string {
-	// TODO improve the security
-	sha512Hasher := sha512.New()
-	sha512Hasher.Write([]byte(password))
-	return base64.StdEncoding.EncodeToString(sha512Hasher.Sum(nil))
-}
-
 func VerifyOrRegister(login string, password string, register bool) (bool, uint64, error) {
+	salted, err := saltclient.Make(config.SaltServiceAddr).Salt(login, password)
+	if err != nil {
+		common.LogOriginalError(err)
+		return false, 0, common.ErrTechnical
+	}
+
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
@@ -55,7 +53,7 @@ func VerifyOrRegister(login string, password string, register bool) (bool, uint6
 	defer cancel()
 
 	client := pb.NewLoginClient(conn)
-	request := &pb.LoginRequest{Login: login, Salted: salt(password)}
+	request := &pb.LoginRequest{Login: login, Salted: salted}
 	var response *pb.Response
 	if register {
 		response, err = client.Register(ctx, request)
@@ -95,7 +93,20 @@ func GetUsers(userIds []uint64) (map[uint64]User, error) {
 	return logins, nil
 }
 
-func ChangeLogin(userId uint64, newLogin string, password string) error {
+func ChangeLogin(userId uint64, oldLogin string, newLogin string, password string) error {
+	salter := saltclient.Make(config.SaltServiceAddr)
+	oldSalted, err := salter.Salt(oldLogin, password)
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrTechnical
+	}
+
+	newSalted, err := salter.Salt(newLogin, password)
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrTechnical
+	}
+
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
@@ -106,8 +117,8 @@ func ChangeLogin(userId uint64, newLogin string, password string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	response, err := pb.NewLoginClient(conn).ChangeLogin(ctx, &pb.ChangeLoginRequest{
-		UserId: userId, NewLogin: newLogin, Salted: salt(password),
+	response, err := pb.NewLoginClient(conn).ChangeLogin(ctx, &pb.ChangeRequest{
+		UserId: userId, NewLogin: newLogin, OldSalted: oldSalted, NewSalted: newSalted,
 	})
 	if err != nil {
 		common.LogOriginalError(err)
@@ -119,7 +130,20 @@ func ChangeLogin(userId uint64, newLogin string, password string) error {
 	return nil
 }
 
-func ChangePassword(userId uint64, oldPassword string, newPassword string) error {
+func ChangePassword(userId uint64, login string, oldPassword string, newPassword string) error {
+	salter := saltclient.Make(config.SaltServiceAddr)
+	oldSalted, err := salter.Salt(login, oldPassword)
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrTechnical
+	}
+
+	newSalted, err := salter.Salt(login, newPassword)
+	if err != nil {
+		common.LogOriginalError(err)
+		return common.ErrTechnical
+	}
+
 	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
@@ -130,8 +154,8 @@ func ChangePassword(userId uint64, oldPassword string, newPassword string) error
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	response, err := pb.NewLoginClient(conn).ChangePassword(ctx, &pb.ChangePasswordRequest{
-		UserId: userId, OldSalted: salt(oldPassword), NewSalted: salt(newPassword),
+	response, err := pb.NewLoginClient(conn).ChangePassword(ctx, &pb.ChangeRequest{
+		UserId: userId, OldSalted: oldSalted, NewSalted: newSalted,
 	})
 	if err != nil {
 		common.LogOriginalError(err)

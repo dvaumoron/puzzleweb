@@ -185,6 +185,7 @@ func retrievePath(name string, defaultValue string) string {
 	if value := os.Getenv(name); value != "" {
 		return checkPath(value)
 	}
+	fmt.Println(name, "not found, using default :", defaultValue)
 	return defaultValue
 }
 

@@ -58,8 +58,8 @@ func init() {
 		os.Exit(1)
 	}
 
-	retrieveWithDefault("SITE_DOMAIN", &Domain, "localhost")
-	retrieveWithDefault("SITE_PORT", &Port, "8080")
+	Domain = retrieveWithDefault("SITE_DOMAIN", "localhost")
+	Port = retrieveWithDefault("SITE_PORT", "8080")
 
 	fileLogConfigPath := os.Getenv("LOG_CONFIG_PATH")
 	if fileLogConfigPath != "" {
@@ -93,35 +93,35 @@ func init() {
 		}
 	}
 
-	retrieveWithDefault("DATE_FORMAT", &DateFormat, "2/1/2006 15:04:05")
+	DateFormat = retrieveWithDefault("DATE_FORMAT", "2/1/2006 15:04:05")
 
-	retrievePath("STATIC_PATH", &StaticPath, "static")
-	retrievePath("LOCALES_PATH", &LocalesPath, "locales")
-	retrievePath("TEMPLATES_PATH", &TemplatesPath, "templates")
+	StaticPath = retrievePath("STATIC_PATH", "static")
+	LocalesPath = retrievePath("LOCALES_PATH", "locales")
+	TemplatesPath = retrievePath("TEMPLATES_PATH", "templates")
 
-	requiredFromEnv("SESSION_SERVICE_ADDR", &SessionServiceAddr)
-	requiredFromEnv("LOGIN_SERVICE_ADDR", &LoginServiceAddr)
-	requiredFromEnv("RIGHT_SERVICE_ADDR", &RightServiceAddr)
-	requiredFromEnv("PROFILE_SERVICE_ADDR", &ProfileServiceAddr)
-	requiredFromEnv("SETTINGS_SERVICE_ADDR", &SettingsServiceAddr)
-	requiredFromEnv("WIKI_SERVICE_ADDR", &WikiServiceAddr)
-	requiredFromEnv("MARKDOWN_SERVICE_ADDR", &MarkdownServiceAddr)
-	requiredFromEnv("FORUM_SERVICE_ADDR", &ForumServiceAddr)
-	requiredFromEnv("BLOG_SERVICE_ADDR", &BlogServiceAddr)
+	SessionServiceAddr = requiredFromEnv("SESSION_SERVICE_ADDR")
+	LoginServiceAddr = requiredFromEnv("LOGIN_SERVICE_ADDR")
+	RightServiceAddr = requiredFromEnv("RIGHT_SERVICE_ADDR")
+	ProfileServiceAddr = requiredFromEnv("PROFILE_SERVICE_ADDR")
+	SettingsServiceAddr = requiredFromEnv("SETTINGS_SERVICE_ADDR")
+	WikiServiceAddr = requiredFromEnv("WIKI_SERVICE_ADDR")
+	MarkdownServiceAddr = requiredFromEnv("MARKDOWN_SERVICE_ADDR")
+	ForumServiceAddr = requiredFromEnv("FORUM_SERVICE_ADDR")
+	BlogServiceAddr = requiredFromEnv("BLOG_SERVICE_ADDR")
 }
 
-func retrieveWithDefault(name string, pValue *string, defaultValue string) {
-	if *pValue = os.Getenv(name); *pValue == "" {
-		*pValue = defaultValue
+func retrieveWithDefault(name string, defaultValue string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
 	}
+	return defaultValue
 }
 
-func retrievePath(name string, pValue *string, defaultValue string) {
-	if *pValue = os.Getenv(name); *pValue == "" {
-		*pValue = defaultValue
-	} else {
-		*pValue = checkPath(*pValue)
+func retrievePath(name string, defaultValue string) string {
+	if value := os.Getenv(name); value != "" {
+		return checkPath(value)
 	}
+	return defaultValue
 }
 
 func checkPath(path string) string {
@@ -131,10 +131,11 @@ func checkPath(path string) string {
 	return path
 }
 
-func requiredFromEnv(name string, pValue *string) {
-	*pValue = os.Getenv(name)
-	if *pValue == "" {
+func requiredFromEnv(name string) string {
+	value := os.Getenv(name)
+	if value == "" {
 		fmt.Println(name, "not found in env")
 		os.Exit(1)
 	}
+	return value
 }

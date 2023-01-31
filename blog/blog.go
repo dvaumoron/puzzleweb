@@ -19,6 +19,7 @@ package blog
 
 import (
 	"github.com/dvaumoron/puzzleweb"
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,6 +44,8 @@ func (w *blogWidget) LoadInto(router gin.IRouter) {
 }
 
 func NewBlogPage(blogName string, groupId uint64, blogId uint64, args ...string) *puzzleweb.Page {
+	config.Shared.LoadBlog()
+
 	// TODO
 	p := puzzleweb.NewPage(blogName)
 	p.Widget = &blogWidget{}

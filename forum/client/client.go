@@ -62,7 +62,7 @@ func CreateThread(forumId uint64, groupId uint64, userId uint64, title string, m
 		return err
 	}
 
-	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -103,7 +103,7 @@ func CreateCommentThread(objectId uint64, groupId uint64, userId uint64, elemTit
 		return err
 	}
 
-	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -132,7 +132,7 @@ func CreateMessage(groupId uint64, userId uint64, threadId uint64, message strin
 		return err
 	}
 
-	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -161,7 +161,7 @@ func GetThread(forumId uint64, groupId uint64, userId uint64, threadId uint64) (
 		return nil, err
 	}
 
-	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -233,7 +233,7 @@ func searchContent(groupId uint64, userId uint64, kind contentRequestKind, searc
 		return nil, err
 	}
 
-	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -269,7 +269,7 @@ func deleteContent(groupId uint64, userId uint64, kind deleteRequestKind, reques
 		return err
 	}
 
-	conn, err := grpc.Dial(config.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -324,6 +324,6 @@ func convertContent(content *pb.Content, creator profileclient.Profile) *ForumCo
 	createdAt := time.Unix(content.CreatedAt, 0)
 	return &ForumContent{
 		Id: content.Id, Creator: creator,
-		Date: createdAt.Format(config.DateFormat), Text: content.Text,
+		Date: createdAt.Format(config.Shared.DateFormat), Text: content.Text,
 	}
 }

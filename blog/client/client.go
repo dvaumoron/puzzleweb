@@ -60,7 +60,7 @@ func CreatePost(blogId uint64, groupId uint64, userId uint64, title string, cont
 		return err
 	}
 
-	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -89,7 +89,7 @@ func GetPost(blogId uint64, groupId uint64, userId uint64, postId uint64) (*Blog
 		return nil, err
 	}
 
-	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -121,7 +121,7 @@ func GetPosts(blogId uint64, groupId uint64, userId uint64, start uint64, end ui
 		return nil, err
 	}
 
-	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -151,7 +151,7 @@ func DeletePost(blogId uint64, groupId uint64, userId uint64, postId uint64) err
 		return err
 	}
 
-	conn, err := grpc.Dial(config.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -199,7 +199,7 @@ func sortConvertPosts(list []*pb.Content) ([]*BlogPost, error) {
 func convertPost(post *pb.Content, creator profileclient.Profile) *BlogPost {
 	createdAt := time.Unix(post.CreatedAt, 0)
 	return &BlogPost{
-		PostId: post.PostId, Creator: creator, Date: createdAt.Format(config.DateFormat),
+		PostId: post.PostId, Creator: creator, Date: createdAt.Format(config.Shared.DateFormat),
 		Title: post.Title, content: template.HTML(post.Text),
 	}
 }

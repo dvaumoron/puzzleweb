@@ -30,7 +30,7 @@ import (
 )
 
 func Apply(text string) (template.HTML, error) {
-	conn, err := grpc.Dial(config.MarkdownServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.MarkdownServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return "", common.ErrTechnical

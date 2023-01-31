@@ -19,6 +19,7 @@ package profile
 
 import (
 	"github.com/dvaumoron/puzzleweb"
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,6 +38,8 @@ func (w *profileWidget) LoadInto(router gin.IRouter) {
 }
 
 func AddProfilePage(site *puzzleweb.Site, args ...string) {
+	config.Shared.LoadProfile()
+
 	// TODO
 	p := puzzleweb.NewHiddenPage("profile")
 	p.Widget = &profileWidget{}

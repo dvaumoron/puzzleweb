@@ -56,7 +56,7 @@ func NewSite(args ...string) *Site {
 
 	engine := gin.Default()
 
-	engine.Static("/static", config.StaticPath)
+	engine.Static("/static", config.Shared.StaticPath)
 	engine.GET("/profilePic", profilePicHandler)
 
 	site := &Site{
@@ -95,7 +95,7 @@ func (site *Site) initEngine() *gin.Engine {
 		if faviconPath == "" {
 			faviconPath = favicon
 		}
-		engine.StaticFile(favicon, config.StaticPath+faviconPath)
+		engine.StaticFile(favicon, config.Shared.StaticPath+faviconPath)
 		site.root.Widget.LoadInto(engine)
 		if len(locale.AllLang) != 1 {
 			engine.GET("/changeLang", common.CreateRedirect(func(c *gin.Context) string {
@@ -111,7 +111,7 @@ func (site *Site) initEngine() *gin.Engine {
 
 func (site *Site) Run() error {
 	locale.InitMessages()
-	return site.initEngine().Run(checkPort(config.Port))
+	return site.initEngine().Run(checkPort(config.Shared.Port))
 }
 
 type SiteConfig struct {

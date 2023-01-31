@@ -23,6 +23,7 @@ import (
 
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/login/client"
@@ -93,6 +94,8 @@ func loginData(data gin.H, c *gin.Context) {
 }
 
 func AddLoginPage(site *puzzleweb.Site, args ...string) {
+	config.Shared.LoadLogin()
+
 	size := len(args)
 	tmpl := "login.html"
 	if size != 0 && args[0] != "" {

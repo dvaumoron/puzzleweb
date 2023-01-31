@@ -38,7 +38,7 @@ type Profile struct {
 }
 
 func UpdateProfile(userId uint64, desc string, info map[string]string) error {
-	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -62,7 +62,7 @@ func UpdateProfile(userId uint64, desc string, info map[string]string) error {
 }
 
 func UpdatePicture(userId uint64, data []byte) error {
-	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -86,7 +86,7 @@ func UpdatePicture(userId uint64, data []byte) error {
 }
 
 func GetPicture(userId uint64) ([]byte, error) {
-	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -105,7 +105,7 @@ func GetPicture(userId uint64) ([]byte, error) {
 }
 
 func GetProfiles(userIds []uint64) (map[uint64]Profile, error) {
-	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -145,7 +145,7 @@ func GetProfiles(userIds []uint64) (map[uint64]Profile, error) {
 
 // no right check
 func Delete(userId uint64) error {
-	conn, err := grpc.Dial(config.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical

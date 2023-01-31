@@ -23,6 +23,7 @@ import (
 
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/session"
@@ -59,6 +60,7 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 }
 
 func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string) *puzzleweb.Page {
+	config.Shared.LoadWiki()
 	cache.InitWiki(wikiId)
 
 	defaultPage := "Welcome"

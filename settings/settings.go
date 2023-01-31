@@ -19,6 +19,7 @@ package settings
 
 import (
 	"github.com/dvaumoron/puzzleweb"
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 )
 
@@ -35,6 +36,8 @@ func (w *settingsWidget) LoadInto(router gin.IRouter) {
 }
 
 func AddSettingsPage(site *puzzleweb.Site, args ...string) {
+	config.Shared.LoadSettings()
+
 	// TODO
 	p := puzzleweb.NewHiddenPage("settings")
 	p.Widget = &settingsWidget{}

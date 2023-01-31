@@ -71,7 +71,7 @@ func InitMessages() {
 		messages[lang] = messagesLang
 
 		var pathBuilder strings.Builder
-		pathBuilder.WriteString(config.LocalesPath)
+		pathBuilder.WriteString(config.Shared.LocalesPath)
 		pathBuilder.WriteString("/message_")
 		pathBuilder.WriteString(lang)
 		pathBuilder.WriteString(".property")
@@ -151,8 +151,8 @@ func CheckLang(lang string) string {
 
 func setLangCookie(c *gin.Context, lang string) string {
 	c.SetCookie(
-		LangName, lang, config.SessionTimeOut,
-		"/", config.Domain, false, false,
+		LangName, lang, config.Shared.SessionTimeOut,
+		"/", config.Shared.Domain, false, false,
 	)
 	return lang
 }

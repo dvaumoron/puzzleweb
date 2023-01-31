@@ -29,7 +29,7 @@ import (
 )
 
 func Generate() (uint64, error) {
-	conn, err := grpc.Dial(config.SessionServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.SessionServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return 0, common.ErrTechnical
@@ -50,11 +50,11 @@ func Generate() (uint64, error) {
 }
 
 func GetSession(id uint64) (map[string]string, error) {
-	return get(config.SessionServiceAddr, id)
+	return get(config.Shared.SessionServiceAddr, id)
 }
 
 func GetSettings(id uint64) (map[string]string, error) {
-	return get(config.SettingsServiceAddr, id)
+	return get(config.Shared.SettingsServiceAddr, id)
 }
 
 func get(addr string, id uint64) (map[string]string, error) {
@@ -81,11 +81,11 @@ func get(addr string, id uint64) (map[string]string, error) {
 }
 
 func UpdateSession(id uint64, session map[string]string) error {
-	return update(config.SessionServiceAddr, id, session)
+	return update(config.Shared.SessionServiceAddr, id, session)
 }
 
 func UpdateSettings(id uint64, settings map[string]string) error {
-	return update(config.SettingsServiceAddr, id, settings)
+	return update(config.Shared.SettingsServiceAddr, id, settings)
 }
 
 func update(addr string, id uint64, info map[string]string) error {

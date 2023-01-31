@@ -19,6 +19,7 @@ package forum
 
 import (
 	"github.com/dvaumoron/puzzleweb"
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,6 +44,8 @@ func (w *forumWidget) LoadInto(router gin.IRouter) {
 }
 
 func NewForumPage(forumName string, groupId uint64, forumId uint64, args ...string) *puzzleweb.Page {
+	config.Shared.LoadForum()
+
 	// TODO
 	p := puzzleweb.NewPage(forumName)
 	p.Widget = &forumWidget{}

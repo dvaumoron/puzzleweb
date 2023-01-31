@@ -75,7 +75,7 @@ func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
 		return nil
 	}
 
-	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -107,7 +107,7 @@ func GetAllRoles(adminId uint64) ([]*Role, error) {
 }
 
 func GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAction, error) {
-	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -140,7 +140,7 @@ func GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAc
 }
 
 func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
-	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -183,7 +183,7 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 }
 
 func UpdateRole(adminId uint64, role *Role) error {
-	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -220,7 +220,7 @@ func UpdateRole(adminId uint64, role *Role) error {
 }
 
 func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
-	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -249,7 +249,7 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 }
 
 func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
-	conn, err := grpc.Dial(config.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical

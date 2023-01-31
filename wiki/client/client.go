@@ -104,7 +104,7 @@ func buildRef(lang string, title string) string {
 }
 
 func loadContent(wikiId uint64, wikiRef string, version uint64) (*cache.WikiContent, error) {
-	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -157,7 +157,7 @@ func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, 
 }
 
 func storeContent(wikiId uint64, userId uint64, wikiRef string, last uint64, markdown string) error {
-	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -185,7 +185,7 @@ func storeContent(wikiId uint64, userId uint64, wikiRef string, last uint64, mar
 }
 
 func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {
-	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -210,7 +210,7 @@ func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {
 }
 
 func deleteContent(wikiId uint64, wikiRef string, version uint64) error {
-	conn, err := grpc.Dial(config.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical

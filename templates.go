@@ -48,8 +48,8 @@ func (r puzzleHTMLRender) Instance(name string, data any) render.Render {
 func loadTemplates() render.HTMLRender {
 	if templatesRender == nil {
 		tmpl := template.New("")
-		inSize := len(config.TemplatesPath) + 1
-		err := filepath.WalkDir(config.TemplatesPath+"/", func(path string, d fs.DirEntry, err error) error {
+		inSize := len(config.Shared.TemplatesPath) + 1
+		err := filepath.WalkDir(config.Shared.TemplatesPath+"/", func(path string, d fs.DirEntry, err error) error {
 			if err == nil && !d.IsDir() {
 				name := path[inSize:]
 				if name[len(name)-5:] == ".html" {

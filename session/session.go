@@ -50,8 +50,8 @@ func generateSessionCookie(c *gin.Context) (uint64, error) {
 	sessionId, err := client.Generate()
 	if err == nil {
 		c.SetCookie(
-			cookieName, fmt.Sprint(sessionId), config.SessionTimeOut,
-			"/", config.Domain, true, true,
+			cookieName, fmt.Sprint(sessionId), config.Shared.SessionTimeOut,
+			"/", config.Shared.Domain, true, true,
 		)
 	}
 	return sessionId, err

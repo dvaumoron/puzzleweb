@@ -28,88 +28,150 @@ import (
 const defaultSessionTimeOut = 1200
 const defaultPageSize = 50
 
-var Domain string
-var Port string
+var Shared = loadDefault()
 
-var LogConfig []byte
+type Config struct {
+	Domain string
+	Port   string
 
-var SessionTimeOut int
-var PageSize uint64
-var DateFormat string
+	LogConfig []byte
 
-var StaticPath string
-var LocalesPath string
-var TemplatesPath string
+	SessionTimeOut int
+	PageSize       uint64
+	DateFormat     string
 
-var SessionServiceAddr string
-var SaltServiceAddr string
-var LoginServiceAddr string
-var RightServiceAddr string
-var ProfileServiceAddr string
-var SettingsServiceAddr string
-var WikiServiceAddr string
-var MarkdownServiceAddr string
-var ForumServiceAddr string
-var BlogServiceAddr string
+	StaticPath    string
+	LocalesPath   string
+	TemplatesPath string
 
-func init() {
-	err := godotenv.Load()
-	if err != nil {
+	SessionServiceAddr  string
+	SaltServiceAddr     string
+	LoginServiceAddr    string
+	RightServiceAddr    string
+	ProfileServiceAddr  string
+	SettingsServiceAddr string
+	WikiServiceAddr     string
+	MarkdownServiceAddr string
+	ForumServiceAddr    string
+	BlogServiceAddr     string
+}
+
+func loadDefault() Config {
+	if godotenv.Load() != nil {
 		fmt.Println("Failed to load .env file")
 		os.Exit(1)
 	}
 
-	Domain = retrieveWithDefault("SITE_DOMAIN", "localhost")
-	Port = retrieveWithDefault("SITE_PORT", "8080")
+	var err error
+	var logConfig []byte
+	var sessionTimeOut int
+	var pageSize uint64
+
+	domain := retrieveWithDefault("SITE_DOMAIN", "localhost")
+	port := retrieveWithDefault("SITE_PORT", "8080")
 
 	fileLogConfigPath := os.Getenv("LOG_CONFIG_PATH")
 	if fileLogConfigPath != "" {
-		var err error
-		LogConfig, err = os.ReadFile(fileLogConfigPath)
+		logConfig, err = os.ReadFile(fileLogConfigPath)
 		if err != nil {
 			fmt.Println("Failed to read logging config file :", err)
-			LogConfig = nil
+			logConfig = nil
 		}
 	}
 
 	sessionTimeOutStr := os.Getenv("SESSION_TIME_OUT")
 	if sessionTimeOutStr == "" {
-		SessionTimeOut = defaultSessionTimeOut
+		sessionTimeOut = defaultSessionTimeOut
 	} else {
-		SessionTimeOut, _ = strconv.Atoi(sessionTimeOutStr)
-		if SessionTimeOut == 0 {
+		sessionTimeOut, _ = strconv.Atoi(sessionTimeOutStr)
+		if sessionTimeOut == 0 {
 			fmt.Println("Failed to parse SESSION_TIME_OUT, using default")
-			SessionTimeOut = defaultSessionTimeOut
+			sessionTimeOut = defaultSessionTimeOut
 		}
 	}
 
 	pageSizeStr := os.Getenv("PAGE_SIZE")
 	if pageSizeStr == "" {
-		PageSize = defaultPageSize
+		pageSize = defaultPageSize
 	} else {
-		PageSize, _ = strconv.ParseUint(pageSizeStr, 10, 64)
-		if PageSize == 0 {
+		pageSize, _ = strconv.ParseUint(pageSizeStr, 10, 64)
+		if pageSize == 0 {
 			fmt.Println("Failed to parse PAGE_SIZE, using default")
-			PageSize = defaultPageSize
+			pageSize = defaultPageSize
 		}
 	}
 
-	DateFormat = retrieveWithDefault("DATE_FORMAT", "2/1/2006 15:04:05")
+	dateFormat := retrieveWithDefault("DATE_FORMAT", "2/1/2006 15:04:05")
 
-	StaticPath = retrievePath("STATIC_PATH", "static")
-	LocalesPath = retrievePath("LOCALES_PATH", "locales")
-	TemplatesPath = retrievePath("TEMPLATES_PATH", "templates")
+	return Config{
+		Domain: domain, Port: port, LogConfig: logConfig, SessionTimeOut: sessionTimeOut,
+		PageSize: pageSize, DateFormat: dateFormat,
 
-	SessionServiceAddr = requiredFromEnv("SESSION_SERVICE_ADDR")
-	SaltServiceAddr = requiredFromEnv("SALT_SERVICE_ADDR")
-	LoginServiceAddr = requiredFromEnv("LOGIN_SERVICE_ADDR")
-	RightServiceAddr = requiredFromEnv("RIGHT_SERVICE_ADDR")
-	ProfileServiceAddr = requiredFromEnv("PROFILE_SERVICE_ADDR")
-	SettingsServiceAddr = requiredFromEnv("SETTINGS_SERVICE_ADDR")
-	WikiServiceAddr = requiredFromEnv("WIKI_SERVICE_ADDR")
-	MarkdownServiceAddr = requiredFromEnv("MARKDOWN_SERVICE_ADDR")
-	ForumServiceAddr = requiredFromEnv("FORUM_SERVICE_ADDR")
-	BlogServiceAddr = requiredFromEnv("BLOG_SERVICE_ADDR")
+		StaticPath:    retrievePath("STATIC_PATH", "static"),
+		LocalesPath:   retrievePath("LOCALES_PATH", "locales"),
+		TemplatesPath: retrievePath("TEMPLATES_PATH", "templates"),
+
+		SessionServiceAddr: requiredFromEnv("SESSION_SERVICE_ADDR"),
+	}
+}
+
+func (c *Config) LoadLogin() {
+	if c.SaltServiceAddr == "" {
+		c.SaltServiceAddr = requiredFromEnv("SALT_SERVICE_ADDR")
+		c.LoginServiceAddr = requiredFromEnv("LOGIN_SERVICE_ADDR")
+	}
+}
+
+func (c *Config) LoadRight() {
+	if c.RightServiceAddr == "" {
+		c.LoadLogin()
+		c.RightServiceAddr = requiredFromEnv("RIGHT_SERVICE_ADDR")
+	}
+}
+
+func (c *Config) LoadProfile() {
+	if c.ProfileServiceAddr == "" {
+		c.LoadLogin()
+		c.ProfileServiceAddr = requiredFromEnv("PROFILE_SERVICE_ADDR")
+	}
+}
+
+func (c *Config) LoadSettings() {
+	if c.SettingsServiceAddr == "" {
+		c.LoadLogin()
+		c.SettingsServiceAddr = requiredFromEnv("SETTINGS_SERVICE_ADDR")
+	}
+}
+
+func (c *Config) loadMarkdown() {
+	if c.MarkdownServiceAddr == "" {
+		c.MarkdownServiceAddr = requiredFromEnv("MARKDOWN_SERVICE_ADDR")
+	}
+}
+
+func (c *Config) LoadWiki() {
+	if c.WikiServiceAddr == "" {
+		c.LoadRight()
+		c.LoadProfile()
+		c.loadMarkdown()
+		c.WikiServiceAddr = requiredFromEnv("WIKI_SERVICE_ADDR")
+	}
+}
+
+func (c *Config) LoadForum() {
+	if c.ForumServiceAddr == "" {
+		c.LoadRight()
+		c.LoadProfile()
+		c.ForumServiceAddr = requiredFromEnv("FORUM_SERVICE_ADDR")
+	}
+}
+
+func (c *Config) LoadBlog() {
+	if c.BlogServiceAddr == "" {
+		c.LoadForum()
+		c.loadMarkdown()
+		c.BlogServiceAddr = requiredFromEnv("BLOG_SERVICE_ADDR")
+	}
 }
 
 func retrieveWithDefault(name string, defaultValue string) string {

@@ -36,13 +36,13 @@ type User struct {
 }
 
 func VerifyOrRegister(login string, password string, register bool) (bool, uint64, error) {
-	salted, err := saltclient.Make(config.SaltServiceAddr).Salt(login, password)
+	salted, err := saltclient.Make(config.Shared.SaltServiceAddr).Salt(login, password)
 	if err != nil {
 		common.LogOriginalError(err)
 		return false, 0, common.ErrTechnical
 	}
 
-	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return false, 0, common.ErrTechnical
@@ -70,7 +70,7 @@ func VerifyOrRegister(login string, password string, register bool) (bool, uint6
 
 // You should remove duplicate id in list
 func GetUsers(userIds []uint64) (map[uint64]User, error) {
-	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
@@ -94,7 +94,7 @@ func GetUsers(userIds []uint64) (map[uint64]User, error) {
 }
 
 func ChangeLogin(userId uint64, oldLogin string, newLogin string, password string) error {
-	salter := saltclient.Make(config.SaltServiceAddr)
+	salter := saltclient.Make(config.Shared.SaltServiceAddr)
 	oldSalted, err := salter.Salt(oldLogin, password)
 	if err != nil {
 		common.LogOriginalError(err)
@@ -107,7 +107,7 @@ func ChangeLogin(userId uint64, oldLogin string, newLogin string, password strin
 		return common.ErrTechnical
 	}
 
-	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -131,7 +131,7 @@ func ChangeLogin(userId uint64, oldLogin string, newLogin string, password strin
 }
 
 func ChangePassword(userId uint64, login string, oldPassword string, newPassword string) error {
-	salter := saltclient.Make(config.SaltServiceAddr)
+	salter := saltclient.Make(config.Shared.SaltServiceAddr)
 	oldSalted, err := salter.Salt(login, oldPassword)
 	if err != nil {
 		common.LogOriginalError(err)
@@ -144,7 +144,7 @@ func ChangePassword(userId uint64, login string, oldPassword string, newPassword
 		return common.ErrTechnical
 	}
 
-	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -168,7 +168,7 @@ func ChangePassword(userId uint64, login string, oldPassword string, newPassword
 }
 
 func ListUsers(start uint64, end uint64, filter string) (uint64, []User, error) {
-	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return 0, nil, common.ErrTechnical
@@ -196,7 +196,7 @@ func ListUsers(start uint64, end uint64, filter string) (uint64, []User, error) 
 
 // no right check
 func DeleteUser(userId uint64) error {
-	conn, err := grpc.Dial(config.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -219,5 +219,5 @@ func DeleteUser(userId uint64) error {
 
 func convertUser(user *pb.User) User {
 	registredAt := time.Unix(user.RegistredAt, 0)
-	return User{Id: user.Id, Login: user.Login, RegistredAt: registredAt.Format(config.DateFormat)}
+	return User{Id: user.Id, Login: user.Login, RegistredAt: registredAt.Format(config.Shared.DateFormat)}
 }

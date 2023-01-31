@@ -29,14 +29,14 @@ import (
 var Logger *zap.Logger
 
 func init() {
-	if len(config.LogConfig) == 0 {
+	if len(config.Shared.LogConfig) == 0 {
 		defaultLogConfig()
 		return
 	}
 
 	var cfg zap.Config
-	err := json.Unmarshal(config.LogConfig, &cfg)
-	config.LogConfig = nil
+	err := json.Unmarshal(config.Shared.LogConfig, &cfg)
+	config.Shared.LogConfig = nil
 	if err != nil {
 		fmt.Println("Failed to parse logging config file :", err)
 		defaultLogConfig()

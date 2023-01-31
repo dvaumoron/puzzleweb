@@ -209,6 +209,8 @@ func (w *adminWidget) LoadInto(router gin.IRouter) {
 }
 
 func AddAdminPage(site *puzzleweb.Site, args ...string) {
+	config.Shared.LoadRight()
+
 	indexTmpl := "admin/index.html"
 	listUserTmpl := "admin/user/list.html"
 	viewUserTmpl := "admin/user/view.html"
@@ -268,7 +270,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			}
 			pageSize, _ := strconv.ParseUint(c.Query("pageSize"), 10, 64)
 			if pageSize == 0 {
-				pageSize = config.PageSize
+				pageSize = config.Shared.PageSize
 			}
 			filter := c.Query("filter")
 

@@ -57,9 +57,8 @@ type Config struct {
 }
 
 func loadDefault() Config {
-	if godotenv.Load() != nil {
-		fmt.Println("Failed to load .env file")
-		os.Exit(1)
+	if godotenv.Overload() == nil {
+		fmt.Println("Loaded .env file")
 	}
 
 	var err error

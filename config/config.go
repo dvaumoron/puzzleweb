@@ -177,6 +177,7 @@ func retrieveWithDefault(name string, defaultValue string) string {
 	if value := os.Getenv(name); value != "" {
 		return value
 	}
+	fmt.Println(name, "not found, using default :", defaultValue)
 	return defaultValue
 }
 

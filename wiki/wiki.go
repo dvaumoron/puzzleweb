@@ -181,9 +181,13 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 			last := c.PostForm(versionName)
 			content := c.PostForm("content")
 
-			err := client.StoreContent(wikiId, groupId, userId, lang, title, last, content)
+			success, err := client.StoreContent(wikiId, groupId, userId, lang, title, last, content)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error(), c)
+				return targetBuilder.String()
+			}
+			if !success {
+				common.WriteError(targetBuilder, "base.version.outdated", c)
 			}
 			return targetBuilder.String()
 		}),

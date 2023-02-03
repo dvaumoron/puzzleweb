@@ -59,16 +59,16 @@ func LoadContent(wikiId uint64, groupId uint64, userId uint64, lang string, titl
 	return loadContent(wikiId, buildRef(lang, title), version)
 }
 
-func StoreContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, last string, markdown string) error {
+func StoreContent(wikiId uint64, groupId uint64, userId uint64, lang string, title string, last string, markdown string) (bool, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	version, err := strconv.ParseUint(last, 10, 64)
 	if err != nil {
 		log.Logger.Warn("Failed to parse wiki last version.", zap.Error(err))
-		return common.ErrTechnical
+		return false, common.ErrTechnical
 	}
 	return storeContent(wikiId, userId, buildRef(lang, title), version, markdown)
 }
@@ -156,11 +156,11 @@ func innerLoadContent(ctx context.Context, client pb.WikiClient, wikiId uint64, 
 	return content, nil
 }
 
-func storeContent(wikiId uint64, userId uint64, wikiRef string, last uint64, markdown string) error {
+func storeContent(wikiId uint64, userId uint64, wikiRef string, last uint64, markdown string) (bool, error) {
 	conn, err := grpc.Dial(config.Shared.WikiServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return false, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -172,16 +172,15 @@ func storeContent(wikiId uint64, userId uint64, wikiRef string, last uint64, mar
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return false, common.ErrTechnical
 	}
-	if !response.Success {
-		return common.ErrUpdate
+	success := response.Success
+	if success {
+		cache.Store(wikiId, wikiRef, &cache.WikiContent{
+			Version: response.Version, Markdown: markdown,
+		})
 	}
-
-	cache.Store(wikiId, wikiRef, &cache.WikiContent{
-		Version: response.Version, Markdown: markdown,
-	})
-	return nil
+	return success, nil
 }
 
 func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {

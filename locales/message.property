@@ -41,3 +41,6 @@ update.label=
 delete.label=
 new.role.label=
 error.bad.role.name=
+
+# wiki
+base.version.outdated=

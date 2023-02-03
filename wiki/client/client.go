@@ -201,11 +201,7 @@ func getVersions(wikiId uint64, wikiRef string) ([]Version, error) {
 		common.LogOriginalError(err)
 		return nil, common.ErrTechnical
 	}
-	list := response.List
-	if len(list) == 0 {
-		return nil, nil
-	}
-	return sortConvertVersions(list)
+	return sortConvertVersions(response.List)
 }
 
 func deleteContent(wikiId uint64, wikiRef string, version uint64) error {

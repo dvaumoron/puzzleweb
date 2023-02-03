@@ -212,7 +212,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 			data[wikiTitleName] = title
 			data[versionsName] = versions
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
-			if size := len(versions); size == 0 {
+			if len(versions) == 0 {
 				data[common.ErrorMsgName] = locale.GetText(common.NoElementKey, c)
 			}
 			return listTmpl, ""

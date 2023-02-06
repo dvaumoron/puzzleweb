@@ -57,8 +57,8 @@ type GroupDisplay struct {
 	Id           uint64
 	Name         string
 	DisplayName  string
-	Roles        []*RoleDisplay
-	AddableRoles []*RoleDisplay
+	Roles        []RoleDisplay
+	AddableRoles []RoleDisplay
 }
 
 type RoleDisplay struct {
@@ -66,8 +66,8 @@ type RoleDisplay struct {
 	Actions []string
 }
 
-func NewRoleDisplay(role *client.Role, c *gin.Context) *RoleDisplay {
-	return &RoleDisplay{Name: role.Name, Actions: displayActions(role.Actions, c)}
+func MakeRoleDisplay(role client.Role, c *gin.Context) RoleDisplay {
+	return RoleDisplay{Name: role.Name, Actions: displayActions(role.Actions, c)}
 }
 
 type sortableGroups []*GroupDisplay
@@ -84,7 +84,7 @@ func (s sortableGroups) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-type sortableRoles []*RoleDisplay
+type sortableRoles []RoleDisplay
 
 func (s sortableRoles) Len() int {
 	return len(s)
@@ -115,11 +115,11 @@ var saveUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 		err = common.ErrTechnical
 	} else {
 		rolesStr := c.PostFormArray("roles")
-		roles := make([]*client.Role, 0, len(rolesStr))
+		roles := make([]client.Role, 0, len(rolesStr))
 		for _, roleStr := range rolesStr {
 			splitted := strings.Split(roleStr, "/")
 			if len(splitted) > 1 {
-				roles = append(roles, &client.Role{
+				roles = append(roles, client.Role{
 					Name: splitted[0], Group: splitted[1],
 				})
 			}
@@ -145,7 +145,7 @@ var deleteUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 	} else {
 		// an empty slice delete the user right
 		// only the first service call do a right check
-		err = client.UpdateUser(adminId, userId, []*client.Role{})
+		err = client.UpdateUser(adminId, userId, []client.Role{})
 		if err == nil {
 			err = profileclient.Delete(userId)
 			if err == nil {
@@ -184,7 +184,7 @@ var saveRoleHandler = common.CreateRedirect(func(c *gin.Context) string {
 			}
 			actions = append(actions, action)
 		}
-		err = client.UpdateRole(adminId, &client.Role{Name: roleName, Group: group, Actions: actions})
+		err = client.UpdateRole(adminId, client.Role{Name: roleName, Group: group, Actions: actions})
 	}
 
 	var targetBuilder strings.Builder
@@ -397,13 +397,13 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 	site.AddPage(p)
 }
 
-func displayGroups(roles []*client.Role, c *gin.Context) []*GroupDisplay {
+func displayGroups(roles []client.Role, c *gin.Context) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
 	populateGroup(nameToGroup, roles, c, rolesAppender)
 	return sortGroups(nameToGroup)
 }
 
-func populateGroup(nameToGroup map[string]*GroupDisplay, roles []*client.Role, c *gin.Context, appender func(*GroupDisplay, *client.Role, *gin.Context)) {
+func populateGroup(nameToGroup map[string]*GroupDisplay, roles []client.Role, c *gin.Context, appender func(*GroupDisplay, client.Role, *gin.Context)) {
 	for _, role := range roles {
 		groupName := role.Group
 		group := nameToGroup[groupName]
@@ -419,8 +419,8 @@ func populateGroup(nameToGroup map[string]*GroupDisplay, roles []*client.Role, c
 	}
 }
 
-func rolesAppender(group *GroupDisplay, role *client.Role, c *gin.Context) {
-	group.Roles = append(group.Roles, NewRoleDisplay(role, c))
+func rolesAppender(group *GroupDisplay, role client.Role, c *gin.Context) {
+	group.Roles = append(group.Roles, MakeRoleDisplay(role, c))
 }
 
 // convert a RightAction slice in a displayable string slice,
@@ -453,15 +453,15 @@ func sortGroups(nameToGroup map[string]*GroupDisplay) []*GroupDisplay {
 	return groupRoles
 }
 
-func displayEditGroups(userRoles []*client.Role, allRoles []*client.Role, c *gin.Context) []*GroupDisplay {
+func displayEditGroups(userRoles []client.Role, allRoles []client.Role, c *gin.Context) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
 	populateGroup(nameToGroup, userRoles, c, rolesAppender)
 	populateGroup(nameToGroup, allRoles, c, addableRolesAppender)
 	return sortGroups(nameToGroup)
 }
 
-func addableRolesAppender(group *GroupDisplay, role *client.Role, c *gin.Context) {
-	group.AddableRoles = append(group.AddableRoles, NewRoleDisplay(role, c))
+func addableRolesAppender(group *GroupDisplay, role client.Role, c *gin.Context) {
+	group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role, c))
 }
 
 func setActionChecked(data gin.H, actionSet common.Set[pb.RightAction], toTest pb.RightAction, name string) {

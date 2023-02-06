@@ -83,16 +83,16 @@ func CreatePost(blogId uint64, groupId uint64, userId uint64, title string, cont
 	return nil
 }
 
-func GetPost(blogId uint64, groupId uint64, userId uint64, postId uint64) (*BlogPost, error) {
+func GetPost(blogId uint64, groupId uint64, userId uint64, postId uint64) (BlogPost, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
 	if err != nil {
-		return nil, err
+		return BlogPost{}, err
 	}
 
 	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return BlogPost{}, common.ErrTechnical
 	}
 	defer conn.Close()
 
@@ -104,18 +104,18 @@ func GetPost(blogId uint64, groupId uint64, userId uint64, postId uint64) (*Blog
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return BlogPost{}, common.ErrTechnical
 	}
 
 	creatorId := response.UserId
 	users, err := profileclient.GetProfiles([]uint64{creatorId})
 	if err != nil {
-		return nil, err
+		return BlogPost{}, err
 	}
 	return convertPost(response, users[creatorId]), nil
 }
 
-func GetPosts(blogId uint64, groupId uint64, userId uint64, start uint64, end uint64, filter string) ([]*BlogPost, error) {
+func GetPosts(blogId uint64, groupId uint64, userId uint64, start uint64, end uint64, filter string) ([]BlogPost, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func DeletePost(blogId uint64, groupId uint64, userId uint64, postId uint64) err
 	return nil
 }
 
-func sortConvertPosts(list []*pb.Content) ([]*BlogPost, error) {
+func sortConvertPosts(list []*pb.Content) ([]BlogPost, error) {
 	sort.Sort(sortableContents(list))
 
 	size := len(list)
@@ -189,16 +189,16 @@ func sortConvertPosts(list []*pb.Content) ([]*BlogPost, error) {
 		return nil, err
 	}
 
-	contents := make([]*BlogPost, 0, size)
+	contents := make([]BlogPost, 0, size)
 	for _, content := range list {
 		contents = append(contents, convertPost(content, users[content.UserId]))
 	}
 	return contents, nil
 }
 
-func convertPost(post *pb.Content, creator profileclient.Profile) *BlogPost {
+func convertPost(post *pb.Content, creator profileclient.Profile) BlogPost {
 	createdAt := time.Unix(post.CreatedAt, 0)
-	return &BlogPost{
+	return BlogPost{
 		PostId: post.PostId, Creator: creator, Date: createdAt.Format(config.Shared.DateFormat),
 		Title: post.Title, content: template.HTML(post.Text),
 	}

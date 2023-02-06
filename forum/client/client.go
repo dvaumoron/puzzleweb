@@ -39,7 +39,6 @@ type ForumContent struct {
 	Text    string
 }
 
-type contentRequestKind func(pb.ForumClient, context.Context, *pb.SearchRequest) (*pb.Contents, error)
 type deleteRequestKind func(pb.ForumClient, context.Context, *pb.IdRequest) (*pb.Response, error)
 
 type sortableContents []*pb.Content
@@ -143,62 +142,130 @@ func CreateMessage(groupId uint64, userId uint64, threadId uint64, message strin
 	return nil
 }
 
-func GetThread(forumId uint64, groupId uint64, userId uint64, threadId uint64) (*ForumContent, error) {
+func GetThread(forumId uint64, groupId uint64, userId uint64, threadId uint64, start uint64, end uint64) (uint64, ForumContent, []ForumContent, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
 	if err != nil {
-		return nil, err
+		return 0, ForumContent{}, nil, err
 	}
 
 	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return 0, ForumContent{}, nil, common.ErrTechnical
 	}
 	defer conn.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	response, err := pb.NewForumClient(conn).GetThread(ctx, &pb.IdRequest{
+	client := pb.NewForumClient(conn)
+	response, err := client.GetThread(ctx, &pb.IdRequest{
 		ContainerId: forumId, Id: threadId,
 	})
 	if err != nil {
 		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return 0, ForumContent{}, nil, common.ErrTechnical
 	}
 
-	creatorId := response.UserId
-	users, err := profileclient.GetProfiles([]uint64{creatorId})
+	response2, err := client.GetMessages(ctx, &pb.SearchRequest{ContainerId: threadId, Start: start, End: end})
 	if err != nil {
-		return nil, err
+		common.LogOriginalError(err)
+		return 0, ForumContent{}, nil, common.ErrTechnical
 	}
-	return convertContent(response, users[creatorId]), nil
+
+	list := response2.List
+	userIds := extractUserIds(list)
+	threadCreatorId := response.UserId
+	userIds = append(userIds, response.UserId)
+
+	users, err := profileclient.GetProfiles(userIds)
+	if err != nil {
+		return 0, ForumContent{}, nil, err
+	}
+
+	thread := convertContent(response, users[threadCreatorId])
+	messages := sortConvertContents(list, users)
+	return response2.Total, thread, messages, nil
 }
 
-func GetThreads(forumId uint64, groupId uint64, userId uint64, start uint64, end uint64, filter string) ([]*ForumContent, error) {
-	return searchContent(
-		groupId, userId, getThreads,
-		&pb.SearchRequest{ContainerId: forumId, Start: start, End: end, Filter: filter},
-	)
+func GetThreads(forumId uint64, groupId uint64, userId uint64, start uint64, end uint64, filter string) (uint64, []ForumContent, error) {
+	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return 0, nil, common.ErrTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	response, err := pb.NewForumClient(conn).GetThreads(ctx, &pb.SearchRequest{
+		ContainerId: forumId, Start: start, End: end, Filter: filter,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return 0, nil, common.ErrTechnical
+	}
+	list := response.List
+	if len(list) == 0 {
+		return response.Total, nil, nil
+	}
+
+	users, err := profileclient.GetProfiles(extractUserIds(list))
+	if err != nil {
+		common.LogOriginalError(err)
+		return 0, nil, common.ErrTechnical
+	}
+	return response.Total, sortConvertContents(list, users), err
 }
 
-func GetCommentThreadId(objectId uint64, groupId uint64, userId uint64, elemTitle string) (uint64, error) {
-	contents, err := GetThreads(objectId, groupId, userId, 0, 1, elemTitle)
+func GetCommentThread(objectId uint64, groupId uint64, userId uint64, elemTitle string, start uint64, end uint64) (uint64, []ForumContent, error) {
+	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
-	if len(contents) == 0 {
+
+	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		common.LogOriginalError(err)
+		return 0, nil, common.ErrTechnical
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	client := pb.NewForumClient(conn)
+	response, err := client.GetThreads(ctx, &pb.SearchRequest{
+		ContainerId: objectId, Start: 0, End: 1, Filter: elemTitle,
+	})
+	if err != nil {
+		common.LogOriginalError(err)
+		return 0, nil, common.ErrTechnical
+	}
+	if response.Total == 0 {
 		common.LogOriginalError(fmt.Errorf("no comment thread found : %d, %s", objectId, elemTitle))
-		return 0, common.ErrTechnical
+		return 0, nil, common.ErrTechnical
 	}
-	return contents[0].Id, nil
-}
+	threadId := response.List[0].Id
 
-func GetMessages(groupId uint64, userId uint64, threadId uint64, start uint64, end uint64) ([]*ForumContent, error) {
-	return searchContent(
-		groupId, userId, getMessages,
-		&pb.SearchRequest{ContainerId: threadId, Start: start, End: end},
-	)
+	response2, err := client.GetMessages(ctx, &pb.SearchRequest{ContainerId: threadId, Start: start, End: end})
+	if err != nil {
+		common.LogOriginalError(err)
+		return 0, nil, common.ErrTechnical
+	}
+
+	list := response2.List
+	users, err := profileclient.GetProfiles(extractUserIds(list))
+	if err != nil {
+		return 0, nil, err
+	}
+	return response2.Total, sortConvertContents(list, users), nil
 }
 
 func DeleteThread(forumId uint64, groupId uint64, userId uint64, threadId uint64) error {
@@ -213,42 +280,6 @@ func DeleteMessage(groupId uint64, userId uint64, threadId uint64, messageId uin
 		groupId, userId, deleteMessage,
 		&pb.IdRequest{ContainerId: threadId, Id: messageId},
 	)
-}
-
-func searchContent(groupId uint64, userId uint64, kind contentRequestKind, search *pb.SearchRequest) ([]*ForumContent, error) {
-	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
-	if err != nil {
-		return nil, err
-	}
-
-	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
-	}
-	defer conn.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	response, err := kind(pb.NewForumClient(conn), ctx, search)
-	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
-	}
-	list := response.List
-	if len(list) == 0 {
-		return nil, nil
-	}
-	return sortConvertContents(list)
-}
-
-func getThreads(client pb.ForumClient, ctx context.Context, search *pb.SearchRequest) (*pb.Contents, error) {
-	return client.GetThreads(ctx, search)
-}
-
-func getMessages(client pb.ForumClient, ctx context.Context, search *pb.SearchRequest) (*pb.Contents, error) {
-	return client.GetMessages(ctx, search)
 }
 
 func deleteContent(groupId uint64, userId uint64, kind deleteRequestKind, request *pb.IdRequest) error {
@@ -286,32 +317,29 @@ func deleteMessage(client pb.ForumClient, ctx context.Context, request *pb.IdReq
 	return client.DeleteMessage(ctx, request)
 }
 
-func sortConvertContents(list []*pb.Content) ([]*ForumContent, error) {
+func sortConvertContents(list []*pb.Content, users map[uint64]profileclient.Profile) []ForumContent {
 	sort.Sort(sortableContents(list))
 
-	size := len(list)
-	// no duplicate check, there is one in GetProfiles
-	userIds := make([]uint64, 0, size)
-	for _, content := range list {
-		userIds = append(userIds, content.UserId)
-	}
-
-	users, err := profileclient.GetProfiles(userIds)
-	if err != nil {
-		return nil, err
-	}
-
-	contents := make([]*ForumContent, 0, size)
+	contents := make([]ForumContent, 0, len(list))
 	for _, content := range list {
 		contents = append(contents, convertContent(content, users[content.UserId]))
 	}
-	return contents, nil
+	return contents
 }
 
-func convertContent(content *pb.Content, creator profileclient.Profile) *ForumContent {
+func convertContent(content *pb.Content, creator profileclient.Profile) ForumContent {
 	createdAt := time.Unix(content.CreatedAt, 0)
-	return &ForumContent{
+	return ForumContent{
 		Id: content.Id, Creator: creator,
 		Date: createdAt.Format(config.Shared.DateFormat), Text: content.Text,
 	}
+}
+
+// no duplicate check, there is one in GetProfiles
+func extractUserIds(list []*pb.Content) []uint64 {
+	userIds := make([]uint64, 0, len(list))
+	for _, content := range list {
+		userIds = append(userIds, content.UserId)
+	}
+	return userIds
 }

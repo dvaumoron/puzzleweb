@@ -19,6 +19,7 @@ package client
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	pb "github.com/dvaumoron/puzzleloginservice"
@@ -33,6 +34,20 @@ type User struct {
 	Id          uint64
 	Login       string
 	RegistredAt string
+}
+
+type sortableContents []*pb.User
+
+func (s sortableContents) Len() int {
+	return len(s)
+}
+
+func (s sortableContents) Less(i, j int) bool {
+	return s[i].Login < s[j].Login
+}
+
+func (s sortableContents) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
 
 func VerifyOrRegister(login string, password string, register bool) (bool, uint64, error) {
@@ -187,6 +202,7 @@ func ListUsers(start uint64, end uint64, filter string) (uint64, []User, error) 
 	}
 
 	list := response.List
+	sort.Sort(sortableContents(list))
 	users := make([]User, 0, len(list))
 	for _, user := range list {
 		users = append(users, convertUser(user))

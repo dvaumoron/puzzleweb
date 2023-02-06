@@ -98,7 +98,7 @@ func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
 	return nil
 }
 
-func GetAllRoles(adminId uint64) ([]*Role, error) {
+func GetAllRoles(adminId uint64) ([]Role, error) {
 	groupIds := make([]uint64, 0, len(groupIdToName))
 	for groupId := range groupIdToName {
 		groupIds = append(groupIds, groupId)
@@ -139,7 +139,7 @@ func GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAc
 	return actions.List, nil
 }
 
-func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
+func UpdateUser(adminId uint64, userId uint64, roles []Role) error {
 	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
@@ -182,7 +182,7 @@ func UpdateUser(adminId uint64, userId uint64, roles []*Role) error {
 	return nil
 }
 
-func UpdateRole(adminId uint64, role *Role) error {
+func UpdateRole(adminId uint64, role Role) error {
 	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
@@ -219,7 +219,7 @@ func UpdateRole(adminId uint64, role *Role) error {
 	return nil
 }
 
-func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
+func GetUserRoles(adminId uint64, userId uint64) ([]Role, error) {
 	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
@@ -248,7 +248,7 @@ func GetUserRoles(adminId uint64, userId uint64) ([]*Role, error) {
 	return getUserRoles(client, ctx, userId)
 }
 
-func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
+func getGroupRoles(adminId uint64, groupIds []uint64) ([]Role, error) {
 	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
@@ -279,7 +279,7 @@ func getGroupRoles(adminId uint64, groupIds []uint64) ([]*Role, error) {
 	return convertRolesFromRequest(roles.List), nil
 }
 
-func getUserRoles(client pb.RightClient, ctx context.Context, userId uint64) ([]*Role, error) {
+func getUserRoles(client pb.RightClient, ctx context.Context, userId uint64) ([]Role, error) {
 	roles, err := client.ListUserRoles(ctx, &pb.UserId{Id: userId})
 	if err != nil {
 		common.LogOriginalError(err)
@@ -288,10 +288,10 @@ func getUserRoles(client pb.RightClient, ctx context.Context, userId uint64) ([]
 	return convertRolesFromRequest(roles.List), nil
 }
 
-func convertRolesFromRequest(roles []*pb.Role) []*Role {
-	resRoles := make([]*Role, 0, len(roles))
+func convertRolesFromRequest(roles []*pb.Role) []Role {
+	resRoles := make([]Role, 0, len(roles))
 	for _, role := range roles {
-		resRoles = append(resRoles, &Role{
+		resRoles = append(resRoles, Role{
 			Name: role.Name, Group: groupIdToName[role.ObjectId], Actions: role.List,
 		})
 	}

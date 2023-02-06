@@ -5,8 +5,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dvaumoron/puzzleblogservice v1.1.0 h1:EbV2WKZxmdPaXMsh78nDDZr/KVpJskMoMMlgoD1W84U=
 github.com/dvaumoron/puzzleblogservice v1.1.0/go.mod h1:G7aZYaJHItf4DM5kXehMXwOYTcUl75sH/k8fZ/QBj10=
-github.com/dvaumoron/puzzleforumservice v1.3.0 h1:S+TN3xSMAmaAMlwfkZaGuWW7+UFOQ15VJEPfo1fvPNI=
-github.com/dvaumoron/puzzleforumservice v1.3.0/go.mod h1:cCNSZOUMidXTNIrNjfTRYduK+A3oa4B6YEGEKbvwkPg=
+github.com/dvaumoron/puzzleforumservice v1.4.0 h1:39BTgVB7A6bev/Jo0V3O4RSusK/jlJ97fwmr1/iGsTE=
+github.com/dvaumoron/puzzleforumservice v1.4.0/go.mod h1:cCNSZOUMidXTNIrNjfTRYduK+A3oa4B6YEGEKbvwkPg=
 github.com/dvaumoron/puzzleloginservice v1.7.0 h1:o5W2j/rbUeSctEe8+yDc49/3R5vzfwtOVH9Lse5BFpc=
 github.com/dvaumoron/puzzleloginservice v1.7.0/go.mod h1:K/m2nN30p+uAJamWT85Vh1Mtea7+ahSz+fnIughCok0=
 github.com/dvaumoron/puzzlemarkdownservice v1.0.1 h1:82Iqn7YKrS51vyJJy3m4UMhyIPqo/LzSPxI0rMfZK7Y=

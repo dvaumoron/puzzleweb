@@ -72,20 +72,8 @@ func CreateThread(forumId uint64, groupId uint64, userId uint64, title string, m
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	client := pb.NewForumClient(conn)
-	response, err := client.CreateThread(ctx, &pb.CreateRequest{
-		ContainerId: forumId, UserId: userId, Text: title,
-	})
-	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
-	}
-	if !response.Success {
-		return common.ErrUpdate
-	}
-
-	response, err = client.CreateMessage(ctx, &pb.CreateRequest{
-		ContainerId: response.Id, UserId: userId, Text: message,
+	response, err := pb.NewForumClient(conn).CreateThread(ctx, &pb.CreateRequest{
+		ContainerId: forumId, UserId: userId, Title: title, Text: message,
 	})
 	if err != nil {
 		common.LogOriginalError(err)

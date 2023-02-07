@@ -132,10 +132,7 @@ func GetProfiles(userIds []uint64) (map[uint64]UserProfile, error) {
 	profiles := map[uint64]UserProfile{}
 	for _, profile := range response.List {
 		userId := profile.UserId
-		user := users[userId]
-		profiles[userId] = UserProfile{
-			User: user, Desc: profile.Desc, Info: profile.Info,
-		}
+		profiles[userId] = UserProfile{User: users[userId], Desc: profile.Desc, Info: profile.Info}
 	}
 	return profiles, err
 }

@@ -101,10 +101,7 @@ func (site *Site) initEngine() *gin.Engine {
 		engine.StaticFile(favicon, config.Shared.StaticPath+faviconPath)
 		site.root.Widget.LoadInto(engine)
 		if len(locale.AllLang) != 1 {
-			engine.GET("/changeLang", common.CreateRedirect(func(c *gin.Context) string {
-				locale.SetLangCookie(c, c.Query(locale.LangName))
-				return c.Query(common.RedirectName)
-			}))
+			engine.GET("/changeLang", changeLangHandler)
 		}
 		engine.NoRoute(common.CreateRedirectString(site.Page404Url))
 		site.initialized = true
@@ -150,6 +147,11 @@ func profilePicHandler(c *gin.Context) {
 	}
 	c.Data(http.StatusFound, http.DetectContentType(data), data)
 }
+
+var changeLangHandler = common.CreateRedirect(func(c *gin.Context) string {
+	locale.SetLangCookie(c, c.Query(locale.LangName))
+	return c.Query(common.RedirectName)
+})
 
 func checkPort(port string) string {
 	if port[0] != ':' {

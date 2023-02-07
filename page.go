@@ -65,7 +65,7 @@ func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
 		err := rightclient.AuthQuery(session.GetUserId(c), groupId, rightclient.ActionAccess)
 		if err != nil {
-			return "", common.DefaultErrorRedirect(err.Error(), c)
+			return "", common.DefaultErrorRedirect(err.Error())
 		}
 		if lang := locale.GetLang(c); lang != locale.DefaultLang {
 			var builder strings.Builder

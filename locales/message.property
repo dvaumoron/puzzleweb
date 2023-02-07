@@ -1,51 +1,51 @@
 # general
-wrong.lang=
-no.element=
-error.not.authorized=
-error.technical.problem=
-error.update=
-error.unknown.user=
-welcome.label=
-group.label.admin=
-group.label.public=
-name.label=
-edit.label=
-registred.at.label=
-list.link.label=
-filter.link.label=
-previous.page.link.label=
-next.page.link.label=
-view.link.label=
-new.link.label=
-edit.link.label=
-save.link.label=
-cancel.link.label=
-delete.link.label=
+WrongLang=
+NoElement=
+ErrorNotAuthorized=
+ErrorTechnicalProblem=
+ErrorUpdate=
+ErrorUnknownUser=
+WelcomeLabel=
+GroupLabelAdmin=
+GroupLabelPublic=
+NameLabel=
+EditLabel=
+RegistredAtLabel=
+ListLinkLabel=
+FilterLinkLabel=
+PreviousPageLinkLabel=
+NextPageLinkLabel=
+ViewLinkLabel=
+NewLinkLabel=
+EditLinkLabel=
+SaveLinkLabel=
+CancelLinkLabel=
+DeleteLinkLabel=
 
 # login
-page.title.login=
-wrong.login=
-existing.login=
-login.label=
-password.label=
-login.link.label=
-logout.link.label=
-register.link.label=
+PageTitleLogin=
+WrongLogin=
+ExistingLogin=
+LoginLabel=
+PasswordLabel=
+LoginLinkLabel=
+LogoutLinkLabel=
+RegisterLinkLabel=
 
 # admin
-page.title.admin=
-user.list=
-role.list=
-access.label=
-create.label=
-update.label=
-delete.label=
-new.role.label=
-error.bad.role.name=
+PageTitleAdmin=
+UserList=
+RoleList=
+AccessLabel=
+CreateLabel=
+UpdateLabel=
+DeleteLabel=
+NewRoleLabel=
+ErrorBadRoleName=
 
 # profile
-page.title.profile=
-error.wrong.confirm.password=
+PageTitleProfile=
+ErrorWrongConfirmPassword=
 
 # wiki
-base.version.outdated=
+BaseVersionOutdated=

@@ -35,7 +35,7 @@ func makePageDesc(name string, url string, c *gin.Context) PageDesc {
 }
 
 func getPageTitle(name string, c *gin.Context) string {
-	return locale.GetText("page.title."+name, c)
+	return locale.GetText("PageTitle"+locale.CamelCase(name), c)
 }
 
 func extractAriane(splittedPath []string, c *gin.Context) []PageDesc {
@@ -67,7 +67,7 @@ func initData(c *gin.Context) gin.H {
 		"Messages":   locale.GetMessages(c),
 	}
 	if errorMsg := c.Query("error"); errorMsg != "" {
-		data[common.ErrorMsgName] = errorMsg
+		data[common.ErrorMsgName] = locale.GetText(errorMsg, c)
 	}
 	for _, adder := range site.adders {
 		adder(data, c)

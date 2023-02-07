@@ -37,7 +37,7 @@ import (
 
 const userInfoName = "UserInfo"
 
-var errWrongConfirm = errors.New("error.wrong.confirm.password")
+var errWrongConfirm = errors.New("ErrorWrongConfirmPassword")
 
 type profileWidget struct {
 	viewHandler gin.HandlerFunc
@@ -47,7 +47,7 @@ type profileWidget struct {
 var saveHandler = common.CreateRedirect(func(c *gin.Context) string {
 	userId := session.GetUserId(c)
 	if userId == 0 {
-		return common.DefaultErrorRedirect(common.UnknownUser, c)
+		return common.DefaultErrorRedirect(common.UnknownUserKey)
 	}
 
 	desc := c.PostForm(common.UserDescName)
@@ -56,7 +56,7 @@ var saveHandler = common.CreateRedirect(func(c *gin.Context) string {
 	picture, err := c.FormFile("picture")
 	if err != nil {
 		common.LogOriginalError(err)
-		return common.DefaultErrorRedirect(common.ErrTechnical.Error(), c)
+		return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 	}
 
 	if picture != nil {
@@ -64,7 +64,7 @@ var saveHandler = common.CreateRedirect(func(c *gin.Context) string {
 		pictureFile, err = picture.Open()
 		if err != nil {
 			common.LogOriginalError(err)
-			return common.DefaultErrorRedirect(common.ErrTechnical.Error(), c)
+			return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 		}
 		defer pictureFile.Close()
 
@@ -72,7 +72,7 @@ var saveHandler = common.CreateRedirect(func(c *gin.Context) string {
 		pictureData, err = io.ReadAll(pictureFile)
 		if err != nil {
 			common.LogOriginalError(err)
-			return common.DefaultErrorRedirect(common.ErrTechnical.Error(), c)
+			return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 		}
 
 		err = client.UpdatePicture(userId, pictureData)
@@ -84,7 +84,7 @@ var saveHandler = common.CreateRedirect(func(c *gin.Context) string {
 
 	targetBuilder := profileUrlBuilder(c, userId)
 	if err != nil {
-		common.WriteError(targetBuilder, err.Error(), c)
+		common.WriteError(targetBuilder, err.Error())
 	}
 	return targetBuilder.String()
 })
@@ -92,7 +92,7 @@ var saveHandler = common.CreateRedirect(func(c *gin.Context) string {
 var changeLoginHandler = common.CreateRedirect(func(c *gin.Context) string {
 	userId := session.GetUserId(c)
 	if userId == 0 {
-		return common.DefaultErrorRedirect(common.UnknownUser, c)
+		return common.DefaultErrorRedirect(common.UnknownUserKey)
 	}
 
 	session := session.Get(c)
@@ -106,7 +106,7 @@ var changeLoginHandler = common.CreateRedirect(func(c *gin.Context) string {
 	if err != nil {
 		session.Store(common.LoginName, newLogin)
 
-		common.WriteError(targetBuilder, err.Error(), c)
+		common.WriteError(targetBuilder, err.Error())
 	}
 	return targetBuilder.String()
 })
@@ -114,7 +114,7 @@ var changeLoginHandler = common.CreateRedirect(func(c *gin.Context) string {
 var changePasswordHandler = common.CreateRedirect(func(c *gin.Context) string {
 	userId := session.GetUserId(c)
 	if userId == 0 {
-		return common.DefaultErrorRedirect(common.UnknownUser, c)
+		return common.DefaultErrorRedirect(common.UnknownUserKey)
 	}
 
 	login := session.Get(c).Load(common.LoginName)
@@ -129,7 +129,7 @@ var changePasswordHandler = common.CreateRedirect(func(c *gin.Context) string {
 
 	targetBuilder := profileUrlBuilder(c, userId)
 	if err != nil {
-		common.WriteError(targetBuilder, err.Error(), c)
+		common.WriteError(targetBuilder, err.Error())
 	}
 	return targetBuilder.String()
 })
@@ -170,19 +170,19 @@ func AddProfilePage(site *puzzleweb.Site, groupId uint64, args ...string) {
 			userId, err := common.GetRequestedUserId(c)
 			if err != nil {
 				common.LogOriginalError(err)
-				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error(), c)
+				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
 			if currentUserId := session.GetUserId(c); userId != currentUserId {
 				err = rightclient.AuthQuery(currentUserId, groupId, rightclient.ActionAccess)
 				if err != nil {
-					return "", common.DefaultErrorRedirect(err.Error(), c)
+					return "", common.DefaultErrorRedirect(err.Error())
 				}
 			}
 
 			profiles, err := client.GetProfiles([]uint64{userId})
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error(), c)
+				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
 			userProfile := profiles[userId]
@@ -196,12 +196,12 @@ func AddProfilePage(site *puzzleweb.Site, groupId uint64, args ...string) {
 		editHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			userId := session.GetUserId(c)
 			if userId == 0 {
-				return "", common.DefaultErrorRedirect(common.UnknownUser, c)
+				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
 			}
 
 			profiles, err := client.GetProfiles([]uint64{userId})
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error(), c)
+				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
 			userProfile := profiles[userId]

@@ -50,9 +50,9 @@ var submitHandler = common.CreateRedirect(func(c *gin.Context) string {
 		errorMsg = err.Error()
 	} else if !success {
 		if register {
-			errorMsg = locale.GetText("existing.login", c)
+			errorMsg = locale.GetText("ExistingLogin", c)
 		} else {
-			errorMsg = locale.GetText("wrong.login", c)
+			errorMsg = locale.GetText("WrongLogin", c)
 		}
 	}
 

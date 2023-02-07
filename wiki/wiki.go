@@ -107,7 +107,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 
 			if lang != askedLang {
 				targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
-				common.WriteError(targetBuilder, common.WrongLangKey, c)
+				common.WriteError(targetBuilder, common.WrongLangKey)
 				return "", targetBuilder.String()
 			}
 
@@ -115,7 +115,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 			version := c.Query(versionName)
 			content, err := client.LoadContent(wikiId, groupId, userId, lang, title, version)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error(), c)
+				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
 			if content == nil {
@@ -128,7 +128,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 
 			body, err := content.GetBody()
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error(), c)
+				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
 			data[wikiTitleName] = title
@@ -146,14 +146,14 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 
 			if lang == askedLang {
 				targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
-				common.WriteError(targetBuilder, common.WrongLangKey, c)
+				common.WriteError(targetBuilder, common.WrongLangKey)
 				return "", targetBuilder.String()
 			}
 
 			userId := session.GetUserId(c)
 			content, err := client.LoadContent(wikiId, groupId, userId, lang, title, "")
 			if err == nil {
-				return "", common.DefaultErrorRedirect(err.Error(), c)
+				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
 			data[wikiTitleName] = title
@@ -173,7 +173,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 
 			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
 			if lang != askedLang {
-				common.WriteError(targetBuilder, common.WrongLangKey, c)
+				common.WriteError(targetBuilder, common.WrongLangKey)
 				return targetBuilder.String()
 			}
 
@@ -183,11 +183,11 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 
 			success, err := client.StoreContent(wikiId, groupId, userId, lang, title, last, content)
 			if err != nil {
-				common.WriteError(targetBuilder, err.Error(), c)
+				common.WriteError(targetBuilder, err.Error())
 				return targetBuilder.String()
 			}
 			if !success {
-				common.WriteError(targetBuilder, "base.version.outdated", c)
+				common.WriteError(targetBuilder, "BaseVersionOutdated")
 			}
 			return targetBuilder.String()
 		}),
@@ -198,14 +198,14 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 
 			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, listMode, title)
 			if lang != askedLang {
-				common.WriteError(targetBuilder, common.WrongLangKey, c)
+				common.WriteError(targetBuilder, common.WrongLangKey)
 				return "", targetBuilder.String()
 			}
 
 			userId := session.GetUserId(c)
 			versions, err := client.GetVersions(wikiId, groupId, userId, lang, title)
 			if err != nil {
-				common.WriteError(targetBuilder, err.Error(), c)
+				common.WriteError(targetBuilder, err.Error())
 				return "", targetBuilder.String()
 			}
 
@@ -224,7 +224,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 
 			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, listMode, title)
 			if lang != askedLang {
-				common.WriteError(targetBuilder, common.WrongLangKey, c)
+				common.WriteError(targetBuilder, common.WrongLangKey)
 				return targetBuilder.String()
 			}
 
@@ -232,7 +232,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 			version := c.Query(versionName)
 			err := client.DeleteContent(wikiId, groupId, userId, lang, title, version)
 			if err != nil {
-				common.WriteError(targetBuilder, err.Error(), c)
+				common.WriteError(targetBuilder, err.Error())
 			}
 			return targetBuilder.String()
 		}),

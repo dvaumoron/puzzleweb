@@ -19,35 +19,33 @@ package common
 
 import (
 	"errors"
-	"net/url"
 	"strings"
 
-	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 const ErrorMsgName = "ErrorMsg"
 const QueryError = "?error="
-const WrongLangKey = "wrong.lang"
-const NoElementKey = "no.element"
-const UnknownUser = "error.unknown.user"
+
+const NoElementKey = "NoElement"
+const WrongLangKey = "WrongLang"
+const UnknownUserKey = "ErrorUnknownUser"
 
 // error displayed to user
-var ErrNotAuthorized = errors.New("error.not.authorized")
-var ErrTechnical = errors.New("error.technical.problem")
-var ErrUpdate = errors.New("error.update")
+var ErrNotAuthorized = errors.New("ErrorNotAuthorized")
+var ErrTechnical = errors.New("ErrorTechnicalProblem")
+var ErrUpdate = errors.New("ErrorUpdate")
 
 func LogOriginalError(err error) {
 	log.Logger.Warn("Original error.", zap.Error(err))
 }
 
-func WriteError(urlBuilder *strings.Builder, errMsg string, c *gin.Context) {
+func WriteError(urlBuilder *strings.Builder, errorMsg string) {
 	urlBuilder.WriteString(QueryError)
-	urlBuilder.WriteString(url.QueryEscape(locale.GetText(errMsg, c)))
+	urlBuilder.WriteString(errorMsg)
 }
 
-func DefaultErrorRedirect(errMsg string, c *gin.Context) string {
-	return "/?error=" + url.QueryEscape(locale.GetText(errMsg, c))
+func DefaultErrorRedirect(errorMsg string) string {
+	return "/?error=" + errorMsg
 }

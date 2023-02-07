@@ -32,13 +32,11 @@ import (
 
 const LangName = "lang"
 const pathName = "Path"
-const keyName = "key"
 
 var matcher language.Matcher
 var AllLang []string
 var DefaultLang string
-var messages map[string]map[string]string
-var displayMessages map[string]map[string]string
+var messages map[string]map[string]string = map[string]map[string]string{}
 
 type Tags struct {
 	list []language.Tag
@@ -65,7 +63,6 @@ func InitMessages() {
 	}
 	DefaultLang = AllLang[0]
 	matcher = language.NewMatcher(list)
-	messages = map[string]map[string]string{}
 	for _, lang := range AllLang {
 		messagesLang := map[string]string{}
 		messages[lang] = messagesLang
@@ -106,26 +103,21 @@ func InitMessages() {
 
 	messagesDefaultLang := messages[DefaultLang]
 	for _, lang := range AllLang {
-		displayMessagesLang := map[string]string{}
-		displayMessages[lang] = displayMessagesLang
 		if lang == DefaultLang {
-			for key, value := range messagesDefaultLang {
-				displayMessagesLang[transformKey(key)] = value
-			}
-		} else {
-			messagesLang := messages[lang]
-			for key, value := range messagesLang {
-				if value == "" {
-					value = messagesDefaultLang[key]
-				}
-				displayMessagesLang[transformKey(key)] = value
+			continue
+		}
+		messagesLang := messages[lang]
+		for key, value := range messagesLang {
+			if value == "" {
+				messagesLang[key] = messagesDefaultLang[key]
 			}
 		}
 	}
+
 }
 
 func GetText(key string, c *gin.Context) string {
-	return getText(key, GetLang(c))
+	return GetMessages(c)[key]
 }
 
 func GetLang(c *gin.Context) string {
@@ -162,43 +154,10 @@ func SetLangCookie(c *gin.Context, lang string) {
 }
 
 func GetMessages(c *gin.Context) map[string]string {
-	return displayMessages[GetLang(c)]
+	return messages[GetLang(c)]
 }
 
-func getText(key string, lang string) string {
-	if text := messages[lang][key]; text != "" {
-		return text
-	}
-	if lang == DefaultLang {
-		return warnMissingDefault(key, DefaultLang)
-	}
-
-	log.Logger.Warn("Missing key, falling to default locale.",
-		zap.String("key", key), zap.String("currentLocale", lang),
-	)
-
-	if text := messages[DefaultLang][key]; text != "" {
-		return text
-	}
-	return warnMissingDefault(key, DefaultLang)
-}
-
-func warnMissingDefault(key string, defaultLang string) string {
-	log.Logger.Warn("Missing key in default locale.",
-		zap.String(keyName, key), zap.String("defaultLocale", defaultLang),
-	)
-	return key
-}
-
-func transformKey(key string) string {
-	var keyBuilder strings.Builder
-	for _, part := range strings.Split(key, ".") {
-		keyBuilder.WriteString(transformWord(part))
-	}
-	return keyBuilder.String()
-}
-
-func transformWord(word string) string {
+func CamelCase(word string) string {
 	if word == "" {
 		return ""
 	}

@@ -37,9 +37,9 @@ func (w *blogWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.listHandler)
 	router.GET("/view/:postId", w.viewHandler)
 	router.POST("/comment/:postId", w.commentHandler)
-	router.GET("/create/", w.createHandler)
-	router.POST("/preview/", w.previewHandler)
-	router.POST("/save/", w.saveHandler)
+	router.GET("/create", w.createHandler)
+	router.POST("/preview", w.previewHandler)
+	router.POST("/save", w.saveHandler)
 	router.GET("/delete/:postId", w.deleteHandler)
 }
 

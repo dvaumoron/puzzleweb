@@ -31,8 +31,8 @@ type settingsWidget struct {
 var saveHandler gin.HandlerFunc
 
 func (w *settingsWidget) LoadInto(router gin.IRouter) {
-	router.GET("/edit/", w.editHandler)
-	router.POST("/save/", saveHandler)
+	router.GET("/edit", w.editHandler)
+	router.POST("/save", saveHandler)
 }
 
 func AddSettingsPage(site *puzzleweb.Site, args ...string) {

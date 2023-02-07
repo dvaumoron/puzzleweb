@@ -35,8 +35,8 @@ type forumWidget struct {
 
 func (w *forumWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.listThreadHandler)
-	router.GET("/create/", w.createThreadHandler)
-	router.POST("/save/", w.saveThreadHandler)
+	router.GET("/create", w.createThreadHandler)
+	router.POST("/save", w.saveThreadHandler)
 	router.GET("/delete/:threadId", w.deleteThreadHandler)
 	router.GET("/view/:threadId", w.viewThreadHandler)
 	router.POST("/message/save/:threadId", w.saveMessageHandler)

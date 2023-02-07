@@ -4,6 +4,7 @@ no.element=
 error.not.authorized=
 error.technical.problem=
 error.update=
+error.unknown.user=
 welcome.label=
 group.label.admin=
 group.label.public=
@@ -41,6 +42,10 @@ update.label=
 delete.label=
 new.role.label=
 error.bad.role.name=
+
+# profile
+page.title.profile=
+error.wrong.confirm.password=
 
 # wiki
 base.version.outdated=

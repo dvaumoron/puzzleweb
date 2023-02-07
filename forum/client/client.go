@@ -34,7 +34,7 @@ import (
 
 type ForumContent struct {
 	Id      uint64
-	Creator profileclient.Profile
+	Creator profileclient.UserProfile
 	Date    string
 	Text    string
 }
@@ -317,7 +317,7 @@ func deleteMessage(client pb.ForumClient, ctx context.Context, request *pb.IdReq
 	return client.DeleteMessage(ctx, request)
 }
 
-func sortConvertContents(list []*pb.Content, users map[uint64]profileclient.Profile) []ForumContent {
+func sortConvertContents(list []*pb.Content, users map[uint64]profileclient.UserProfile) []ForumContent {
 	sort.Sort(sortableContents(list))
 
 	contents := make([]ForumContent, 0, len(list))
@@ -327,7 +327,7 @@ func sortConvertContents(list []*pb.Content, users map[uint64]profileclient.Prof
 	return contents
 }
 
-func convertContent(content *pb.Content, creator profileclient.Profile) ForumContent {
+func convertContent(content *pb.Content, creator profileclient.UserProfile) ForumContent {
 	createdAt := time.Unix(content.CreatedAt, 0)
 	return ForumContent{
 		Id: content.Id, Creator: creator,

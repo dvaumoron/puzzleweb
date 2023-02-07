@@ -19,7 +19,6 @@ package puzzleweb
 
 import (
 	"net/http"
-	"strconv"
 
 	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/common"
@@ -57,7 +56,7 @@ func NewSite(args ...string) *Site {
 	engine := gin.Default()
 
 	engine.Static("/static", config.Shared.StaticPath)
-	engine.GET("/profilePic", profilePicHandler)
+	engine.GET("/profilePic/:UserId", profilePicHandler)
 
 	site := &Site{
 		engine: engine,
@@ -81,6 +80,10 @@ func (site *Site) AddDefaultData(adder common.DataAdder) {
 
 func (site *Site) SetHTMLRender(r render.HTMLRender) {
 	site.engine.HTMLRender = r
+}
+
+func (site *Site) SetMaxMultipartMemory(memorySize int64) {
+	site.engine.MaxMultipartMemory = memorySize
 }
 
 func (site *Site) initEngine() *gin.Engine {
@@ -134,7 +137,7 @@ func Run(sites ...SiteConfig) error {
 }
 
 func profilePicHandler(c *gin.Context) {
-	userId, err := strconv.ParseUint(c.Query(common.UserIdName), 10, 64)
+	userId, err := common.GetRequestedUserId(c)
 	if err != nil {
 		c.AbortWithError(http.StatusNotFound, err)
 		return

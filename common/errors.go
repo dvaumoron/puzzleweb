@@ -32,6 +32,7 @@ const ErrorMsgName = "ErrorMsg"
 const QueryError = "?error="
 const WrongLangKey = "wrong.lang"
 const NoElementKey = "no.element"
+const UnknownUser = "error.unknown.user"
 
 // error displayed to user
 var ErrNotAuthorized = errors.New("error.not.authorized")

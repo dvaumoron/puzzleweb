@@ -29,12 +29,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type Profile struct {
-	UserId      uint64
-	Login       string
-	RegistredAt string
-	Desc        string
-	Info        map[string]string
+type UserProfile struct {
+	loginclient.User
+	Desc string
+	Info map[string]string
 }
 
 func UpdateProfile(userId uint64, desc string, info map[string]string) error {
@@ -104,7 +102,7 @@ func GetPicture(userId uint64) ([]byte, error) {
 	return response.Data, nil
 }
 
-func GetProfiles(userIds []uint64) (map[uint64]Profile, error) {
+func GetProfiles(userIds []uint64) (map[uint64]UserProfile, error) {
 	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
@@ -131,13 +129,12 @@ func GetProfiles(userIds []uint64) (map[uint64]Profile, error) {
 		return nil, err
 	}
 
-	profiles := map[uint64]Profile{}
+	profiles := map[uint64]UserProfile{}
 	for _, profile := range response.List {
 		userId := profile.UserId
 		user := users[userId]
-		profiles[userId] = Profile{
-			UserId: userId, Login: user.Login, RegistredAt: user.RegistredAt,
-			Desc: profile.Desc, Info: profile.Info,
+		profiles[userId] = UserProfile{
+			User: user, Desc: profile.Desc, Info: profile.Info,
 		}
 	}
 	return profiles, err

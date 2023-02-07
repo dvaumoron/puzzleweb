@@ -32,7 +32,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const loginName = "Login"
 const loginUrlName = "LoginUrl"
 const prevUrlWithErrorName = "PrevUrlWithError"
 
@@ -41,9 +40,9 @@ type loginWidget struct {
 }
 
 var submitHandler = common.CreateRedirect(func(c *gin.Context) string {
-	login := c.PostForm(loginName)
-	password := c.PostForm("Password")
-	register := c.PostForm("Register") == "true"
+	login := c.PostForm(common.LoginName)
+	password := c.PostForm(common.PasswordName)
+	register := c.PostForm("Register") == "true" // TODO confirm password
 
 	success, userId, err := client.VerifyOrRegister(login, password, register)
 	errorMsg := ""
@@ -62,7 +61,7 @@ var submitHandler = common.CreateRedirect(func(c *gin.Context) string {
 	}
 
 	s := session.Get(c)
-	s.Store(loginName, login)
+	s.Store(common.LoginName, login)
 	s.Store(common.UserIdName, fmt.Sprint(userId))
 
 	locale.SetLangCookie(c, settingsclient.Get(userId, c)[locale.LangName])
@@ -72,7 +71,7 @@ var submitHandler = common.CreateRedirect(func(c *gin.Context) string {
 
 var logoutHandler = common.CreateRedirect(func(c *gin.Context) string {
 	s := session.Get(c)
-	s.Delete(loginName)
+	s.Delete(common.LoginName)
 	s.Delete(common.UserIdName)
 	return c.Query(common.RedirectName)
 })
@@ -85,10 +84,10 @@ func (w *loginWidget) LoadInto(router gin.IRouter) {
 
 func loginData(data gin.H, c *gin.Context) {
 	escapedUrl := url.QueryEscape(c.Request.URL.Path)
-	if login := session.Get(c).Load(loginName); login == "" {
+	if login := session.Get(c).Load(common.LoginName); login == "" {
 		data[loginUrlName] = "/login?redirect=" + escapedUrl
 	} else {
-		data[loginName] = login
+		data[common.LoginName] = login
 		data[loginUrlName] = "/login/logout?redirect=" + escapedUrl
 	}
 }

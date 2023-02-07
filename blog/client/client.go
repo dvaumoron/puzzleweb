@@ -34,7 +34,7 @@ import (
 
 type BlogPost struct {
 	PostId  uint64
-	Creator profileclient.Profile
+	Creator profileclient.UserProfile
 	Date    string
 	Title   string
 	content template.HTML // markdown apply is done before storage
@@ -196,7 +196,7 @@ func sortConvertPosts(list []*pb.Content) ([]BlogPost, error) {
 	return contents, nil
 }
 
-func convertPost(post *pb.Content, creator profileclient.Profile) BlogPost {
+func convertPost(post *pb.Content, creator profileclient.UserProfile) BlogPost {
 	createdAt := time.Unix(post.CreatedAt, 0)
 	return BlogPost{
 		PostId: post.PostId, Creator: creator, Date: createdAt.Format(config.Shared.DateFormat),

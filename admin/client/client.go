@@ -74,6 +74,9 @@ func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
 	if groupId == PublicGroupId && action == ActionAccess {
 		return nil
 	}
+	if userId == 0 {
+		return common.ErrNotAuthorized
+	}
 
 	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

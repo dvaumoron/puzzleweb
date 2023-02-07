@@ -19,13 +19,21 @@ package common
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 const RedirectName = "Redirect"
-const UserIdName = "UserId"
 const BaseUrlName = "BaseUrl"
+
+const PasswordName = "Password"
+
+const UserIdName = "UserId"
+const LoginName = "Login"         // current connected user
+const UserLoginName = "UserLogin" // viewed user
+const RegistredAtName = "RegistredAt"
+const UserDescName = "UserDesc"
 
 type DataAdder func(gin.H, *gin.Context)
 type Redirecter func(*gin.Context) string
@@ -78,4 +86,8 @@ func MapToValueSlice[K comparable, V any](objects map[K]V) []V {
 		res = append(res, object)
 	}
 	return res
+}
+
+func GetRequestedUserId(c *gin.Context) (uint64, error) {
+	return strconv.ParseUint(c.Param(UserIdName), 10, 64)
 }

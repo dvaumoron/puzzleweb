@@ -145,7 +145,8 @@ func (p *Page) extractSubPageNames(url string, c *gin.Context) []PageDesc {
 	pageDescs := make([]PageDesc, 0, size)
 	for _, page := range pages {
 		if page.visible {
-			pageDescs = append(pageDescs, makePageDesc(page.name, url+page.name, c))
+			name := page.name
+			pageDescs = append(pageDescs, makePageDesc(name, url+name, c))
 		}
 	}
 	return pageDescs

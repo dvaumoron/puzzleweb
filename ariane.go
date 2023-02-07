@@ -69,6 +69,10 @@ func initData(c *gin.Context) gin.H {
 	if errorMsg := c.Query("error"); errorMsg != "" {
 		data[common.ErrorMsgName] = locale.GetText(errorMsg, c)
 	}
+	if locale.MultipleLang {
+		data["LangSelector"] = true
+		data["AllLang"] = locale.AllLang
+	}
 	for _, adder := range site.adders {
 		adder(data, c)
 	}

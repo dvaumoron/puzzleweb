@@ -59,6 +59,4 @@ func Get(userId uint64, c *gin.Context) map[string]string {
 	return userSettings
 }
 
-func Update(userId uint64, userSettings map[string]string) error {
-	return sessionclient.UpdateSettings(userId, userSettings)
-}
+var Update = sessionclient.UpdateSettings

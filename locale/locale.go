@@ -36,6 +36,7 @@ const pathName = "Path"
 var matcher language.Matcher
 var AllLang []string
 var DefaultLang string
+var MultipleLang bool
 var messages map[string]map[string]string = map[string]map[string]string{}
 
 type Tags struct {
@@ -57,6 +58,8 @@ func InitMessages() {
 	if size == 0 {
 		log.Logger.Fatal("No locales declared.")
 	}
+	MultipleLang = size > 1
+
 	AllLang = make([]string, 0, size)
 	for _, langTag := range list {
 		AllLang = append(AllLang, langTag.String())
@@ -113,7 +116,6 @@ func InitMessages() {
 			}
 		}
 	}
-
 }
 
 func GetText(key string, c *gin.Context) string {

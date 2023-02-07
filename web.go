@@ -50,7 +50,7 @@ func NewSite(args ...string) *Site {
 		rootTmpl = args[0]
 	}
 	if size > 1 {
-		log.Logger.Info("CreateSite should be called with 0 or 1 argument.")
+		log.Logger.Info("CreateSite should be called with at most 1 argument.")
 	}
 
 	engine := gin.Default()
@@ -100,7 +100,7 @@ func (site *Site) initEngine() *gin.Engine {
 		}
 		engine.StaticFile(favicon, config.Shared.StaticPath+faviconPath)
 		site.root.Widget.LoadInto(engine)
-		if len(locale.AllLang) != 1 {
+		if locale.MultipleLang {
 			engine.GET("/changeLang", changeLangHandler)
 		}
 		engine.NoRoute(common.CreateRedirectString(site.Page404Url))

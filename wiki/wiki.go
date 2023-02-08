@@ -60,7 +60,7 @@ func (w wikiWidget) LoadInto(router gin.IRouter) {
 	router.GET("/:lang/delete/:title", w.deleteHandler)
 }
 
-func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string) puzzleweb.Page {
+func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string) puzzleweb.Page {
 	config.Shared.LoadWiki()
 	cache.InitWiki(wikiId)
 
@@ -70,7 +70,7 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 	listTmpl := "wiki/list.html"
 	switch len(args) {
 	default:
-		log.Logger.Info("NewWikiPage should be called with 3 to 7 arguments.")
+		log.Logger.Info("MakeWikiPage should be called with 3 to 7 arguments.")
 		fallthrough
 	case 4:
 		if args[3] != "" {

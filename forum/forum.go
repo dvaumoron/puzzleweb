@@ -57,7 +57,7 @@ func (w forumWidget) LoadInto(router gin.IRouter) {
 	router.GET("/message/delete/:threadId/:messageId", w.deleteMessageHandler)
 }
 
-func NewForumPage(forumName string, groupId uint64, forumId uint64, args ...string) puzzleweb.Page {
+func MakeForumPage(forumName string, groupId uint64, forumId uint64, args ...string) puzzleweb.Page {
 	config.Shared.LoadForum()
 
 	listTmpl := "forum/list.html"
@@ -65,7 +65,7 @@ func NewForumPage(forumName string, groupId uint64, forumId uint64, args ...stri
 	viewTmpl := "forum/view.html"
 	switch len(args) {
 	default:
-		log.Logger.Info("NewForumPage should be called with 3 to 6 arguments.")
+		log.Logger.Info("MakeForumPage should be called with 3 to 6 arguments.")
 		fallthrough
 	case 3:
 		if args[2] != "" {

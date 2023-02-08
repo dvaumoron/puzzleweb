@@ -43,7 +43,7 @@ func (w blogWidget) LoadInto(router gin.IRouter) {
 	router.GET("/delete/:postId", w.deleteHandler)
 }
 
-func NewBlogPage(blogName string, groupId uint64, blogId uint64, args ...string) puzzleweb.Page {
+func MakeBlogPage(blogName string, groupId uint64, blogId uint64, args ...string) puzzleweb.Page {
 	config.Shared.LoadBlog()
 
 	// TODO

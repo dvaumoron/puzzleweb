@@ -71,13 +71,6 @@ type Role struct {
 }
 
 func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
-	if groupId == PublicGroupId && action == ActionAccess {
-		return nil
-	}
-	if userId == 0 {
-		return common.ErrNotAuthorized
-	}
-
 	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		common.LogOriginalError(err)
@@ -167,14 +160,10 @@ func UpdateUser(adminId uint64, userId uint64, roles []Role) error {
 
 	converted := make([]*pb.RoleRequest, 0, len(roles))
 	for _, role := range roles {
-		converted = append(converted, &pb.RoleRequest{
-			Name: role.Name, ObjectId: nameToGroupId[role.Group],
-		})
+		converted = append(converted, &pb.RoleRequest{Name: role.Name, ObjectId: nameToGroupId[role.Group]})
 	}
 
-	response, err = client.UpdateUser(ctx, &pb.UserRight{
-		UserId: userId, List: converted,
-	})
+	response, err = client.UpdateUser(ctx, &pb.UserRight{UserId: userId, List: converted})
 	if err != nil {
 		common.LogOriginalError(err)
 		return common.ErrTechnical
@@ -209,8 +198,7 @@ func UpdateRole(adminId uint64, role Role) error {
 	}
 
 	response, err = client.UpdateRole(ctx, &pb.Role{
-		Name: role.Name, ObjectId: nameToGroupId[role.Group],
-		List: role.Actions,
+		Name: role.Name, ObjectId: nameToGroupId[role.Group], List: role.Actions,
 	})
 	if err != nil {
 		common.LogOriginalError(err)

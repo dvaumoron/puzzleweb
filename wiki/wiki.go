@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb"
+	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
@@ -209,12 +210,13 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 				return "", targetBuilder.String()
 			}
 
+			deleteRight := rightclient.AuthQuery(userId, groupId, rightclient.ActionDelete) == nil
+
 			data[wikiTitleName] = title
 			data[versionsName] = versions
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
-			if len(versions) == 0 {
-				data[common.ErrorMsgName] = locale.GetText(common.NoElementKey, c)
-			}
+			data[common.AllowedToDeleteName] = deleteRight
+			common.InitNoELementMsg(data, len(versions), c)
 			return listTmpl, ""
 		}),
 		deleteHandler: common.CreateRedirect(func(c *gin.Context) string {

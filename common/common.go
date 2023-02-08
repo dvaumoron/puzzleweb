@@ -21,11 +21,17 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 const RedirectName = "Redirect"
 const BaseUrlName = "BaseUrl"
+const AllowedToCreateName = "AllowedToCreate"
+const AllowedToUpdateName = "AllowedToUpdate"
+const AllowedToDeleteName = "AllowedToDelete"
 
 const PasswordName = "Password"
 
@@ -88,6 +94,38 @@ func MapToValueSlice[K comparable, V any](objects map[K]V) []V {
 	return res
 }
 
-func GetRequestedUserId(c *gin.Context) (uint64, error) {
-	return strconv.ParseUint(c.Param(UserIdName), 10, 64)
+func GetRequestedUserId(c *gin.Context) uint64 {
+	userId, err := strconv.ParseUint(c.Param(UserIdName), 10, 64)
+	if err != nil {
+		log.Logger.Warn("Failed to parse userId from request.", zap.Error(err))
+	}
+	return userId
+}
+
+func GetPagination(c *gin.Context) (uint64, uint64, uint64, string) {
+	pageNumber, _ := strconv.ParseUint(c.Query("pageNumber"), 10, 64)
+	if pageNumber == 0 {
+		pageNumber = 1
+	}
+	pageSize, _ := strconv.ParseUint(c.Query("pageSize"), 10, 64)
+	if pageSize == 0 {
+		pageSize = config.Shared.PageSize
+	}
+	filter := c.Query("filter")
+
+	start := (pageNumber - 1) * pageSize
+	end := start + pageSize
+
+	return pageNumber, start, end, filter
+}
+
+func InitPagination(data gin.H, filter string, pageNumber uint64, end uint64, total uint64) {
+	data["Filter"] = filter
+	if pageNumber != 1 {
+		data["PreviousPageNumber"] = pageNumber - 1
+	}
+	if end < total {
+		data["NextPageNumber"] = pageNumber + 1
+	}
+	data["Total"] = total
 }

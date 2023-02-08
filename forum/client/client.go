@@ -142,7 +142,7 @@ func CreateMessage(groupId uint64, userId uint64, threadId uint64, message strin
 	return nil
 }
 
-func GetThread(forumId uint64, groupId uint64, userId uint64, threadId uint64, start uint64, end uint64) (uint64, ForumContent, []ForumContent, error) {
+func GetThread(forumId uint64, groupId uint64, userId uint64, threadId uint64, start uint64, end uint64, filter string) (uint64, ForumContent, []ForumContent, error) {
 	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
 	if err != nil {
 		return 0, ForumContent{}, nil, err
@@ -167,7 +167,9 @@ func GetThread(forumId uint64, groupId uint64, userId uint64, threadId uint64, s
 		return 0, ForumContent{}, nil, common.ErrTechnical
 	}
 
-	response2, err := client.GetMessages(ctx, &pb.SearchRequest{ContainerId: threadId, Start: start, End: end})
+	response2, err := client.GetMessages(ctx, &pb.SearchRequest{
+		ContainerId: threadId, Start: start, End: end, Filter: filter,
+	})
 	if err != nil {
 		common.LogOriginalError(err)
 		return 0, ForumContent{}, nil, common.ErrTechnical

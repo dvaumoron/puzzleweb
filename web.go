@@ -134,15 +134,15 @@ func Run(sites ...SiteConfig) error {
 }
 
 func profilePicHandler(c *gin.Context) {
-	userId, err := common.GetRequestedUserId(c)
-	if err != nil {
-		c.AbortWithError(http.StatusNotFound, err)
+	userId := common.GetRequestedUserId(c)
+	if userId == 0 {
+		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
 	data, err := profileclient.GetPicture(userId)
 	if err != nil {
-		c.AbortWithError(http.StatusNotFound, err)
+		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 	c.Data(http.StatusFound, http.DetectContentType(data), data)

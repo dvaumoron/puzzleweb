@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb"
+	"github.com/dvaumoron/puzzleweb/admin"
 	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
@@ -167,26 +168,35 @@ func AddProfilePage(site *puzzleweb.Site, groupId uint64, args ...string) {
 	p := puzzleweb.NewHiddenPage("profile")
 	p.Widget = &profileWidget{
 		viewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			userId, err := common.GetRequestedUserId(c)
-			if err != nil {
-				common.LogOriginalError(err)
+			viewedUserId := common.GetRequestedUserId(c)
+			if viewedUserId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
-			if currentUserId := session.GetUserId(c); userId != currentUserId {
-				err = rightclient.AuthQuery(currentUserId, groupId, rightclient.ActionAccess)
+			currentUserId := session.GetUserId(c)
+			if viewedUserId != currentUserId {
+				err := rightclient.AuthQuery(currentUserId, groupId, rightclient.ActionAccess)
 				if err != nil {
 					return "", common.DefaultErrorRedirect(err.Error())
 				}
 			}
 
-			profiles, err := client.GetProfiles([]uint64{userId})
+			profiles, err := client.GetProfiles([]uint64{viewedUserId})
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			userProfile := profiles[userId]
-			data[common.UserIdName] = userId
+			roles, err := rightclient.GetUserRoles(currentUserId, viewedUserId)
+			// ignore ErrNotAuthorized
+			if err == common.ErrTechnical {
+				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
+			}
+			if err == nil {
+				data["UserRight"] = admin.DisplayGroups(roles, c)
+			}
+
+			userProfile := profiles[viewedUserId]
+			data[common.UserIdName] = viewedUserId
 			data[common.UserLoginName] = userProfile.Login
 			data[common.RegistredAtName] = userProfile.RegistredAt
 			data[common.UserDescName] = userProfile.Desc

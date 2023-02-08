@@ -111,33 +111,20 @@ func loadDefault() Config {
 		TemplatesPath: retrievePath("TEMPLATES_PATH", "templates"),
 
 		SessionServiceAddr: requiredFromEnv("SESSION_SERVICE_ADDR"),
-	}
-}
-
-func (c *Config) LoadLogin() {
-	if c.SaltServiceAddr == "" {
-		c.SaltServiceAddr = requiredFromEnv("SALT_SERVICE_ADDR")
-		c.LoginServiceAddr = requiredFromEnv("LOGIN_SERVICE_ADDR")
-	}
-}
-
-func (c *Config) LoadRight() {
-	if c.RightServiceAddr == "" {
-		c.LoadLogin()
-		c.RightServiceAddr = requiredFromEnv("RIGHT_SERVICE_ADDR")
+		SaltServiceAddr:    requiredFromEnv("SALT_SERVICE_ADDR"),
+		LoginServiceAddr:   requiredFromEnv("LOGIN_SERVICE_ADDR"),
+		RightServiceAddr:   requiredFromEnv("RIGHT_SERVICE_ADDR"),
 	}
 }
 
 func (c *Config) LoadProfile() {
 	if c.ProfileServiceAddr == "" {
-		c.LoadLogin()
 		c.ProfileServiceAddr = requiredFromEnv("PROFILE_SERVICE_ADDR")
 	}
 }
 
 func (c *Config) LoadSettings() {
 	if c.SettingsServiceAddr == "" {
-		c.LoadLogin()
 		c.SettingsServiceAddr = requiredFromEnv("SETTINGS_SERVICE_ADDR")
 	}
 }
@@ -150,7 +137,6 @@ func (c *Config) loadMarkdown() {
 
 func (c *Config) LoadWiki() {
 	if c.WikiServiceAddr == "" {
-		c.LoadRight()
 		c.LoadProfile()
 		c.loadMarkdown()
 		c.WikiServiceAddr = requiredFromEnv("WIKI_SERVICE_ADDR")
@@ -159,7 +145,6 @@ func (c *Config) LoadWiki() {
 
 func (c *Config) LoadForum() {
 	if c.ForumServiceAddr == "" {
-		c.LoadRight()
 		c.LoadProfile()
 		c.ForumServiceAddr = requiredFromEnv("FORUM_SERVICE_ADDR")
 	}

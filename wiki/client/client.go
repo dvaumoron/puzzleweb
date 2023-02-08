@@ -50,10 +50,7 @@ func LoadContent(wikiId uint64, groupId uint64, userId uint64, lang string, titl
 	if versionStr != "" {
 		version, err = strconv.ParseUint(versionStr, 10, 64)
 		if err != nil {
-			log.Logger.Info("Failed to parse wiki version, falling to last.",
-				zap.Error(err),
-			)
-			version = 0
+			log.Logger.Info("Failed to parse wiki version, falling to last.", zap.Error(err))
 		}
 	}
 	return loadContent(wikiId, buildRef(lang, title), version)

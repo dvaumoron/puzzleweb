@@ -20,14 +20,12 @@ package admin
 import (
 	"errors"
 	"sort"
-	"strconv"
 	"strings"
 
 	pb "github.com/dvaumoron/puzzlerightservice"
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
 	loginclient "github.com/dvaumoron/puzzleweb/login/client"
@@ -39,7 +37,7 @@ import (
 const roleNameName = "RoleName"
 const groupName = "Group"
 const groupsName = "Groups"
-const usersName = "Users"
+const viewAdminName = "ViewAdmin"
 
 const (
 	accessKey = "AccessLabel"
@@ -107,16 +105,9 @@ type adminWidget struct {
 }
 
 var saveUserHandler = common.CreateRedirect(func(c *gin.Context) string {
-	adminId := session.GetUserId(c)
-	if adminId == 0 {
-		return common.DefaultErrorRedirect(common.UnknownUserKey)
-	}
-
-	userId, err := common.GetRequestedUserId(c)
-	if err != nil {
-		common.LogOriginalError(err)
-		err = common.ErrTechnical
-	} else {
+	userId := common.GetRequestedUserId(c)
+	err := common.ErrTechnical
+	if userId != 0 {
 		rolesStr := c.PostFormArray("roles")
 		roles := make([]client.Role, 0, len(rolesStr))
 		for _, roleStr := range rolesStr {
@@ -127,7 +118,7 @@ var saveUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 				})
 			}
 		}
-		err = client.UpdateUser(adminId, userId, roles)
+		err = client.UpdateUser(session.GetUserId(c), userId, roles)
 	}
 
 	targetBuilder := userListUrlBuilder(c)
@@ -138,19 +129,12 @@ var saveUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 })
 
 var deleteUserHandler = common.CreateRedirect(func(c *gin.Context) string {
-	adminId := session.GetUserId(c)
-	if adminId == 0 {
-		return common.DefaultErrorRedirect(common.UnknownUserKey)
-	}
-
-	userId, err := common.GetRequestedUserId(c)
-	if err != nil {
-		common.LogOriginalError(err)
-		err = common.ErrTechnical
-	} else {
+	userId := common.GetRequestedUserId(c)
+	err := common.ErrTechnical
+	if userId != 0 {
 		// an empty slice delete the user right
 		// only the first service call do a right check
-		err = client.UpdateUser(adminId, userId, []client.Role{})
+		err = client.UpdateUser(session.GetUserId(c), userId, []client.Role{})
 		if err == nil {
 			err = profileclient.Delete(userId)
 			if err == nil {
@@ -167,11 +151,6 @@ var deleteUserHandler = common.CreateRedirect(func(c *gin.Context) string {
 })
 
 var saveRoleHandler = common.CreateRedirect(func(c *gin.Context) string {
-	adminId := session.GetUserId(c)
-	if adminId == 0 {
-		return common.DefaultErrorRedirect(common.UnknownUserKey)
-	}
-
 	roleName := c.PostForm(roleNameName)
 	err := errBadName
 	if roleName != "new" {
@@ -191,7 +170,7 @@ var saveRoleHandler = common.CreateRedirect(func(c *gin.Context) string {
 			}
 			actions = append(actions, action)
 		}
-		err = client.UpdateRole(adminId, client.Role{Name: roleName, Group: group, Actions: actions})
+		err = client.UpdateRole(session.GetUserId(c), client.Role{Name: roleName, Group: group, Actions: actions})
 	}
 
 	var targetBuilder strings.Builder
@@ -215,9 +194,11 @@ func (w *adminWidget) LoadInto(router gin.IRouter) {
 	router.POST("/role/save", saveRoleHandler)
 }
 
-func AddAdminPage(site *puzzleweb.Site, args ...string) {
-	config.Shared.LoadRight()
+func adminData(data gin.H, c *gin.Context) {
+	data[viewAdminName] = client.AuthQuery(session.GetUserId(c), client.AdminGroupId, client.ActionAccess) == nil
+}
 
+func AddAdminPage(site *puzzleweb.Site, args ...string) {
 	indexTmpl := "admin/index.html"
 	listUserTmpl := "admin/user/list.html"
 	viewUserTmpl := "admin/user/view.html"
@@ -263,69 +244,35 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 	p := puzzleweb.NewHiddenPage("admin")
 	p.Widget = &adminWidget{
 		displayHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			adminId := session.GetUserId(c)
-			if adminId == 0 {
-				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
-			}
-
-			err := client.AuthQuery(adminId, client.AdminGroupId, client.ActionAccess)
-			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+			viewAdmin, _ := data[viewAdminName].(bool)
+			if !viewAdmin {
+				return "", common.DefaultErrorRedirect(common.ErrNotAuthorized.Error())
 			}
 			return indexTmpl, ""
 		}),
 		listUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			adminId := session.GetUserId(c)
-			if adminId == 0 {
-				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
+			viewAdmin, _ := data[viewAdminName].(bool)
+			if !viewAdmin {
+				return "", common.DefaultErrorRedirect(common.ErrNotAuthorized.Error())
 			}
 
-			pageNumber, _ := strconv.ParseUint(c.Query("pageNumber"), 10, 64)
-			if pageNumber == 0 {
-				pageNumber = 1
-			}
-			pageSize, _ := strconv.ParseUint(c.Query("pageSize"), 10, 64)
-			if pageSize == 0 {
-				pageSize = config.Shared.PageSize
-			}
-			filter := c.Query("filter")
+			pageNumber, start, end, filter := common.GetPagination(c)
 
-			err := client.AuthQuery(adminId, client.AdminGroupId, client.ActionAccess)
-			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
-			}
-
-			start := (pageNumber - 1) * pageSize
-			end := start + pageSize
 			total, users, err := loginclient.ListUsers(start, end, filter)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			data["Total"] = total
-			if pageNumber != 1 {
-				data["PreviousPageNumber"] = pageNumber - 1
-			}
-			if end < total {
-				data["NextPageNumber"] = pageNumber + 1
-			}
-			data["Filter"] = filter
-			data[usersName] = users
+			common.InitPagination(data, filter, pageNumber, end, total)
+			data["Users"] = users
 			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
-			if size := len(users); size == 0 {
-				data[common.ErrorMsgName] = locale.GetText(common.NoElementKey, c)
-			}
+			common.InitNoELementMsg(data, len(users), c)
 			return listUserTmpl, ""
 		}),
 		viewUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
-			if adminId == 0 {
-				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
-			}
-
-			userId, err := common.GetRequestedUserId(c)
-			if err != nil {
-				common.LogOriginalError(err)
+			userId := common.GetRequestedUserId(c)
+			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
@@ -339,24 +286,21 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
+			updateRight := client.AuthQuery(adminId, client.AdminGroupId, client.ActionUpdate) == nil
+
 			user := users[userId]
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data[common.UserIdName] = userId
 			data[common.UserLoginName] = user.Login
 			data[common.RegistredAtName] = user.RegistredAt
-			data["IsAdmin"] = adminId != userId
-			data[groupsName] = displayGroups(roles, c)
+			data[common.AllowedToUpdateName] = updateRight
+			data[groupsName] = DisplayGroups(roles, c)
 			return viewUserTmpl, ""
 		}),
 		editUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
-			if adminId == 0 {
-				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
-			}
-
-			userId, err := common.GetRequestedUserId(c)
-			if err != nil {
-				common.LogOriginalError(err)
+			userId := common.GetRequestedUserId(c)
+			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
@@ -382,26 +326,16 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			return editUserTmpl, ""
 		}),
 		listRoleHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			adminId := session.GetUserId(c)
-			if adminId == 0 {
-				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
-			}
-
-			allRoles, err := client.GetAllRoles(adminId)
+			allRoles, err := client.GetAllRoles(session.GetUserId(c))
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
 			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
-			data[groupsName] = displayGroups(allRoles, c)
+			data[groupsName] = DisplayGroups(allRoles, c)
 			return listRoleTmpl, ""
 		}),
 		editRoleHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			adminId := session.GetUserId(c)
-			if adminId == 0 {
-				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
-			}
-
 			roleName := c.PostForm(roleNameName)
 			group := c.PostForm(groupName)
 
@@ -410,7 +344,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			data[groupName] = group
 
 			if roleName != "new" {
-				actions, err := client.GetActions(adminId, roleName, group)
+				actions, err := client.GetActions(session.GetUserId(c), roleName, group)
 				if err != nil {
 					return "", common.DefaultErrorRedirect(err.Error())
 				}
@@ -426,10 +360,12 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 		}),
 	}
 
+	site.AddDefaultData(adminData)
+
 	site.AddPage(p)
 }
 
-func displayGroups(roles []client.Role, c *gin.Context) []*GroupDisplay {
+func DisplayGroups(roles []client.Role, c *gin.Context) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
 	populateGroup(nameToGroup, roles, c, rolesAppender)
 	return sortGroups(nameToGroup)
@@ -441,8 +377,7 @@ func populateGroup(nameToGroup map[string]*GroupDisplay, roles []client.Role, c 
 		group := nameToGroup[groupName]
 		if group == nil {
 			group = &GroupDisplay{
-				Id:          client.GetGroupId(groupName),
-				Name:        groupName,
+				Id: client.GetGroupId(groupName), Name: groupName,
 				DisplayName: locale.GetText("GroupLabel"+locale.CamelCase(groupName), c),
 			}
 			nameToGroup[groupName] = group

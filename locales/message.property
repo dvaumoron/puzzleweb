@@ -34,8 +34,8 @@ RegisterLinkLabel=
 
 # admin
 PageTitleAdmin=
-UserList=
-RoleList=
+UserListTitle=
+RoleListTitle=
 AccessLabel=
 CreateLabel=
 UpdateLabel=

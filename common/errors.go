@@ -21,14 +21,15 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/log"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 const ErrorMsgName = "ErrorMsg"
 const QueryError = "?error="
 
-const NoElementKey = "NoElement"
 const WrongLangKey = "WrongLang"
 const UnknownUserKey = "ErrorUnknownUser"
 
@@ -48,4 +49,10 @@ func WriteError(urlBuilder *strings.Builder, errorMsg string) {
 
 func DefaultErrorRedirect(errorMsg string) string {
 	return "/?error=" + errorMsg
+}
+
+func InitNoELementMsg(data gin.H, size int, c *gin.Context) {
+	if size == 0 {
+		data[ErrorMsgName] = locale.GetText("NoElement", c)
+	}
 }

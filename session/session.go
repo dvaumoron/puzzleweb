@@ -36,6 +36,7 @@ const sessionName = "Session"
 func getSessionId(c *gin.Context) (uint64, error) {
 	cookie, err := c.Cookie(cookieName)
 	if err != nil {
+		log.Logger.Info("Failed to retrieve session cookie.", zap.Error(err))
 		return generateSessionCookie(c)
 	}
 	sessionId, err := strconv.ParseUint(cookie, 10, 64)
@@ -85,14 +86,14 @@ func (s *Session) Delete(key string) {
 func Manage(c *gin.Context) {
 	sessionId, err := getSessionId(c)
 	if err != nil {
-		log.Logger.Error("Failed to generate sessionId.", zap.Error(err))
-		c.AbortWithError(http.StatusInternalServerError, err)
+		log.Logger.Error("Failed to generate sessionId.")
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
 	session, err := client.GetSession(sessionId)
 	if err != nil {
-		logSessionError(c, "Failed to retrieve session.", sessionId, err)
+		logSessionError(c, "Failed to retrieve session.", sessionId)
 		return
 	}
 
@@ -100,19 +101,18 @@ func Manage(c *gin.Context) {
 	c.Next()
 
 	if s := Get(c); s.change {
-		if err := client.UpdateSession(sessionId, s.session); err != nil {
-			logSessionError(c, "Failed to save session.", sessionId, err)
+		if client.UpdateSession(sessionId, s.session) != nil {
+			logSessionError(c, "Failed to save session.", sessionId)
 		}
 	}
 }
 
-func logSessionError(c *gin.Context, msg string, sessionId uint64, err error) {
-	log.Logger.Error(msg, zap.Uint64("sessionId", sessionId), zap.Error(err))
-	c.AbortWithError(http.StatusInternalServerError, err)
+func logSessionError(c *gin.Context, msg string, sessionId uint64) {
+	log.Logger.Error(msg, zap.Uint64("sessionId", sessionId))
+	c.AbortWithStatus(http.StatusInternalServerError)
 }
 
 func Get(c *gin.Context) *Session {
-	var typed *Session
 	untyped, _ := c.Get(sessionName)
 	typed, ok := untyped.(*Session)
 	if !ok {
@@ -124,11 +124,9 @@ func Get(c *gin.Context) *Session {
 }
 
 func GetUserId(c *gin.Context) uint64 {
-	userIdStr := Get(c).Load(common.UserIdName)
-	userId, err := strconv.ParseUint(userIdStr, 10, 64)
+	userId, err := strconv.ParseUint(Get(c).Load(common.UserIdName), 10, 64)
 	if err != nil {
-		log.Logger.Info("Failed to parse userId.", zap.Error(err))
-		return 0
+		log.Logger.Info("Failed to parse userId from session.", zap.Error(err))
 	}
 	return userId
 }

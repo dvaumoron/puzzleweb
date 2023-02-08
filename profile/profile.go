@@ -135,7 +135,7 @@ var changePasswordHandler = common.CreateRedirect(func(c *gin.Context) string {
 	return targetBuilder.String()
 })
 
-func (w *profileWidget) LoadInto(router gin.IRouter) {
+func (w profileWidget) LoadInto(router gin.IRouter) {
 	router.GET("/view/:UserId", w.viewHandler)
 	router.GET("/edit", w.editHandler)
 	router.POST("/save", saveHandler)
@@ -165,8 +165,8 @@ func AddProfilePage(site *puzzleweb.Site, groupId uint64, args ...string) {
 	case 0:
 	}
 
-	p := puzzleweb.NewHiddenPage("profile")
-	p.Widget = &profileWidget{
+	p := puzzleweb.MakeHiddenPage("profile")
+	p.Widget = profileWidget{
 		viewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			viewedUserId := common.GetRequestedUserId(c)
 			if viewedUserId == 0 {

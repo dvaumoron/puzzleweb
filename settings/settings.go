@@ -48,7 +48,7 @@ var saveHandler gin.HandlerFunc = common.CreateRedirect(func(c *gin.Context) str
 	return targetBuilder.String()
 })
 
-func (w *settingsWidget) LoadInto(router gin.IRouter) {
+func (w settingsWidget) LoadInto(router gin.IRouter) {
 	router.GET("/edit", w.editHandler)
 	router.POST("/save", saveHandler)
 }
@@ -65,8 +65,8 @@ func AddSettingsPage(site *puzzleweb.Site, args ...string) {
 		log.Logger.Info("AddSettingsPage should be called with 1 or 2 arguments.")
 	}
 
-	p := puzzleweb.NewHiddenPage("settings")
-	p.Widget = &settingsWidget{
+	p := puzzleweb.MakeHiddenPage("settings")
+	p.Widget = settingsWidget{
 		editHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			userId := session.GetUserId(c)
 			if userId == 0 {

@@ -47,7 +47,7 @@ type forumWidget struct {
 	deleteMessageHandler gin.HandlerFunc
 }
 
-func (w *forumWidget) LoadInto(router gin.IRouter) {
+func (w forumWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.listThreadHandler)
 	router.GET("/create", w.createThreadHandler)
 	router.POST("/save", w.saveThreadHandler)
@@ -57,7 +57,7 @@ func (w *forumWidget) LoadInto(router gin.IRouter) {
 	router.GET("/message/delete/:threadId/:messageId", w.deleteMessageHandler)
 }
 
-func NewForumPage(forumName string, groupId uint64, forumId uint64, args ...string) *puzzleweb.Page {
+func NewForumPage(forumName string, groupId uint64, forumId uint64, args ...string) puzzleweb.Page {
 	config.Shared.LoadForum()
 
 	listTmpl := "forum/list.html"
@@ -85,9 +85,8 @@ func NewForumPage(forumName string, groupId uint64, forumId uint64, args ...stri
 	case 0:
 	}
 
-	// TODO
-	p := puzzleweb.NewPage(forumName)
-	p.Widget = &forumWidget{
+	p := puzzleweb.MakePage(forumName)
+	p.Widget = forumWidget{
 		listThreadHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			userId := session.GetUserId(c)
 

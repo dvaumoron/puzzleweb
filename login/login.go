@@ -75,7 +75,7 @@ var logoutHandler = common.CreateRedirect(func(c *gin.Context) string {
 	return c.Query(common.RedirectName)
 })
 
-func (w *loginWidget) LoadInto(router gin.IRouter) {
+func (w loginWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.displayHandler)
 	router.POST("/submit", submitHandler)
 	router.GET("/logout", logoutHandler)
@@ -101,8 +101,8 @@ func AddLoginPage(site *puzzleweb.Site, args ...string) {
 		log.Logger.Info("AddLoginPage should be called with 2 or 3 arguments.")
 	}
 
-	p := puzzleweb.NewHiddenPage("login")
-	p.Widget = &loginWidget{
+	p := puzzleweb.MakeHiddenPage("login")
+	p.Widget = loginWidget{
 		displayHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			data[common.RedirectName] = c.Query(common.RedirectName)
 

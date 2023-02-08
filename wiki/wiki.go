@@ -51,7 +51,7 @@ type wikiWidget struct {
 	deleteHandler  gin.HandlerFunc
 }
 
-func (w *wikiWidget) LoadInto(router gin.IRouter) {
+func (w wikiWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.defaultHandler)
 	router.GET("/:lang/view/:title", w.viewHandler)
 	router.GET("/:lang/edit/:title", w.editHandler)
@@ -60,7 +60,7 @@ func (w *wikiWidget) LoadInto(router gin.IRouter) {
 	router.GET("/:lang/delete/:title", w.deleteHandler)
 }
 
-func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string) *puzzleweb.Page {
+func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string) puzzleweb.Page {
 	config.Shared.LoadWiki()
 	cache.InitWiki(wikiId)
 
@@ -94,8 +94,8 @@ func NewWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string)
 	case 0:
 	}
 
-	p := puzzleweb.NewPage(wikiName)
-	p.Widget = &wikiWidget{
+	p := puzzleweb.MakePage(wikiName)
+	p.Widget = wikiWidget{
 		defaultHandler: common.CreateRedirect(func(c *gin.Context) string {
 			return wikiUrlBuilder(
 				common.GetCurrentUrl(c), locale.GetLang(c), viewMode, defaultPage,

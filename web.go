@@ -36,7 +36,7 @@ const siteName = "Site"
 
 type Site struct {
 	engine      *gin.Engine
-	root        *Page
+	root        Page
 	Page404Url  string
 	adders      []common.DataAdder
 	initialized bool
@@ -58,10 +58,7 @@ func NewSite(args ...string) *Site {
 	engine.Static("/static", config.Shared.StaticPath)
 	engine.GET("/profilePic/:UserId", profilePicHandler)
 
-	site := &Site{
-		engine: engine,
-		root:   NewStaticPage("root", rightclient.PublicGroupId, rootTmpl),
-	}
+	site := &Site{engine: engine, root: MakeStaticPage("root", rightclient.PublicGroupId, rootTmpl)}
 
 	engine.Use(session.Manage, func(c *gin.Context) {
 		c.Set(siteName, site)
@@ -70,7 +67,7 @@ func NewSite(args ...string) *Site {
 	return site
 }
 
-func (site *Site) AddPage(page *Page) {
+func (site *Site) AddPage(page Page) {
 	site.root.AddSubPage(page)
 }
 

@@ -182,7 +182,7 @@ var saveRoleHandler = common.CreateRedirect(func(c *gin.Context) string {
 	return targetBuilder.String()
 })
 
-func (w *adminWidget) LoadInto(router gin.IRouter) {
+func (w adminWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.displayHandler)
 	router.GET("/user/list", w.listUserHandler)
 	router.GET("/user/view/:UserId", w.viewUserHandler)
@@ -241,8 +241,8 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 	case 0:
 	}
 
-	p := puzzleweb.NewHiddenPage("admin")
-	p.Widget = &adminWidget{
+	p := puzzleweb.MakeHiddenPage("admin")
+	p.Widget = adminWidget{
 		displayHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			viewAdmin, _ := data[viewAdminName].(bool)
 			if !viewAdmin {

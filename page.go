@@ -37,20 +37,20 @@ type Page struct {
 	Widget  Widget
 }
 
-func NewPage(name string) *Page {
-	return &Page{name: name, visible: true}
+func MakePage(name string) Page {
+	return Page{name: name, visible: true}
 }
 
-func NewHiddenPage(name string) *Page {
-	return &Page{name: name, visible: false}
+func MakeHiddenPage(name string) Page {
+	return Page{name: name, visible: false}
 }
 
 type staticWidget struct {
 	displayHandler gin.HandlerFunc
-	subPages       []*Page
+	subPages       []Page
 }
 
-func (w *staticWidget) addSubPage(page *Page) {
+func (w *staticWidget) addSubPage(page Page) {
 	w.subPages = append(w.subPages, page)
 }
 
@@ -82,46 +82,46 @@ func newStaticWidget(groupId uint64, tmpl string) *staticWidget {
 	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(groupId, tmpl))}
 }
 
-func NewStaticPage(name string, groupId uint64, tmpl string) *Page {
-	p := NewPage(name)
+func MakeStaticPage(name string, groupId uint64, tmpl string) Page {
+	p := MakePage(name)
 	p.Widget = newStaticWidget(groupId, tmpl)
 	return p
 }
 
-func NewHiddenStaticPage(name string, groupId uint64, tmpl string) *Page {
-	p := NewHiddenPage(name)
+func MakeHiddenStaticPage(name string, groupId uint64, tmpl string) Page {
+	p := MakeHiddenPage(name)
 	p.Widget = newStaticWidget(groupId, tmpl)
 	return p
 }
 
-func (p *Page) AddSubPage(page *Page) {
+func (p Page) AddSubPage(page Page) {
 	sw, ok := p.Widget.(*staticWidget)
 	if ok {
 		sw.addSubPage(page)
 	}
 }
 
-func (p *Page) getSubPage(name string) *Page {
+func (p Page) getSubPage(name string) (Page, bool) {
 	if name == "" {
-		return nil
+		return Page{}, false
 	}
 	sw, ok := p.Widget.(*staticWidget)
 	if ok {
 		for _, sub := range sw.subPages {
 			if sub.name == name {
-				return sub
+				return sub, true
 			}
 		}
 	}
-	return nil
+	return Page{}, false
 }
 
-func (current *Page) extractPageAndPath(path string) (*Page, []string) {
+func (current Page) extractPageAndPath(path string) (Page, []string) {
 	splitted := strings.Split(path, "/")[1:]
 	names := make([]string, 0, len(splitted))
 	for _, name := range splitted {
-		subPage := current.getSubPage(name)
-		if subPage == nil {
+		subPage, ok := current.getSubPage(name)
+		if !ok {
 			break
 		}
 		current = subPage
@@ -130,7 +130,7 @@ func (current *Page) extractPageAndPath(path string) (*Page, []string) {
 	return current, names
 }
 
-func (p *Page) extractSubPageNames(url string, c *gin.Context) []PageDesc {
+func (p Page) extractSubPageNames(url string, c *gin.Context) []PageDesc {
 	sw, ok := p.Widget.(*staticWidget)
 	if !ok {
 		return nil

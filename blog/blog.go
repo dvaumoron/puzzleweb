@@ -33,7 +33,7 @@ type blogWidget struct {
 	deleteHandler  gin.HandlerFunc
 }
 
-func (w *blogWidget) LoadInto(router gin.IRouter) {
+func (w blogWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.listHandler)
 	router.GET("/view/:postId", w.viewHandler)
 	router.POST("/comment/:postId", w.commentHandler)
@@ -43,11 +43,11 @@ func (w *blogWidget) LoadInto(router gin.IRouter) {
 	router.GET("/delete/:postId", w.deleteHandler)
 }
 
-func NewBlogPage(blogName string, groupId uint64, blogId uint64, args ...string) *puzzleweb.Page {
+func NewBlogPage(blogName string, groupId uint64, blogId uint64, args ...string) puzzleweb.Page {
 	config.Shared.LoadBlog()
 
 	// TODO
-	p := puzzleweb.NewPage(blogName)
-	p.Widget = &blogWidget{}
+	p := puzzleweb.MakePage(blogName)
+	p.Widget = blogWidget{}
 	return p
 }

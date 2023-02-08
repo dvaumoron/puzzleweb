@@ -49,14 +49,14 @@ func (a *Tags) Add(lang language.Tag) {
 
 var Availables Tags = Tags{list: make([]language.Tag, 0, 1)}
 
-func InitMessages() {
+func InitMessages(logger *zap.Logger) {
 	if matcher != nil {
 		return
 	}
 	list := Availables.list
 	size := len(list)
 	if size == 0 {
-		log.Logger.Fatal("No locales declared.")
+		logger.Fatal("No locales declared.")
 	}
 	MultipleLang = size > 1
 
@@ -78,10 +78,7 @@ func InitMessages() {
 		path := pathBuilder.String()
 		file, err := os.Open(path)
 		if err != nil {
-			log.Logger.Fatal("Failed to load locale file.",
-				zap.String(pathName, path),
-				zap.Error(err),
-			)
+			logger.Fatal("Failed to load locale file.", zap.String(pathName, path), zap.Error(err))
 		}
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
@@ -97,10 +94,7 @@ func InitMessages() {
 			}
 		}
 		if err = scanner.Err(); err != nil {
-			log.Logger.Error("Error reading locale file.",
-				zap.String(pathName, path),
-				zap.Error(err),
-			)
+			logger.Error("Error reading locale file.", zap.String(pathName, path), zap.Error(err))
 		}
 	}
 
@@ -137,9 +131,7 @@ func CheckLang(lang string) string {
 			return lang
 		}
 	}
-	log.Logger.Info("Asked not declared locale.",
-		zap.String("askedLocale", lang),
-	)
+	log.Logger.Info("Asked not declared locale.", zap.String("askedLocale", lang))
 	return DefaultLang
 }
 

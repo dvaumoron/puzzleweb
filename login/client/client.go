@@ -53,14 +53,12 @@ func (s sortableContents) Swap(i, j int) {
 func VerifyOrRegister(login string, password string, register bool) (bool, uint64, error) {
 	salted, err := saltclient.Make(config.Shared.SaltServiceAddr).Salt(login, password)
 	if err != nil {
-		common.LogOriginalError(err)
-		return false, 0, common.ErrTechnical
+		return false, 0, common.LogOriginalError(nil, err)
 	}
 
 	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return false, 0, common.ErrTechnical
+		return false, 0, common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -77,8 +75,7 @@ func VerifyOrRegister(login string, password string, register bool) (bool, uint6
 	}
 
 	if err != nil {
-		common.LogOriginalError(err)
-		return false, 0, common.ErrTechnical
+		return false, 0, common.LogOriginalError(nil, err)
 	}
 	return response.Success, response.Id, nil
 }
@@ -87,8 +84,7 @@ func VerifyOrRegister(login string, password string, register bool) (bool, uint6
 func GetUsers(userIds []uint64) (map[uint64]User, error) {
 	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -97,8 +93,7 @@ func GetUsers(userIds []uint64) (map[uint64]User, error) {
 
 	response, err := pb.NewLoginClient(conn).GetUsers(ctx, &pb.UserIds{Ids: userIds})
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(nil, err)
 	}
 
 	logins := map[uint64]User{}
@@ -112,20 +107,17 @@ func ChangeLogin(userId uint64, oldLogin string, newLogin string, password strin
 	salter := saltclient.Make(config.Shared.SaltServiceAddr)
 	oldSalted, err := salter.Salt(oldLogin, password)
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 
 	newSalted, err := salter.Salt(newLogin, password)
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 
 	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -136,8 +128,7 @@ func ChangeLogin(userId uint64, oldLogin string, newLogin string, password strin
 		UserId: userId, NewLogin: newLogin, OldSalted: oldSalted, NewSalted: newSalted,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -149,20 +140,17 @@ func ChangePassword(userId uint64, login string, oldPassword string, newPassword
 	salter := saltclient.Make(config.Shared.SaltServiceAddr)
 	oldSalted, err := salter.Salt(login, oldPassword)
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 
 	newSalted, err := salter.Salt(login, newPassword)
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 
 	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -173,8 +161,7 @@ func ChangePassword(userId uint64, login string, oldPassword string, newPassword
 		UserId: userId, OldSalted: oldSalted, NewSalted: newSalted,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -185,8 +172,7 @@ func ChangePassword(userId uint64, login string, oldPassword string, newPassword
 func ListUsers(start uint64, end uint64, filter string) (uint64, []User, error) {
 	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return 0, nil, common.ErrTechnical
+		return 0, nil, common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -197,8 +183,7 @@ func ListUsers(start uint64, end uint64, filter string) (uint64, []User, error) 
 		Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return 0, nil, common.ErrTechnical
+		return 0, nil, common.LogOriginalError(nil, err)
 	}
 
 	list := response.List
@@ -214,8 +199,7 @@ func ListUsers(start uint64, end uint64, filter string) (uint64, []User, error) 
 func DeleteUser(userId uint64) error {
 	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -224,8 +208,7 @@ func DeleteUser(userId uint64) error {
 
 	response, err := pb.NewLoginClient(conn).Delete(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate

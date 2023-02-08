@@ -24,20 +24,35 @@ import (
 	"time"
 
 	pb "github.com/dvaumoron/puzzleblogservice"
-	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
+	pbright "github.com/dvaumoron/puzzlerightservice"
+	rightservice "github.com/dvaumoron/puzzleweb/admin/service"
+	"github.com/dvaumoron/puzzleweb/blog/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
+	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type BlogPost struct {
-	PostId  uint64
-	Creator profileclient.UserProfile
-	Date    string
-	Title   string
-	content template.HTML // markdown apply is done before storage
+// check matching with interface
+var _ service.BlogService = BlogClient{}
+
+type BlogClient struct {
+	serviceAddr    string
+	logger         *zap.Logger
+	blogId         uint64
+	groupId        uint64
+	dateFormat     string
+	authService    rightservice.AuthService
+	profileService profileservice.ProfileService
+}
+
+func Make(serviceAddr string, logger *zap.Logger, blogId uint64, groupId uint64, dateFormat string, authService rightservice.AuthService, profileService profileservice.ProfileService) BlogClient {
+	return BlogClient{
+		serviceAddr: serviceAddr, logger: logger, blogId: blogId, groupId: groupId,
+		dateFormat: dateFormat, authService: authService, profileService: profileService,
+	}
 }
 
 type sortableContents []*pb.Content
@@ -54,16 +69,15 @@ func (s sortableContents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func CreatePost(blogId uint64, groupId uint64, userId uint64, title string, content string) error {
-	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate)
+func (client BlogClient) CreatePost(userId uint64, title string, content string) error {
+	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_CREATE)
 	if err != nil {
 		return err
 	}
 
 	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	defer conn.Close()
 
@@ -71,11 +85,10 @@ func CreatePost(blogId uint64, groupId uint64, userId uint64, title string, cont
 	defer cancel()
 
 	response, err := pb.NewBlogClient(conn).CreatePost(ctx, &pb.CreateRequest{
-		BlogId: blogId, UserId: userId, Title: title, Text: content,
+		BlogId: client.blogId, UserId: userId, Title: title, Text: content,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -83,16 +96,15 @@ func CreatePost(blogId uint64, groupId uint64, userId uint64, title string, cont
 	return nil
 }
 
-func GetPost(blogId uint64, groupId uint64, userId uint64, postId uint64) (BlogPost, error) {
-	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
+func (client BlogClient) GetPost(userId uint64, postId uint64) (service.BlogPost, error) {
+	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
 	if err != nil {
-		return BlogPost{}, err
+		return service.BlogPost{}, err
 	}
 
 	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return BlogPost{}, common.ErrTechnical
+		return service.BlogPost{}, common.LogOriginalError(client.logger, err)
 	}
 	defer conn.Close()
 
@@ -100,31 +112,29 @@ func GetPost(blogId uint64, groupId uint64, userId uint64, postId uint64) (BlogP
 	defer cancel()
 
 	response, err := pb.NewBlogClient(conn).GetPost(ctx, &pb.IdRequest{
-		BlogId: blogId, PostId: postId,
+		BlogId: client.blogId, PostId: postId,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return BlogPost{}, common.ErrTechnical
+		return service.BlogPost{}, common.LogOriginalError(client.logger, err)
 	}
 
 	creatorId := response.UserId
-	users, err := profileclient.GetProfiles([]uint64{creatorId})
+	users, err := client.profileService.GetProfiles([]uint64{creatorId})
 	if err != nil {
-		return BlogPost{}, err
+		return service.BlogPost{}, err
 	}
-	return convertPost(response, users[creatorId]), nil
+	return convertPost(response, users[creatorId], client.dateFormat), nil
 }
 
-func GetPosts(blogId uint64, groupId uint64, userId uint64, start uint64, end uint64, filter string) ([]BlogPost, error) {
-	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
+func (client BlogClient) GetPosts(userId uint64, start uint64, end uint64, filter string) ([]service.BlogPost, error) {
+	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
 	if err != nil {
 		return nil, err
 	}
 
 	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
 	defer conn.Close()
 
@@ -132,29 +142,27 @@ func GetPosts(blogId uint64, groupId uint64, userId uint64, start uint64, end ui
 	defer cancel()
 
 	response, err := pb.NewBlogClient(conn).GetPosts(ctx, &pb.SearchRequest{
-		BlogId: blogId, Start: start, End: end, Filter: filter,
+		BlogId: client.blogId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
 	list := response.List
 	if len(list) == 0 {
 		return nil, nil
 	}
-	return sortConvertPosts(list)
+	return client.sortConvertPosts(list)
 }
 
-func DeletePost(blogId uint64, groupId uint64, userId uint64, postId uint64) error {
-	err := rightclient.AuthQuery(userId, groupId, rightclient.ActionAccess)
+func (client BlogClient) DeletePost(userId uint64, postId uint64) error {
+	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_DELETE)
 	if err != nil {
 		return err
 	}
 
 	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	defer conn.Close()
 
@@ -162,11 +170,10 @@ func DeletePost(blogId uint64, groupId uint64, userId uint64, postId uint64) err
 	defer cancel()
 
 	response, err := pb.NewBlogClient(conn).DeletePost(ctx, &pb.IdRequest{
-		BlogId: blogId, PostId: postId,
+		BlogId: client.blogId, PostId: postId,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -174,7 +181,7 @@ func DeletePost(blogId uint64, groupId uint64, userId uint64, postId uint64) err
 	return nil
 }
 
-func sortConvertPosts(list []*pb.Content) ([]BlogPost, error) {
+func (client BlogClient) sortConvertPosts(list []*pb.Content) ([]service.BlogPost, error) {
 	sort.Sort(sortableContents(list))
 
 	size := len(list)
@@ -184,22 +191,22 @@ func sortConvertPosts(list []*pb.Content) ([]BlogPost, error) {
 		userIds = append(userIds, content.UserId)
 	}
 
-	users, err := profileclient.GetProfiles(userIds)
+	users, err := client.profileService.GetProfiles(userIds)
 	if err != nil {
 		return nil, err
 	}
 
-	contents := make([]BlogPost, 0, size)
+	contents := make([]service.BlogPost, 0, size)
 	for _, content := range list {
-		contents = append(contents, convertPost(content, users[content.UserId]))
+		contents = append(contents, convertPost(content, users[content.UserId], client.dateFormat))
 	}
 	return contents, nil
 }
 
-func convertPost(post *pb.Content, creator profileclient.UserProfile) BlogPost {
+func convertPost(post *pb.Content, creator profileservice.UserProfile, dateFormat string) service.BlogPost {
 	createdAt := time.Unix(post.CreatedAt, 0)
-	return BlogPost{
-		PostId: post.PostId, Creator: creator, Date: createdAt.Format(config.Shared.DateFormat),
-		Title: post.Title, content: template.HTML(post.Text),
+	return service.BlogPost{
+		PostId: post.PostId, Creator: creator, Date: createdAt.Format(dateFormat),
+		Title: post.Title, Content: template.HTML(post.Text),
 	}
 }

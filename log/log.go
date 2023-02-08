@@ -22,39 +22,34 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dvaumoron/puzzleweb/config"
 	"go.uber.org/zap"
 )
 
-var Logger *zap.Logger
-
-func init() {
-	if len(config.Shared.LogConfig) == 0 {
-		defaultLogConfig()
-		return
+func NewLogger(logConfig []byte) *zap.Logger {
+	if len(logConfig) == 0 {
+		return defaultLogConfig()
 	}
 
 	var cfg zap.Config
-	err := json.Unmarshal(config.Shared.LogConfig, &cfg)
-	config.Shared.LogConfig = nil
+	err := json.Unmarshal(logConfig, &cfg)
 	if err != nil {
 		fmt.Println("Failed to parse logging config file :", err)
-		defaultLogConfig()
-		return
+		return defaultLogConfig()
 	}
 
-	Logger, err = cfg.Build()
+	logger, err := cfg.Build()
 	if err != nil {
 		fmt.Println("Failed to init logging with config file :", err)
-		defaultLogConfig()
+		return defaultLogConfig()
 	}
+	return logger
 }
 
-func defaultLogConfig() {
-	var err error
-	Logger, err = zap.NewProduction()
+func defaultLogConfig() *zap.Logger {
+	logger, err := zap.NewProduction()
 	if err != nil {
 		fmt.Println("Failed to init logging with default config :", err)
 		os.Exit(1)
 	}
+	return logger
 }

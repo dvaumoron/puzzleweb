@@ -24,14 +24,14 @@ import (
 
 	pb "github.com/dvaumoron/puzzlerightservice"
 	"github.com/dvaumoron/puzzleweb"
-	"github.com/dvaumoron/puzzleweb/admin/client"
+	"github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/log"
 	loginclient "github.com/dvaumoron/puzzleweb/login/client"
 	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 const roleNameName = "RoleName"
@@ -63,7 +63,7 @@ type RoleDisplay struct {
 	Actions []string
 }
 
-func MakeRoleDisplay(role client.Role, c *gin.Context) RoleDisplay {
+func MakeRoleDisplay(role service.Role, c *gin.Context) RoleDisplay {
 	return RoleDisplay{Name: role.Name, Actions: displayActions(role.Actions, c)}
 }
 
@@ -96,109 +96,30 @@ func (s sortableRoles) Swap(i, j int) {
 }
 
 type adminWidget struct {
-	displayHandler  gin.HandlerFunc
-	listUserHandler gin.HandlerFunc
-	viewUserHandler gin.HandlerFunc
-	editUserHandler gin.HandlerFunc
-	listRoleHandler gin.HandlerFunc
-	editRoleHandler gin.HandlerFunc
+	displayHandler    gin.HandlerFunc
+	listUserHandler   gin.HandlerFunc
+	viewUserHandler   gin.HandlerFunc
+	editUserHandler   gin.HandlerFunc
+	saveUserHandler   gin.HandlerFunc
+	deleteUserHandler gin.HandlerFunc
+	listRoleHandler   gin.HandlerFunc
+	editRoleHandler   gin.HandlerFunc
+	saveRoleHandler   gin.HandlerFunc
 }
-
-var saveUserHandler = common.CreateRedirect(func(c *gin.Context) string {
-	userId := common.GetRequestedUserId(c)
-	err := common.ErrTechnical
-	if userId != 0 {
-		rolesStr := c.PostFormArray("roles")
-		roles := make([]client.Role, 0, len(rolesStr))
-		for _, roleStr := range rolesStr {
-			splitted := strings.Split(roleStr, "/")
-			if len(splitted) > 1 {
-				roles = append(roles, client.Role{
-					Name: splitted[0], Group: splitted[1],
-				})
-			}
-		}
-		err = client.UpdateUser(session.GetUserId(c), userId, roles)
-	}
-
-	targetBuilder := userListUrlBuilder(c)
-	if err != nil {
-		common.WriteError(targetBuilder, err.Error())
-	}
-	return targetBuilder.String()
-})
-
-var deleteUserHandler = common.CreateRedirect(func(c *gin.Context) string {
-	userId := common.GetRequestedUserId(c)
-	err := common.ErrTechnical
-	if userId != 0 {
-		// an empty slice delete the user right
-		// only the first service call do a right check
-		err = client.UpdateUser(session.GetUserId(c), userId, []client.Role{})
-		if err == nil {
-			err = profileclient.Delete(userId)
-			if err == nil {
-				err = loginclient.DeleteUser(userId)
-			}
-		}
-	}
-
-	targetBuilder := userListUrlBuilder(c)
-	if err != nil {
-		common.WriteError(targetBuilder, err.Error())
-	}
-	return targetBuilder.String()
-})
-
-var saveRoleHandler = common.CreateRedirect(func(c *gin.Context) string {
-	roleName := c.PostForm(roleNameName)
-	err := errBadName
-	if roleName != "new" {
-		group := c.PostForm(groupName)
-		actions := make([]pb.RightAction, 0, 4)
-		for _, actionStr := range c.PostFormArray("actions") {
-			var action pb.RightAction
-			switch actionStr {
-			case "access":
-				action = client.ActionAccess
-			case "create":
-				action = client.ActionCreate
-			case "update":
-				action = client.ActionUpdate
-			case "delete":
-				action = client.ActionDelete
-			}
-			actions = append(actions, action)
-		}
-		err = client.UpdateRole(session.GetUserId(c), client.Role{Name: roleName, Group: group, Actions: actions})
-	}
-
-	var targetBuilder strings.Builder
-	targetBuilder.WriteString(common.GetBaseUrl(1, c))
-	targetBuilder.WriteString("list")
-	if err != nil {
-		common.WriteError(&targetBuilder, err.Error())
-	}
-	return targetBuilder.String()
-})
 
 func (w adminWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.displayHandler)
 	router.GET("/user/list", w.listUserHandler)
 	router.GET("/user/view/:UserId", w.viewUserHandler)
 	router.GET("/user/edit/:UserId", w.editUserHandler)
-	router.POST("/user/save/:UserId", saveUserHandler)
-	router.GET("/user/delete/:UserId", deleteUserHandler)
+	router.POST("/user/save/:UserId", w.saveUserHandler)
+	router.GET("/user/delete/:UserId", w.deleteUserHandler)
 	router.GET("/role/list", w.listRoleHandler)
 	router.GET("/role/edit/:RoleName/:Group", w.editRoleHandler)
-	router.POST("/role/save", saveRoleHandler)
+	router.POST("/role/save", w.saveRoleHandler)
 }
 
-func adminData(data gin.H, c *gin.Context) {
-	data[viewAdminName] = client.AuthQuery(session.GetUserId(c), client.AdminGroupId, client.ActionAccess) == nil
-}
-
-func AddAdminPage(site *puzzleweb.Site, args ...string) {
+func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service.AdminService, args ...string) {
 	indexTmpl := "admin/index.html"
 	listUserTmpl := "admin/user/list.html"
 	viewUserTmpl := "admin/user/view.html"
@@ -207,7 +128,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 	editRoleTmpl := "admin/role/edit.html"
 	switch len(args) {
 	default:
-		log.Logger.Info("AddAdminPage should be called with 1 to 7 arguments.")
+		logger.Info("AddAdminPage should be called with 3 to 9 arguments.")
 		fallthrough
 	case 6:
 		if args[5] != "" {
@@ -271,12 +192,12 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 		}),
 		viewUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
-			userId := common.GetRequestedUserId(c)
+			userId := common.GetRequestedUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
-			roles, err := client.GetUserRoles(adminId, userId)
+			roles, err := adminService.GetUserRoles(adminId, userId)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -286,7 +207,7 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			updateRight := client.AuthQuery(adminId, client.AdminGroupId, client.ActionUpdate) == nil
+			updateRight := adminService.AuthQuery(adminId, service.AdminGroupId, pb.RightAction_UPDATE) == nil
 
 			user := users[userId]
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
@@ -299,17 +220,17 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 		}),
 		editUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId := session.GetUserId(c)
-			userId := common.GetRequestedUserId(c)
+			userId := common.GetRequestedUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
-			allRoles, err := client.GetAllRoles(adminId)
+			allRoles, err := adminService.GetAllRoles(adminId)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			userRoles, err := client.GetUserRoles(adminId, userId)
+			userRoles, err := adminService.GetUserRoles(adminId, userId)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -325,8 +246,50 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			data[groupsName] = displayEditGroups(userRoles, allRoles, c)
 			return editUserTmpl, ""
 		}),
+		saveUserHandler: common.CreateRedirect(func(c *gin.Context) string {
+			userId := common.GetRequestedUserId(logger, c)
+			err := common.ErrTechnical
+			if userId != 0 {
+				rolesStr := c.PostFormArray("roles")
+				roles := make([]service.Role, 0, len(rolesStr))
+				for _, roleStr := range rolesStr {
+					splitted := strings.Split(roleStr, "/")
+					if len(splitted) > 1 {
+						roles = append(roles, service.Role{Name: splitted[0], GroupName: splitted[1]})
+					}
+				}
+				err = adminService.UpdateUser(session.GetUserId(c), userId, roles)
+			}
+
+			targetBuilder := userListUrlBuilder(c)
+			if err != nil {
+				common.WriteError(targetBuilder, err.Error())
+			}
+			return targetBuilder.String()
+		}),
+		deleteUserHandler: common.CreateRedirect(func(c *gin.Context) string {
+			userId := common.GetRequestedUserId(logger, c)
+			err := common.ErrTechnical
+			if userId != 0 {
+				// an empty slice delete the user right
+				// only the first service call do a right check
+				err = adminService.UpdateUser(session.GetUserId(c), userId, []service.Role{})
+				if err == nil {
+					err = profileclient.Delete(userId)
+					if err == nil {
+						err = loginclient.DeleteUser(userId)
+					}
+				}
+			}
+
+			targetBuilder := userListUrlBuilder(c)
+			if err != nil {
+				common.WriteError(targetBuilder, err.Error())
+			}
+			return targetBuilder.String()
+		}),
 		listRoleHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			allRoles, err := client.GetAllRoles(session.GetUserId(c))
+			allRoles, err := adminService.GetAllRoles(session.GetUserId(c))
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -344,40 +307,77 @@ func AddAdminPage(site *puzzleweb.Site, args ...string) {
 			data[groupName] = group
 
 			if roleName != "new" {
-				actions, err := client.GetActions(session.GetUserId(c), roleName, group)
+				actions, err := adminService.GetActions(session.GetUserId(c), roleName, group)
 				if err != nil {
 					return "", common.DefaultErrorRedirect(err.Error())
 				}
 
 				actionSet := common.MakeSet(actions)
-				setActionChecked(data, actionSet, client.ActionAccess, "Access")
-				setActionChecked(data, actionSet, client.ActionCreate, "Create")
-				setActionChecked(data, actionSet, client.ActionUpdate, "Update")
-				setActionChecked(data, actionSet, client.ActionDelete, "Delete")
+				setActionChecked(data, actionSet, pb.RightAction_ACCESS, "Access")
+				setActionChecked(data, actionSet, pb.RightAction_CREATE, "Create")
+				setActionChecked(data, actionSet, pb.RightAction_UPDATE, "Update")
+				setActionChecked(data, actionSet, pb.RightAction_DELETE, "Delete")
 			}
 
 			return editRoleTmpl, ""
 		}),
+		saveRoleHandler: common.CreateRedirect(func(c *gin.Context) string {
+			roleName := c.PostForm(roleNameName)
+			err := errBadName
+			if roleName != "new" {
+				group := c.PostForm(groupName)
+				actions := make([]pb.RightAction, 0, 4)
+				for _, actionStr := range c.PostFormArray("actions") {
+					var action pb.RightAction
+					switch actionStr {
+					case "access":
+						action = pb.RightAction_ACCESS
+					case "create":
+						action = pb.RightAction_CREATE
+					case "update":
+						action = pb.RightAction_UPDATE
+					case "delete":
+						action = pb.RightAction_DELETE
+					}
+					actions = append(actions, action)
+				}
+				err = adminService.UpdateRole(session.GetUserId(c), service.Role{
+					Name: roleName, GroupName: group, Actions: actions,
+				})
+			}
+
+			var targetBuilder strings.Builder
+			targetBuilder.WriteString(common.GetBaseUrl(1, c))
+			targetBuilder.WriteString("list")
+			if err != nil {
+				common.WriteError(&targetBuilder, err.Error())
+			}
+			return targetBuilder.String()
+		}),
 	}
 
-	site.AddDefaultData(adminData)
+	site.AddDefaultData(func(data gin.H, c *gin.Context) {
+		data[viewAdminName] = adminService.AuthQuery(
+			session.GetUserId(c), service.AdminGroupId, pb.RightAction_ACCESS,
+		) == nil
+	})
 
 	site.AddPage(p)
 }
 
-func DisplayGroups(roles []client.Role, c *gin.Context) []*GroupDisplay {
+func DisplayGroups(roles []service.Role, c *gin.Context) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
 	populateGroup(nameToGroup, roles, c, rolesAppender)
 	return sortGroups(nameToGroup)
 }
 
-func populateGroup(nameToGroup map[string]*GroupDisplay, roles []client.Role, c *gin.Context, appender func(*GroupDisplay, client.Role, *gin.Context)) {
+func populateGroup(nameToGroup map[string]*GroupDisplay, roles []service.Role, c *gin.Context, appender func(*GroupDisplay, service.Role, *gin.Context)) {
 	for _, role := range roles {
-		groupName := role.Group
+		groupName := role.GroupName
 		group := nameToGroup[groupName]
 		if group == nil {
 			group = &GroupDisplay{
-				Id: client.GetGroupId(groupName), Name: groupName,
+				Id: role.GroupId, Name: groupName,
 				DisplayName: locale.GetText("GroupLabel"+locale.CamelCase(groupName), c),
 			}
 			nameToGroup[groupName] = group
@@ -386,7 +386,7 @@ func populateGroup(nameToGroup map[string]*GroupDisplay, roles []client.Role, c 
 	}
 }
 
-func rolesAppender(group *GroupDisplay, role client.Role, c *gin.Context) {
+func rolesAppender(group *GroupDisplay, role service.Role, c *gin.Context) {
 	group.Roles = append(group.Roles, MakeRoleDisplay(role, c))
 }
 
@@ -395,16 +395,16 @@ func rolesAppender(group *GroupDisplay, role client.Role, c *gin.Context) {
 func displayActions(actions []pb.RightAction, c *gin.Context) []string {
 	actionSet := common.MakeSet(actions)
 	res := make([]string, len(actions))
-	if actionSet.Contains(client.ActionAccess) {
+	if actionSet.Contains(pb.RightAction_ACCESS) {
 		res = append(res, locale.GetText(accessKey, c))
 	}
-	if actionSet.Contains(client.ActionCreate) {
+	if actionSet.Contains(pb.RightAction_CREATE) {
 		res = append(res, locale.GetText(createKey, c))
 	}
-	if actionSet.Contains(client.ActionUpdate) {
+	if actionSet.Contains(pb.RightAction_UPDATE) {
 		res = append(res, locale.GetText(updateKey, c))
 	}
-	if actionSet.Contains(client.ActionDelete) {
+	if actionSet.Contains(pb.RightAction_DELETE) {
 		res = append(res, locale.GetText(deleteKey, c))
 	}
 	return res
@@ -420,14 +420,14 @@ func sortGroups(nameToGroup map[string]*GroupDisplay) []*GroupDisplay {
 	return groupRoles
 }
 
-func displayEditGroups(userRoles []client.Role, allRoles []client.Role, c *gin.Context) []*GroupDisplay {
+func displayEditGroups(userRoles []service.Role, allRoles []service.Role, c *gin.Context) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
 	populateGroup(nameToGroup, userRoles, c, rolesAppender)
 	populateGroup(nameToGroup, allRoles, c, addableRolesAppender)
 	return sortGroups(nameToGroup)
 }
 
-func addableRolesAppender(group *GroupDisplay, role client.Role, c *gin.Context) {
+func addableRolesAppender(group *GroupDisplay, role service.Role, c *gin.Context) {
 	group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role, c))
 }
 

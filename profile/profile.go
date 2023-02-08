@@ -56,7 +56,7 @@ var saveHandler = common.CreateRedirect(func(c *gin.Context) string {
 
 	picture, err := c.FormFile("picture")
 	if err != nil {
-		common.LogOriginalError(err)
+		common.LogOriginalError(nil, err)
 		return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 	}
 
@@ -64,7 +64,7 @@ var saveHandler = common.CreateRedirect(func(c *gin.Context) string {
 		var pictureFile multipart.File
 		pictureFile, err = picture.Open()
 		if err != nil {
-			common.LogOriginalError(err)
+			common.LogOriginalError(nil, err)
 			return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 		}
 		defer pictureFile.Close()
@@ -72,7 +72,7 @@ var saveHandler = common.CreateRedirect(func(c *gin.Context) string {
 		var pictureData []byte
 		pictureData, err = io.ReadAll(pictureFile)
 		if err != nil {
-			common.LogOriginalError(err)
+			common.LogOriginalError(nil, err)
 			return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 		}
 

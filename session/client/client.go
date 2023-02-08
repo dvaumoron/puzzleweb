@@ -31,8 +31,7 @@ import (
 func Generate() (uint64, error) {
 	conn, err := grpc.Dial(config.Shared.SessionServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return 0, common.ErrTechnical
+		return 0, common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -43,8 +42,7 @@ func Generate() (uint64, error) {
 		ctx, &pb.SessionInfo{Info: map[string]string{}},
 	)
 	if err != nil {
-		common.LogOriginalError(err)
-		return 0, common.ErrTechnical
+		return 0, common.LogOriginalError(nil, err)
 	}
 	return response.Id, nil
 }
@@ -60,9 +58,7 @@ func GetSettings(id uint64) (map[string]string, error) {
 func get(addr string, id uint64) (map[string]string, error) {
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
-
+		return nil, common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -73,8 +69,7 @@ func get(addr string, id uint64) (map[string]string, error) {
 		ctx, &pb.SessionId{Id: id},
 	)
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(nil, err)
 
 	}
 	return response.Info, nil

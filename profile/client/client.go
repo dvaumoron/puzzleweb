@@ -25,21 +25,15 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	loginclient "github.com/dvaumoron/puzzleweb/login/client"
+	"github.com/dvaumoron/puzzleweb/profile/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type UserProfile struct {
-	loginclient.User
-	Desc string
-	Info map[string]string
-}
-
 func UpdateProfile(userId uint64, desc string, info map[string]string) error {
 	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -50,8 +44,7 @@ func UpdateProfile(userId uint64, desc string, info map[string]string) error {
 		UserId: userId, Desc: desc, Info: info,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -62,20 +55,16 @@ func UpdateProfile(userId uint64, desc string, info map[string]string) error {
 func UpdatePicture(userId uint64, data []byte) error {
 	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	response, err := pb.NewProfileClient(conn).UpdatePicture(ctx, &pb.Picture{
-		UserId: userId, Data: data,
-	})
+	response, err := pb.NewProfileClient(conn).UpdatePicture(ctx, &pb.Picture{UserId: userId, Data: data})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -86,8 +75,7 @@ func UpdatePicture(userId uint64, data []byte) error {
 func GetPicture(userId uint64) ([]byte, error) {
 	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -96,17 +84,15 @@ func GetPicture(userId uint64) ([]byte, error) {
 
 	response, err := pb.NewProfileClient(conn).GetPicture(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(nil, err)
 	}
 	return response.Data, nil
 }
 
-func GetProfiles(userIds []uint64) (map[uint64]UserProfile, error) {
+func GetProfiles(userIds []uint64) (map[uint64]service.UserProfile, error) {
 	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -120,8 +106,7 @@ func GetProfiles(userIds []uint64) (map[uint64]UserProfile, error) {
 		Ids: userIds,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(nil, err)
 	}
 
 	users, err := loginclient.GetUsers(userIds)
@@ -129,10 +114,10 @@ func GetProfiles(userIds []uint64) (map[uint64]UserProfile, error) {
 		return nil, err
 	}
 
-	profiles := map[uint64]UserProfile{}
+	profiles := map[uint64]service.UserProfile{}
 	for _, profile := range response.List {
 		userId := profile.UserId
-		profiles[userId] = UserProfile{User: users[userId], Desc: profile.Desc, Info: profile.Info}
+		profiles[userId] = service.UserProfile{User: users[userId], Desc: profile.Desc, Info: profile.Info}
 	}
 	return profiles, err
 }
@@ -141,8 +126,7 @@ func GetProfiles(userIds []uint64) (map[uint64]UserProfile, error) {
 func Delete(userId uint64) error {
 	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	defer conn.Close()
 
@@ -151,8 +135,7 @@ func Delete(userId uint64) error {
 
 	response, err := pb.NewProfileClient(conn).Delete(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(nil, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate

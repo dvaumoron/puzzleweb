@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -38,8 +37,9 @@ var ErrNotAuthorized = errors.New("ErrorNotAuthorized")
 var ErrTechnical = errors.New("ErrorTechnicalProblem")
 var ErrUpdate = errors.New("ErrorUpdate")
 
-func LogOriginalError(err error) {
-	log.Logger.Warn("Original error.", zap.Error(err))
+func LogOriginalError(logger *zap.Logger, err error) error {
+	logger.Warn("Original error.", zap.Error(err))
+	return ErrTechnical
 }
 
 func WriteError(urlBuilder *strings.Builder, errorMsg string) {

@@ -19,62 +19,60 @@ package client
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"time"
 
 	pb "github.com/dvaumoron/puzzlerightservice"
+	"github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const (
-	ActionAccess = pb.RightAction_ACCESS
-	ActionCreate = pb.RightAction_CREATE
-	ActionUpdate = pb.RightAction_UPDATE
-	ActionDelete = pb.RightAction_DELETE
-)
+// check matching with interface
+var _ service.AdminService = AdminClient{}
 
-const AdminName = "admin"
-const PublicName = "public"
-const PublicGroupId = 0 // groupId for content always allowed to access
-const AdminGroupId = 1  // groupId corresponding to role administration
+type AdminClient struct {
+	serviceAddr   string
+	logger        *zap.Logger
+	groupIdToName map[uint64]string
+	nameToGroupId map[string]uint64
+}
 
-var groupIdToName = map[uint64]string{PublicGroupId: PublicName, AdminGroupId: AdminName}
-var nameToGroupId = map[string]uint64{PublicName: PublicGroupId, AdminName: AdminGroupId}
+func Make(serviceAddr string, logger *zap.Logger) AdminClient {
+	groupIdToName := map[uint64]string{
+		service.PublicGroupId: service.PublicName, service.AdminGroupId: service.AdminName,
+	}
+	nameToGroupId := map[string]uint64{
+		service.PublicName: service.PublicGroupId, service.AdminName: service.AdminGroupId,
+	}
+	return AdminClient{
+		serviceAddr: serviceAddr, logger: logger, groupIdToName: groupIdToName, nameToGroupId: nameToGroupId,
+	}
+}
 
-func RegisterGroup(groupId uint64, groupName string) {
-	for usedId := range groupIdToName {
+func (client AdminClient) RegisterGroup(groupId uint64, groupName string) {
+	for usedId := range client.groupIdToName {
 		if groupId == usedId {
-			fmt.Println("duplicate groupId")
-			os.Exit(1)
+			client.logger.Fatal("Duplicate groupId.")
 		}
 	}
-	groupIdToName[groupId] = groupName
-	nameToGroupId[groupName] = groupId
+	client.groupIdToName[groupId] = groupName
+	client.nameToGroupId[groupName] = groupId
 }
 
-func GetGroupId(groupName string) uint64 {
-	return nameToGroupId[groupName]
+func (client AdminClient) GetGroupId(groupName string) uint64 {
+	return client.nameToGroupId[groupName]
 }
 
-func GetGroupName(groupId uint64) string {
-	return groupIdToName[groupId]
+func (client AdminClient) GetGroupName(groupId uint64) string {
+	return client.groupIdToName[groupId]
 }
 
-type Role struct {
-	Name    string
-	Group   string
-	Actions []pb.RightAction
-}
-
-func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
-	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client AdminClient) AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
+	conn, err := grpc.Dial(client.serviceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	defer conn.Close()
 
@@ -85,8 +83,7 @@ func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
 		UserId: userId, ObjectId: groupId, Action: action,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -94,65 +91,60 @@ func AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
 	return nil
 }
 
-func GetAllRoles(adminId uint64) ([]Role, error) {
-	groupIds := make([]uint64, 0, len(groupIdToName))
-	for groupId := range groupIdToName {
+func (client AdminClient) GetAllRoles(adminId uint64) ([]service.Role, error) {
+	groupIds := make([]uint64, 0, len(client.groupIdToName))
+	for groupId := range client.groupIdToName {
 		groupIds = append(groupIds, groupId)
 	}
-	return getGroupRoles(adminId, groupIds)
+	return client.getGroupRoles(adminId, groupIds)
 }
 
-func GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAction, error) {
-	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client AdminClient) GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAction, error) {
+	conn, err := grpc.Dial(client.serviceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
 	defer conn.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	client := pb.NewRightClient(conn)
-	response, err := client.AuthQuery(ctx, &pb.RightRequest{
-		UserId: adminId, ObjectId: AdminGroupId, Action: ActionAccess,
+	rightClient := pb.NewRightClient(conn)
+	response, err := rightClient.AuthQuery(ctx, &pb.RightRequest{
+		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
 	}
 
-	actions, err := client.RoleRight(ctx, &pb.RoleRequest{
-		Name: roleName, ObjectId: nameToGroupId[groupName],
+	actions, err := rightClient.RoleRight(ctx, &pb.RoleRequest{
+		Name: roleName, ObjectId: client.nameToGroupId[groupName],
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
 	return actions.List, nil
 }
 
-func UpdateUser(adminId uint64, userId uint64, roles []Role) error {
-	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client AdminClient) UpdateUser(adminId uint64, userId uint64, roles []service.Role) error {
+	conn, err := grpc.Dial(client.serviceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	defer conn.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	client := pb.NewRightClient(conn)
-	response, err := client.AuthQuery(ctx, &pb.RightRequest{
-		UserId: adminId, ObjectId: AdminGroupId, Action: ActionUpdate,
+	rightClient := pb.NewRightClient(conn)
+	response, err := rightClient.AuthQuery(ctx, &pb.RightRequest{
+		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_UPDATE,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -160,13 +152,14 @@ func UpdateUser(adminId uint64, userId uint64, roles []Role) error {
 
 	converted := make([]*pb.RoleRequest, 0, len(roles))
 	for _, role := range roles {
-		converted = append(converted, &pb.RoleRequest{Name: role.Name, ObjectId: nameToGroupId[role.Group]})
+		converted = append(converted, &pb.RoleRequest{
+			Name: role.Name, ObjectId: client.nameToGroupId[role.GroupName],
+		})
 	}
 
-	response, err = client.UpdateUser(ctx, &pb.UserRight{UserId: userId, List: converted})
+	response, err = rightClient.UpdateUser(ctx, &pb.UserRight{UserId: userId, List: converted})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -174,35 +167,32 @@ func UpdateUser(adminId uint64, userId uint64, roles []Role) error {
 	return nil
 }
 
-func UpdateRole(adminId uint64, role Role) error {
-	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client AdminClient) UpdateRole(adminId uint64, role service.Role) error {
+	conn, err := grpc.Dial(client.serviceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	defer conn.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	client := pb.NewRightClient(conn)
-	response, err := client.AuthQuery(ctx, &pb.RightRequest{
-		UserId: adminId, ObjectId: AdminGroupId, Action: ActionUpdate,
+	rightClient := pb.NewRightClient(conn)
+	response, err := rightClient.AuthQuery(ctx, &pb.RightRequest{
+		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_UPDATE,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
 	}
 
-	response, err = client.UpdateRole(ctx, &pb.Role{
-		Name: role.Name, ObjectId: nameToGroupId[role.Group], List: role.Actions,
+	response, err = rightClient.UpdateRole(ctx, &pb.Role{
+		Name: role.Name, ObjectId: client.nameToGroupId[role.GroupName], List: role.Actions,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return common.ErrTechnical
+		return common.LogOriginalError(client.logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -210,80 +200,75 @@ func UpdateRole(adminId uint64, role Role) error {
 	return nil
 }
 
-func GetUserRoles(adminId uint64, userId uint64) ([]Role, error) {
-	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client AdminClient) GetUserRoles(adminId uint64, userId uint64) ([]service.Role, error) {
+	conn, err := grpc.Dial(client.serviceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
 	defer conn.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	client := pb.NewRightClient(conn)
+	rightClient := pb.NewRightClient(conn)
 	if adminId == userId {
-		return getUserRoles(client, ctx, userId)
+		return client.getUserRoles(rightClient, ctx, userId)
 	}
 
-	response, err := client.AuthQuery(ctx, &pb.RightRequest{
-		UserId: adminId, ObjectId: AdminGroupId, Action: ActionAccess,
+	response, err := rightClient.AuthQuery(ctx, &pb.RightRequest{
+		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
 	}
-	return getUserRoles(client, ctx, userId)
+	return client.getUserRoles(rightClient, ctx, userId)
 }
 
-func getGroupRoles(adminId uint64, groupIds []uint64) ([]Role, error) {
-	conn, err := grpc.Dial(config.Shared.RightServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client AdminClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]service.Role, error) {
+	conn, err := grpc.Dial(client.serviceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
 	defer conn.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	client := pb.NewRightClient(conn)
-	response, err := client.AuthQuery(ctx, &pb.RightRequest{
-		UserId: adminId, ObjectId: AdminGroupId, Action: ActionAccess,
+	rightClient := pb.NewRightClient(conn)
+	response, err := rightClient.AuthQuery(ctx, &pb.RightRequest{
+		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
 	}
 
-	roles, err := client.ListRoles(ctx, &pb.ObjectIds{Ids: groupIds})
+	roles, err := rightClient.ListRoles(ctx, &pb.ObjectIds{Ids: groupIds})
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
-	return convertRolesFromRequest(roles.List), nil
+	return convertRolesFromRequest(roles.List, client.groupIdToName), nil
 }
 
-func getUserRoles(client pb.RightClient, ctx context.Context, userId uint64) ([]Role, error) {
-	roles, err := client.ListUserRoles(ctx, &pb.UserId{Id: userId})
+func (client AdminClient) getUserRoles(rightClient pb.RightClient, ctx context.Context, userId uint64) ([]service.Role, error) {
+	roles, err := rightClient.ListUserRoles(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		common.LogOriginalError(err)
-		return nil, common.ErrTechnical
+		return nil, common.LogOriginalError(client.logger, err)
 	}
-	return convertRolesFromRequest(roles.List), nil
+	return convertRolesFromRequest(roles.List, client.groupIdToName), nil
 }
 
-func convertRolesFromRequest(roles []*pb.Role) []Role {
-	resRoles := make([]Role, 0, len(roles))
+func convertRolesFromRequest(roles []*pb.Role, groupIdToName map[uint64]string) []service.Role {
+	resRoles := make([]service.Role, 0, len(roles))
 	for _, role := range roles {
-		resRoles = append(resRoles, Role{
-			Name: role.Name, Group: groupIdToName[role.ObjectId], Actions: role.List,
+		groupId := role.ObjectId
+		resRoles = append(resRoles, service.Role{
+			Name: role.Name, GroupId: groupId, GroupName: groupIdToName[groupId], Actions: role.List,
 		})
 	}
 	return resRoles

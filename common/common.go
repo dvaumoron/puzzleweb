@@ -22,7 +22,6 @@ import (
 	"strconv"
 
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -94,10 +93,10 @@ func MapToValueSlice[K comparable, V any](objects map[K]V) []V {
 	return res
 }
 
-func GetRequestedUserId(c *gin.Context) uint64 {
+func GetRequestedUserId(logger *zap.Logger, c *gin.Context) uint64 {
 	userId, err := strconv.ParseUint(c.Param(UserIdName), 10, 64)
 	if err != nil {
-		log.Logger.Warn("Failed to parse userId from request.", zap.Error(err))
+		logger.Warn("Failed to parse userId from request.", zap.Error(err))
 	}
 	return userId
 }

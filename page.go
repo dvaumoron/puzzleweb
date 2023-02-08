@@ -20,7 +20,8 @@ package puzzleweb
 import (
 	"strings"
 
-	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
+	pbright "github.com/dvaumoron/puzzlerightservice"
+	rightservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/session"
@@ -61,9 +62,9 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
+func localizedTmpl(adminService rightservice.AuthService, groupId uint64, tmpl string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
-		err := rightclient.AuthQuery(session.GetUserId(c), groupId, rightclient.ActionAccess)
+		err := adminService.AuthQuery(session.GetUserId(c), groupId, pbright.RightAction_ACCESS)
 		if err != nil {
 			return "", common.DefaultErrorRedirect(err.Error())
 		}
@@ -78,19 +79,19 @@ func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 	}
 }
 
-func newStaticWidget(groupId uint64, tmpl string) *staticWidget {
-	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(groupId, tmpl))}
+func newStaticWidget(adminService rightservice.AuthService, groupId uint64, tmpl string) *staticWidget {
+	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(adminService, groupId, tmpl))}
 }
 
-func MakeStaticPage(name string, groupId uint64, tmpl string) Page {
+func MakeStaticPage(name string, adminService rightservice.AuthService, groupId uint64, tmpl string) Page {
 	p := MakePage(name)
-	p.Widget = newStaticWidget(groupId, tmpl)
+	p.Widget = newStaticWidget(adminService, groupId, tmpl)
 	return p
 }
 
-func MakeHiddenStaticPage(name string, groupId uint64, tmpl string) Page {
+func MakeHiddenStaticPage(name string, adminService rightservice.AuthService, groupId uint64, tmpl string) Page {
 	p := MakeHiddenPage(name)
-	p.Widget = newStaticWidget(groupId, tmpl)
+	p.Widget = newStaticWidget(adminService, groupId, tmpl)
 	return p
 }
 

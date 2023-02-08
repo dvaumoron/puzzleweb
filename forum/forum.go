@@ -99,10 +99,12 @@ func NewForumPage(forumName string, groupId uint64, forumId uint64, args ...stri
 			}
 
 			createRight := rightclient.AuthQuery(userId, groupId, rightclient.ActionCreate) == nil
+			deleteRight := rightclient.AuthQuery(userId, groupId, rightclient.ActionDelete) == nil
 
 			common.InitPagination(data, filter, pageNumber, end, total)
 			data["Threads"] = threads
 			data[common.AllowedToCreateName] = createRight
+			data[common.AllowedToDeleteName] = deleteRight
 			common.InitNoELementMsg(data, len(threads), c)
 			return listTmpl, ""
 		}),
@@ -157,11 +159,13 @@ func NewForumPage(forumName string, groupId uint64, forumId uint64, args ...stri
 			}
 
 			createRight := rightclient.AuthQuery(userId, groupId, rightclient.ActionUpdate) == nil
+			deleteRight := rightclient.AuthQuery(userId, groupId, rightclient.ActionDelete) == nil
 
 			common.InitPagination(data, filter, pageNumber, end, total)
 			data["Thread"] = thread
 			data["Messages"] = messages
 			data[common.AllowedToCreateName] = createRight
+			data[common.AllowedToDeleteName] = deleteRight
 			common.InitNoELementMsg(data, len(messages), c)
 			return viewTmpl, ""
 		}),

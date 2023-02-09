@@ -38,6 +38,7 @@ type Site struct {
 	engine         *gin.Engine
 	logger         *zap.Logger
 	staticPath     string
+	localesManager *locale.LocalesManager
 	pictureService service.PictureService
 	root           Page
 	Page404Url     string
@@ -46,7 +47,7 @@ type Site struct {
 	FaviconPath    string
 }
 
-func NewSite(staticPath string, authConfig config.BasicConfig[adminservice.AuthService], pictureService service.PictureService, sessionManager session.SessionManager, args ...string) *Site {
+func NewSite(staticPath string, authConfig config.BasicConfig[adminservice.AuthService], pictureService service.PictureService, sessionManager session.SessionManager, localesManager *locale.LocalesManager, args ...string) *Site {
 	logger := authConfig.Logger
 
 	size := len(args)
@@ -63,7 +64,8 @@ func NewSite(staticPath string, authConfig config.BasicConfig[adminservice.AuthS
 	engine.Static("/static", staticPath)
 
 	site := &Site{
-		engine: engine, logger: logger, staticPath: staticPath, pictureService: pictureService,
+		engine: engine, logger: logger, staticPath: staticPath,
+		localesManager: localesManager, pictureService: pictureService,
 		root: MakeStaticPage("root", authConfig, adminservice.PublicGroupId, rootTmpl),
 	}
 
@@ -92,9 +94,11 @@ func (site *Site) SetMaxMultipartMemory(memorySize int64) {
 	site.engine.MaxMultipartMemory = memorySize
 }
 
-func (site *Site) initEngine() *gin.Engine {
+func (site *Site) initEngine(localesPath string) *gin.Engine {
 	engine := site.engine
 	if !site.initialized {
+		site.localesManager.InitMessages(localesPath)
+
 		if engine.HTMLRender == nil {
 			site.logger.Fatal("no HTMLRender initialized")
 		}
@@ -106,7 +110,7 @@ func (site *Site) initEngine() *gin.Engine {
 		}
 		engine.StaticFile(favicon, site.staticPath+faviconPath)
 		site.root.Widget.LoadInto(engine)
-		if locale.MultipleLang {
+		if site.localesManager.MultipleLang {
 			engine.GET("/changeLang", changeLangHandler)
 		}
 		engine.NoRoute(common.CreateRedirectString(site.Page404Url))
@@ -116,8 +120,7 @@ func (site *Site) initEngine() *gin.Engine {
 }
 
 func (site *Site) Run(localesPath string, port string) error {
-	locale.InitMessages(site.logger, localesPath)
-	return site.initEngine().Run(checkPort(port))
+	return site.initEngine(localesPath).Run(checkPort(port))
 }
 
 type SiteConfig struct {
@@ -125,12 +128,11 @@ type SiteConfig struct {
 	Port string
 }
 
-func Run(logger *zap.Logger, localesPath string, sites ...SiteConfig) error {
-	locale.InitMessages(logger, localesPath)
+func Run(localesPath string, sites ...SiteConfig) error {
 	var g errgroup.Group
 	for _, siteConfig := range sites {
 		port := checkPort(siteConfig.Port)
-		handler := siteConfig.Site.initEngine().Handler()
+		handler := siteConfig.Site.initEngine(localesPath).Handler()
 		g.Go(func() error {
 			server := &http.Server{Addr: port, Handler: handler}
 			return server.ListenAndServe()
@@ -155,7 +157,7 @@ func (site *Site) profilePicHandler(c *gin.Context) {
 }
 
 var changeLangHandler = common.CreateRedirect(func(c *gin.Context) string {
-	locale.SetLangCookie(c, c.Query(locale.LangName))
+	getSite(c).localesManager.SetLangCookie(c, c.Query(locale.LangName))
 	return c.Query(common.RedirectName)
 })
 

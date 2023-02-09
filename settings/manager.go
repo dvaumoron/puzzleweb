@@ -18,6 +18,7 @@
 package settings
 
 import (
+	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/session/service"
@@ -39,7 +40,7 @@ func NewManager(settingsConfig config.BasicConfig[service.SessionService]) *Sett
 }
 
 func initSettings(c *gin.Context) map[string]string {
-	return map[string]string{locale.LangName: locale.GetLang(c)}
+	return map[string]string{locale.LangName: puzzleweb.GetLocalesManager(c).GetLang(c)}
 }
 
 func (m *SettingsManager) Get(userId uint64, c *gin.Context) map[string]string {

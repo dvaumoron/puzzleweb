@@ -216,7 +216,7 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 			data[versionsName] = versions
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data[common.AllowedToDeleteName] = deleteRight
-			common.InitNoELementMsg(data, len(versions), c)
+			puzzleweb.InitNoELementMsg(data, len(versions), c)
 			return listTmpl, ""
 		}),
 		deleteHandler: common.CreateRedirect(func(c *gin.Context) string {

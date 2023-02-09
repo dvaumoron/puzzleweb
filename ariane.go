@@ -30,21 +30,21 @@ type PageDesc struct {
 	Url  string
 }
 
-func makePageDesc(name string, url string, c *gin.Context) PageDesc {
-	return PageDesc{Name: getPageTitle(name, c), Url: url}
+func makePageDesc(messages map[string]string, name string, url string) PageDesc {
+	return PageDesc{Name: getPageTitle(messages, name), Url: url}
 }
 
-func getPageTitle(name string, c *gin.Context) string {
-	return locale.GetText("PageTitle"+locale.CamelCase(name), c)
+func getPageTitle(messages map[string]string, name string) string {
+	return messages["PageTitle"+locale.CamelCase(name)]
 }
 
-func extractAriane(splittedPath []string, c *gin.Context) []PageDesc {
+func extractAriane(messages map[string]string, splittedPath []string) []PageDesc {
 	pageDescs := make([]PageDesc, 0, len(splittedPath))
 	var urlBuilder strings.Builder
 	for _, name := range splittedPath {
 		urlBuilder.WriteString("/")
 		urlBuilder.WriteString(name)
-		pageDescs = append(pageDescs, makePageDesc(name, urlBuilder.String(), c))
+		pageDescs = append(pageDescs, makePageDesc(messages, name, urlBuilder.String()))
 	}
 	return pageDescs
 }
@@ -55,26 +55,42 @@ func getSite(c *gin.Context) *Site {
 	return site
 }
 
+func GetLocalesManager(c *gin.Context) *locale.LocalesManager {
+	return getSite(c).localesManager
+}
+
+func GetMessages(c *gin.Context) map[string]string {
+	return getSite(c).localesManager.GetMessages(c)
+}
+
 func initData(c *gin.Context) gin.H {
 	site := getSite(c)
+	localesManager := site.localesManager
+	messages := localesManager.GetMessages(c)
 	currentUrl := common.GetCurrentUrl(c)
 	page, path := site.root.extractPageAndPath(currentUrl)
 	data := gin.H{
-		"PageTitle":  getPageTitle(page.name, c),
+		"PageTitle":  getPageTitle(messages, page.name),
 		"CurrentUrl": currentUrl,
-		"Ariane":     extractAriane(path, c),
-		"SubPages":   page.extractSubPageNames(currentUrl, c),
-		"Messages":   locale.GetMessages(c),
+		"Ariane":     extractAriane(messages, path),
+		"SubPages":   page.extractSubPageNames(messages, currentUrl, c),
+		"Messages":   messages,
 	}
 	if errorMsg := c.Query("error"); errorMsg != "" {
-		data[common.ErrorMsgName] = locale.GetText(errorMsg, c)
+		data[common.ErrorMsgName] = messages[errorMsg]
 	}
-	if locale.MultipleLang {
+	if localesManager.MultipleLang {
 		data["LangSelector"] = true
-		data["AllLang"] = locale.AllLang
+		data["AllLang"] = localesManager.AllLang
 	}
 	for _, adder := range site.adders {
 		adder(data, c)
 	}
 	return data
+}
+
+func InitNoELementMsg(data gin.H, size int, c *gin.Context) {
+	if size == 0 {
+		data[common.ErrorMsgName] = GetMessages(c)["NoElement"]
+	}
 }

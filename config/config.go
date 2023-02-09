@@ -23,6 +23,8 @@ import (
 	"strconv"
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
+	blogservice "github.com/dvaumoron/puzzleweb/blog/service"
+	forumservice "github.com/dvaumoron/puzzleweb/forum/service"
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"github.com/joho/godotenv"
@@ -68,6 +70,17 @@ type AdminConfig struct {
 	UserService    loginservice.AdvancedUserService
 	ProfileService profileservice.AdvancedProfileService
 	PageSize       uint64
+}
+
+type BlogConfig struct {
+	BasicConfig[blogservice.BlogService]
+	PageSize    uint64
+	ExtractSize uint64
+}
+
+type ForumConfig struct {
+	BasicConfig[forumservice.ForumService]
+	PageSize uint64
 }
 
 type ProfileConfig struct {

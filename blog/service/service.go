@@ -21,7 +21,6 @@ import (
 	"html/template"
 
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
-	"go.uber.org/zap"
 )
 
 type BlogPost struct {
@@ -37,11 +36,4 @@ type BlogService interface {
 	GetPost(userId uint64, postId uint64) (BlogPost, error)
 	GetPosts(userId uint64, start uint64, end uint64, filter string) ([]BlogPost, error)
 	DeletePost(userId uint64, postId uint64) error
-}
-
-type BlogConfig struct {
-	Logger      *zap.Logger
-	Service     BlogService
-	PageSize    uint64
-	ExtractSize uint64
 }

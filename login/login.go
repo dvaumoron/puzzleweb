@@ -92,14 +92,16 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.BasicConfig[loginserv
 				success, userId, err = loginService.Verify(login, password)
 			}
 
+			localesManager := puzzleweb.GetLocalesManager(c)
+
 			errorMsg := ""
 			if err != nil {
 				errorMsg = err.Error()
 			} else if !success {
 				if register {
-					errorMsg = locale.GetText("ExistingLogin", c)
+					errorMsg = localesManager.GetMessages(c)["ExistingLogin"]
 				} else {
-					errorMsg = locale.GetText("WrongLogin", c)
+					errorMsg = localesManager.GetMessages(c)["WrongLogin"]
 				}
 			}
 
@@ -111,7 +113,7 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.BasicConfig[loginserv
 			s.Store(common.LoginName, login)
 			s.Store(common.UserIdName, fmt.Sprint(userId))
 
-			locale.SetLangCookie(c, settingsManager.Get(userId, c)[locale.LangName])
+			localesManager.SetLangCookie(c, settingsManager.Get(userId, c)[locale.LangName])
 
 			return c.PostForm(common.RedirectName)
 		}),

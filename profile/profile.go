@@ -103,7 +103,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig, ar
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 			if err == nil {
-				data["UserRight"] = admin.DisplayGroups(roles, c)
+				data["UserRight"] = admin.DisplayGroups(roles, puzzleweb.GetMessages(c))
 			}
 
 			userProfile := profiles[viewedUserId]

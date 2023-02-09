@@ -28,28 +28,28 @@ import (
 )
 
 // check matching with interface
-var _ service.AdminService = AdminClient{}
+var _ service.AdminService = RightClient{}
 
-type AdminClient struct {
+type RightClient struct {
 	grpcclient.Client
 	groupIdToName map[uint64]string
 	nameToGroupId map[string]uint64
 }
 
-func Make(serviceAddr string, logger *zap.Logger) AdminClient {
+func Make(serviceAddr string, logger *zap.Logger) RightClient {
 	groupIdToName := map[uint64]string{
 		service.PublicGroupId: service.PublicName, service.AdminGroupId: service.AdminName,
 	}
 	nameToGroupId := map[string]uint64{
 		service.PublicName: service.PublicGroupId, service.AdminName: service.AdminGroupId,
 	}
-	return AdminClient{
+	return RightClient{
 		Client:        grpcclient.Make(serviceAddr, logger),
 		groupIdToName: groupIdToName, nameToGroupId: nameToGroupId,
 	}
 }
 
-func (client AdminClient) RegisterGroup(groupId uint64, groupName string) {
+func (client RightClient) RegisterGroup(groupId uint64, groupName string) {
 	for usedId := range client.groupIdToName {
 		if groupId == usedId {
 			client.Logger.Fatal("Duplicate groupId.")
@@ -59,15 +59,15 @@ func (client AdminClient) RegisterGroup(groupId uint64, groupName string) {
 	client.nameToGroupId[groupName] = groupId
 }
 
-func (client AdminClient) GetGroupId(groupName string) uint64 {
+func (client RightClient) GetGroupId(groupName string) uint64 {
 	return client.nameToGroupId[groupName]
 }
 
-func (client AdminClient) GetGroupName(groupId uint64) string {
+func (client RightClient) GetGroupName(groupId uint64) string {
 	return client.groupIdToName[groupId]
 }
 
-func (client AdminClient) AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
+func (client RightClient) AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
 	conn, err := client.Dial()
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -89,7 +89,7 @@ func (client AdminClient) AuthQuery(userId uint64, groupId uint64, action pb.Rig
 	return nil
 }
 
-func (client AdminClient) GetAllRoles(adminId uint64) ([]service.Role, error) {
+func (client RightClient) GetAllRoles(adminId uint64) ([]service.Role, error) {
 	groupIds := make([]uint64, 0, len(client.groupIdToName))
 	for groupId := range client.groupIdToName {
 		groupIds = append(groupIds, groupId)
@@ -97,7 +97,7 @@ func (client AdminClient) GetAllRoles(adminId uint64) ([]service.Role, error) {
 	return client.getGroupRoles(adminId, groupIds)
 }
 
-func (client AdminClient) GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAction, error) {
+func (client RightClient) GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAction, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return nil, common.LogOriginalError(client.Logger, err)
@@ -127,7 +127,7 @@ func (client AdminClient) GetActions(adminId uint64, roleName string, groupName 
 	return actions.List, nil
 }
 
-func (client AdminClient) UpdateUser(adminId uint64, userId uint64, roles []service.Role) error {
+func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []service.Role) error {
 	conn, err := client.Dial()
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -165,7 +165,7 @@ func (client AdminClient) UpdateUser(adminId uint64, userId uint64, roles []serv
 	return nil
 }
 
-func (client AdminClient) UpdateRole(adminId uint64, role service.Role) error {
+func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 	conn, err := client.Dial()
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -198,7 +198,7 @@ func (client AdminClient) UpdateRole(adminId uint64, role service.Role) error {
 	return nil
 }
 
-func (client AdminClient) GetUserRoles(adminId uint64, userId uint64) ([]service.Role, error) {
+func (client RightClient) GetUserRoles(adminId uint64, userId uint64) ([]service.Role, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return nil, common.LogOriginalError(client.Logger, err)
@@ -225,7 +225,7 @@ func (client AdminClient) GetUserRoles(adminId uint64, userId uint64) ([]service
 	return client.getUserRoles(rightClient, ctx, userId)
 }
 
-func (client AdminClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]service.Role, error) {
+func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]service.Role, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return nil, common.LogOriginalError(client.Logger, err)
@@ -253,7 +253,7 @@ func (client AdminClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]se
 	return convertRolesFromRequest(roles.List, client.groupIdToName), nil
 }
 
-func (client AdminClient) getUserRoles(rightClient pb.RightClient, ctx context.Context, userId uint64) ([]service.Role, error) {
+func (client RightClient) getUserRoles(rightClient pb.RightClient, ctx context.Context, userId uint64) ([]service.Role, error) {
 	roles, err := rightClient.ListUserRoles(ctx, &pb.UserId{Id: userId})
 	if err != nil {
 		return nil, common.LogOriginalError(client.Logger, err)

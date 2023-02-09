@@ -45,8 +45,3 @@ type CommentService interface {
 	DeleteCommentThread(userId uint64, elemTitle string) error
 	DeleteMessage(userId uint64, threadId uint64, messageId uint64) error
 }
-
-type ForumConfig struct {
-	Service  ForumService
-	PageSize uint64
-}

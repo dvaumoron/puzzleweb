@@ -61,8 +61,8 @@ type RoleDisplay struct {
 	Actions []string
 }
 
-func MakeRoleDisplay(role service.Role, c *gin.Context) RoleDisplay {
-	return RoleDisplay{Name: role.Name, Actions: displayActions(role.Actions, c)}
+func MakeRoleDisplay(role service.Role, messages map[string]string) RoleDisplay {
+	return RoleDisplay{Name: role.Name, Actions: displayActions(role.Actions, messages)}
 }
 
 type sortableGroups []*GroupDisplay
@@ -191,7 +191,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			common.InitPagination(data, filter, pageNumber, end, total)
 			data["Users"] = users
 			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
-			common.InitNoELementMsg(data, len(users), c)
+			puzzleweb.InitNoELementMsg(data, len(users), c)
 			return listUserTmpl, ""
 		}),
 		viewUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
@@ -219,7 +219,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			data[common.UserLoginName] = user.Login
 			data[common.RegistredAtName] = user.RegistredAt
 			data[common.AllowedToUpdateName] = updateRight
-			data[groupsName] = DisplayGroups(roles, c)
+			data[groupsName] = DisplayGroups(roles, puzzleweb.GetMessages(c))
 			return viewUserTmpl, ""
 		}),
 		editUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
@@ -247,7 +247,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data[common.UserIdName] = userId
 			data[common.UserLoginName] = userIdToLogin[userId].Login
-			data[groupsName] = displayEditGroups(userRoles, allRoles, c)
+			data[groupsName] = displayEditGroups(userRoles, allRoles, puzzleweb.GetMessages(c))
 			return editUserTmpl, ""
 		}),
 		saveUserHandler: common.CreateRedirect(func(c *gin.Context) string {
@@ -299,7 +299,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			}
 
 			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
-			data[groupsName] = DisplayGroups(allRoles, c)
+			data[groupsName] = DisplayGroups(allRoles, puzzleweb.GetMessages(c))
 			return listRoleTmpl, ""
 		}),
 		editRoleHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
@@ -369,47 +369,47 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 	site.AddPage(p)
 }
 
-func DisplayGroups(roles []service.Role, c *gin.Context) []*GroupDisplay {
+func DisplayGroups(roles []service.Role, messages map[string]string) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
-	populateGroup(nameToGroup, roles, c, rolesAppender)
+	populateGroup(nameToGroup, roles, messages, rolesAppender)
 	return sortGroups(nameToGroup)
 }
 
-func populateGroup(nameToGroup map[string]*GroupDisplay, roles []service.Role, c *gin.Context, appender func(*GroupDisplay, service.Role, *gin.Context)) {
+func populateGroup(nameToGroup map[string]*GroupDisplay, roles []service.Role, messages map[string]string, appender func(*GroupDisplay, service.Role, map[string]string)) {
 	for _, role := range roles {
 		groupName := role.GroupName
 		group := nameToGroup[groupName]
 		if group == nil {
 			group = &GroupDisplay{
 				Id: role.GroupId, Name: groupName,
-				DisplayName: locale.GetText("GroupLabel"+locale.CamelCase(groupName), c),
+				DisplayName: messages["GroupLabel"+locale.CamelCase(groupName)],
 			}
 			nameToGroup[groupName] = group
 		}
-		appender(group, role, c)
+		appender(group, role, messages)
 	}
 }
 
-func rolesAppender(group *GroupDisplay, role service.Role, c *gin.Context) {
-	group.Roles = append(group.Roles, MakeRoleDisplay(role, c))
+func rolesAppender(group *GroupDisplay, role service.Role, messages map[string]string) {
+	group.Roles = append(group.Roles, MakeRoleDisplay(role, messages))
 }
 
 // convert a RightAction slice in a displayable string slice,
 // always in the same order : access, create, update, delete
-func displayActions(actions []pb.RightAction, c *gin.Context) []string {
+func displayActions(actions []pb.RightAction, messages map[string]string) []string {
 	actionSet := common.MakeSet(actions)
 	res := make([]string, len(actions))
 	if actionSet.Contains(pb.RightAction_ACCESS) {
-		res = append(res, locale.GetText(accessKey, c))
+		res = append(res, messages[accessKey])
 	}
 	if actionSet.Contains(pb.RightAction_CREATE) {
-		res = append(res, locale.GetText(createKey, c))
+		res = append(res, messages[createKey])
 	}
 	if actionSet.Contains(pb.RightAction_UPDATE) {
-		res = append(res, locale.GetText(updateKey, c))
+		res = append(res, messages[updateKey])
 	}
 	if actionSet.Contains(pb.RightAction_DELETE) {
-		res = append(res, locale.GetText(deleteKey, c))
+		res = append(res, messages[deleteKey])
 	}
 	return res
 }
@@ -424,15 +424,15 @@ func sortGroups(nameToGroup map[string]*GroupDisplay) []*GroupDisplay {
 	return groupRoles
 }
 
-func displayEditGroups(userRoles []service.Role, allRoles []service.Role, c *gin.Context) []*GroupDisplay {
+func displayEditGroups(userRoles []service.Role, allRoles []service.Role, messages map[string]string) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
-	populateGroup(nameToGroup, userRoles, c, rolesAppender)
-	populateGroup(nameToGroup, allRoles, c, addableRolesAppender)
+	populateGroup(nameToGroup, userRoles, messages, rolesAppender)
+	populateGroup(nameToGroup, allRoles, messages, addableRolesAppender)
 	return sortGroups(nameToGroup)
 }
 
-func addableRolesAppender(group *GroupDisplay, role service.Role, c *gin.Context) {
-	group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role, c))
+func addableRolesAppender(group *GroupDisplay, role service.Role, messages map[string]string) {
+	group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role, messages))
 }
 
 func setActionChecked(data gin.H, actionSet common.Set[pb.RightAction], toTest pb.RightAction, name string) {

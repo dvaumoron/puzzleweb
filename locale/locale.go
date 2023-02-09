@@ -23,7 +23,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
@@ -32,42 +31,50 @@ import (
 const LangName = "lang"
 const pathName = "Path"
 
-var matcher language.Matcher
-var AllLang []string
-var DefaultLang string
-var MultipleLang bool
-var messages map[string]map[string]string = map[string]map[string]string{}
-
-type Tags struct {
-	list []language.Tag
+type LocalesManager struct {
+	logger         *zap.Logger
+	tags           []language.Tag
+	matcher        language.Matcher
+	AllLang        []string
+	DefaultLang    string
+	MultipleLang   bool
+	messages       map[string]map[string]string
+	sessionTimeOut int
+	domain         string
 }
 
-func (a *Tags) Add(lang language.Tag) {
-	a.list = append(a.list, lang)
+func NewManager(logger *zap.Logger, sessionTimeOut int, domain string) *LocalesManager {
+	return &LocalesManager{
+		logger: logger, tags: make([]language.Tag, 0, 1), sessionTimeOut: sessionTimeOut, domain: domain,
+	}
 }
 
-var Availables Tags = Tags{list: make([]language.Tag, 0, 1)}
+func (m *LocalesManager) AddLang(lang language.Tag) {
+	m.tags = append(m.tags, lang)
+}
 
-func InitMessages(logger *zap.Logger, localesPath string) {
-	if matcher != nil {
+func (m *LocalesManager) InitMessages(localesPath string) {
+	if m.matcher != nil {
+		// avoid multiple initialization
 		return
 	}
-	list := Availables.list
+	list := m.tags
 	size := len(list)
 	if size == 0 {
-		logger.Fatal("No locales declared.")
+		m.logger.Fatal("No locales declared.")
 	}
-	MultipleLang = size > 1
+	m.MultipleLang = size > 1
 
-	AllLang = make([]string, 0, size)
+	m.AllLang = make([]string, 0, size)
 	for _, langTag := range list {
-		AllLang = append(AllLang, langTag.String())
+		m.AllLang = append(m.AllLang, langTag.String())
 	}
-	DefaultLang = AllLang[0]
-	matcher = language.NewMatcher(list)
-	for _, lang := range AllLang {
+	m.DefaultLang = m.AllLang[0]
+	m.matcher = language.NewMatcher(list)
+	m.messages = map[string]map[string]string{}
+	for _, lang := range m.AllLang {
 		messagesLang := map[string]string{}
-		messages[lang] = messagesLang
+		m.messages[lang] = messagesLang
 
 		var pathBuilder strings.Builder
 		pathBuilder.WriteString(localesPath)
@@ -77,7 +84,7 @@ func InitMessages(logger *zap.Logger, localesPath string) {
 		path := pathBuilder.String()
 		file, err := os.Open(path)
 		if err != nil {
-			logger.Fatal("Failed to load locale file.", zap.String(pathName, path), zap.Error(err))
+			m.logger.Fatal("Failed to load locale file.", zap.String(pathName, path), zap.Error(err))
 		}
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
@@ -93,16 +100,16 @@ func InitMessages(logger *zap.Logger, localesPath string) {
 			}
 		}
 		if err = scanner.Err(); err != nil {
-			logger.Error("Error reading locale file.", zap.String(pathName, path), zap.Error(err))
+			m.logger.Error("Error reading locale file.", zap.String(pathName, path), zap.Error(err))
 		}
 	}
 
-	messagesDefaultLang := messages[DefaultLang]
-	for _, lang := range AllLang {
-		if lang == DefaultLang {
+	messagesDefaultLang := m.messages[m.DefaultLang]
+	for _, lang := range m.AllLang {
+		if lang == m.DefaultLang {
 			continue
 		}
-		messagesLang := messages[lang]
+		messagesLang := m.messages[lang]
 		for key, value := range messagesLang {
 			if value == "" {
 				messagesLang[key] = messagesDefaultLang[key]
@@ -111,43 +118,40 @@ func InitMessages(logger *zap.Logger, localesPath string) {
 	}
 }
 
-func GetText(key string, c *gin.Context) string {
-	return GetMessages(c)[key]
+func (m *LocalesManager) GetText(key string, c *gin.Context) string {
+	return m.GetMessages(c)[key]
 }
 
-func GetLang(c *gin.Context) string {
+func (m *LocalesManager) GetLang(c *gin.Context) string {
 	lang, err := c.Cookie(LangName)
 	if err != nil {
-		tag, _ := language.MatchStrings(matcher, c.GetHeader("Accept-Language"))
-		return setLangCookie(c, tag.String())
+		tag, _ := language.MatchStrings(m.matcher, c.GetHeader("Accept-Language"))
+		return m.setLangCookie(c, tag.String())
 	}
-	return CheckLang(lang)
+	return m.CheckLang(lang)
 }
 
-func CheckLang(lang string) string {
-	for _, l := range AllLang {
+func (m *LocalesManager) CheckLang(lang string) string {
+	for _, l := range m.AllLang {
 		if lang == l {
 			return lang
 		}
 	}
-	log.Logger.Info("Asked not declared locale.", zap.String("askedLocale", lang))
-	return DefaultLang
+	m.logger.Info("Asked not declared locale.", zap.String("askedLocale", lang))
+	return m.DefaultLang
 }
 
-func setLangCookie(c *gin.Context, lang string) string {
-	c.SetCookie(
-		LangName, lang, config.Shared.SessionTimeOut,
-		"/", config.Shared.Domain, false, false,
-	)
+func (m *LocalesManager) setLangCookie(c *gin.Context, lang string) string {
+	c.SetCookie(LangName, lang, m.sessionTimeOut, "/", m.domain, false, false)
 	return lang
 }
 
-func SetLangCookie(c *gin.Context, lang string) {
-	setLangCookie(c, CheckLang(lang))
+func (m *LocalesManager) SetLangCookie(c *gin.Context, lang string) {
+	m.setLangCookie(c, m.CheckLang(lang))
 }
 
-func GetMessages(c *gin.Context) map[string]string {
-	return messages[GetLang(c)]
+func (m *LocalesManager) GetMessages(c *gin.Context) map[string]string {
+	return m.messages[m.GetLang(c)]
 }
 
 func CamelCase(word string) string {

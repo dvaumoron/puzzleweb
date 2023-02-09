@@ -24,7 +24,6 @@ import (
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
 )
@@ -69,7 +68,8 @@ func localizedTmpl(authConfig config.BasicConfig[adminservice.AuthService], grou
 		if err != nil {
 			return "", common.DefaultErrorRedirect(err.Error())
 		}
-		if lang := locale.GetLang(c); lang != locale.DefaultLang {
+		localesManager := GetLocalesManager(c)
+		if lang := localesManager.GetLang(c); lang != localesManager.DefaultLang {
 			var builder strings.Builder
 			builder.WriteString(lang)
 			builder.WriteString("/")
@@ -132,7 +132,7 @@ func (current Page) extractPageAndPath(path string) (Page, []string) {
 	return current, names
 }
 
-func (p Page) extractSubPageNames(url string, c *gin.Context) []PageDesc {
+func (p Page) extractSubPageNames(messages map[string]string, url string, c *gin.Context) []PageDesc {
 	sw, ok := p.Widget.(*staticWidget)
 	if !ok {
 		return nil
@@ -148,7 +148,7 @@ func (p Page) extractSubPageNames(url string, c *gin.Context) []PageDesc {
 	for _, page := range pages {
 		if page.visible {
 			name := page.name
-			pageDescs = append(pageDescs, makePageDesc(name, url+name, c))
+			pageDescs = append(pageDescs, makePageDesc(messages, name, url+name))
 		}
 	}
 	return pageDescs

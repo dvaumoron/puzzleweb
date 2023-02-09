@@ -24,7 +24,7 @@ import (
 
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/forum/service"
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -54,9 +54,10 @@ func (w forumWidget) LoadInto(router gin.IRouter) {
 	router.GET("/message/delete/:threadId/:messageId", w.deleteMessageHandler)
 }
 
-func MakeForumPage(logger *zap.Logger, forumName string, config service.ForumConfig, args ...string) puzzleweb.Page {
-	forumService := config.Service
-	defaultPageSize := config.PageSize
+func MakeForumPage(forumName string, forumConfig config.ForumConfig, args ...string) puzzleweb.Page {
+	logger := forumConfig.Logger
+	forumService := forumConfig.Service
+	defaultPageSize := forumConfig.PageSize
 
 	listTmpl := "forum/list.html"
 	createTmpl := "forum/create.html"
@@ -99,7 +100,7 @@ func MakeForumPage(logger *zap.Logger, forumName string, config service.ForumCon
 			data["Threads"] = threads
 			data[common.AllowedToCreateName] = forumService.CreateThreadRight(userId)
 			data[common.AllowedToDeleteName] = forumService.DeleteRight(userId)
-			common.InitNoELementMsg(data, len(threads), c)
+			puzzleweb.InitNoELementMsg(data, len(threads), c)
 			return listTmpl, ""
 		}),
 		createThreadHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
@@ -155,7 +156,7 @@ func MakeForumPage(logger *zap.Logger, forumName string, config service.ForumCon
 			data["Messages"] = messages
 			data[common.AllowedToCreateName] = forumService.CreateMessageRight(userId)
 			data[common.AllowedToDeleteName] = forumService.DeleteRight(userId)
-			common.InitNoELementMsg(data, len(messages), c)
+			puzzleweb.InitNoELementMsg(data, len(messages), c)
 			return viewTmpl, ""
 		}),
 		saveMessageHandler: common.CreateRedirect(func(c *gin.Context) string {

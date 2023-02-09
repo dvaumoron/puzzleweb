@@ -19,7 +19,7 @@ package blog
 
 import (
 	"github.com/dvaumoron/puzzleweb"
-	"github.com/dvaumoron/puzzleweb/blog/service"
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,7 +43,7 @@ func (w blogWidget) LoadInto(router gin.IRouter) {
 	router.GET("/delete/:postId", w.deleteHandler)
 }
 
-func MakeBlogPage(blogName string, config service.BlogConfig, args ...string) puzzleweb.Page {
+func MakeBlogPage(blogName string, blogConfig config.BlogConfig, args ...string) puzzleweb.Page {
 	// TODO
 	p := puzzleweb.MakePage(blogName)
 	p.Widget = blogWidget{}

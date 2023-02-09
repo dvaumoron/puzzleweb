@@ -9,7 +9,6 @@ require (
 	github.com/dvaumoron/puzzlemarkdownservice v1.0.1
 	github.com/dvaumoron/puzzleprofileservice v1.2.0
 	github.com/dvaumoron/puzzlerightservice v1.3.0
-	github.com/dvaumoron/puzzlesaltclient v1.0.0
 	github.com/dvaumoron/puzzlesessionservice v1.2.0
 	github.com/dvaumoron/puzzlewikiservice v1.3.0
 	github.com/gin-gonic/gin v1.8.1
@@ -21,7 +20,6 @@ require (
 )
 
 require (
-	github.com/dvaumoron/puzzlesaltservice v1.0.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect

@@ -37,7 +37,7 @@ func (w settingsWidget) LoadInto(router gin.IRouter) {
 	router.POST("/save", w.saveHandler)
 }
 
-func AddSettingsPage(site *puzzleweb.Site, settingsConfig config.BasicConfig[SettingsManager], args ...string) {
+func AddSettingsPage(site *puzzleweb.Site, settingsConfig config.BasicConfig[*SettingsManager], args ...string) {
 	logger := settingsConfig.Logger
 	settingsManager := settingsConfig.Service
 

@@ -27,7 +27,7 @@ import (
 	pbright "github.com/dvaumoron/puzzlerightservice"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	service "github.com/dvaumoron/puzzleweb/forum/service"
+	"github.com/dvaumoron/puzzleweb/forum/service"
 	"github.com/dvaumoron/puzzleweb/grpcclient"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"go.uber.org/zap"

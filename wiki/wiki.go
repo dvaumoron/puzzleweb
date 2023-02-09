@@ -22,14 +22,10 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb"
-	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/session"
-	"github.com/dvaumoron/puzzleweb/wiki/cache"
-	"github.com/dvaumoron/puzzleweb/wiki/client"
 	"github.com/gin-gonic/gin"
 )
 
@@ -60,9 +56,10 @@ func (w wikiWidget) LoadInto(router gin.IRouter) {
 	router.GET("/:lang/delete/:title", w.deleteHandler)
 }
 
-func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string) puzzleweb.Page {
-	config.Shared.LoadWiki()
-	cache.InitWiki(wikiId)
+func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig, args ...string) puzzleweb.Page {
+	logger := wikiConfig.Logger
+	wikiService := wikiConfig.Service
+	markdownService := wikiConfig.MarkdownService
 
 	defaultPage := "Welcome"
 	viewTmpl := "wiki/view.html"
@@ -70,7 +67,7 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 	listTmpl := "wiki/list.html"
 	switch len(args) {
 	default:
-		log.Logger.Info("MakeWikiPage should be called with 3 to 7 arguments.")
+		logger.Info("MakeWikiPage should be called with 2 to 6 arguments.")
 		fallthrough
 	case 4:
 		if args[3] != "" {
@@ -98,13 +95,13 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 	p.Widget = wikiWidget{
 		defaultHandler: common.CreateRedirect(func(c *gin.Context) string {
 			return wikiUrlBuilder(
-				common.GetCurrentUrl(c), locale.GetLang(c), viewMode, defaultPage,
+				common.GetCurrentUrl(c), puzzleweb.GetLocalesManager(c).GetLang(c), viewMode, defaultPage,
 			).String()
 		}),
 		viewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			askedLang := c.Param(locale.LangName)
 			title := c.Param(titleName)
-			lang := locale.CheckLang(askedLang)
+			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
 
 			if lang != askedLang {
 				targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
@@ -112,9 +109,9 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 				return "", targetBuilder.String()
 			}
 
-			userId := session.GetUserId(c)
+			userId := session.GetUserId(logger, c)
 			version := c.Query(versionName)
-			content, err := client.LoadContent(wikiId, groupId, userId, lang, title, version)
+			content, err := wikiService.LoadContent(userId, lang, title, version)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -127,7 +124,7 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 				return "", wikiUrlBuilder(base, lang, viewMode, title).String()
 			}
 
-			body, err := content.GetBody()
+			body, err := content.GetBody(markdownService)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -143,7 +140,7 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 		editHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			askedLang := c.Param(locale.LangName)
 			title := c.Param(titleName)
-			lang := locale.CheckLang(askedLang)
+			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
 
 			if lang == askedLang {
 				targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
@@ -151,8 +148,8 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 				return "", targetBuilder.String()
 			}
 
-			userId := session.GetUserId(c)
-			content, err := client.LoadContent(wikiId, groupId, userId, lang, title, "")
+			userId := session.GetUserId(logger, c)
+			content, err := wikiService.LoadContent(userId, lang, title, "")
 			if err == nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -169,7 +166,7 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 		}),
 		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
 			askedLang := c.Param(locale.LangName)
-			lang := locale.CheckLang(askedLang)
+			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
 			title := c.Param(titleName)
 
 			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
@@ -178,11 +175,11 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 				return targetBuilder.String()
 			}
 
-			userId := session.GetUserId(c)
+			userId := session.GetUserId(logger, c)
 			last := c.PostForm(versionName)
 			content := c.PostForm("content")
 
-			success, err := client.StoreContent(wikiId, groupId, userId, lang, title, last, content)
+			success, err := wikiService.StoreContent(userId, lang, title, last, content)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
 				return targetBuilder.String()
@@ -194,7 +191,7 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 		}),
 		listHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			askedLang := c.Param(locale.LangName)
-			lang := locale.CheckLang(askedLang)
+			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
 			title := c.Param(titleName)
 
 			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, listMode, title)
@@ -203,25 +200,23 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 				return "", targetBuilder.String()
 			}
 
-			userId := session.GetUserId(c)
-			versions, err := client.GetVersions(wikiId, groupId, userId, lang, title)
+			userId := session.GetUserId(logger, c)
+			versions, err := wikiService.GetVersions(userId, lang, title)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
 				return "", targetBuilder.String()
 			}
 
-			deleteRight := rightclient.AuthQuery(userId, groupId, rightclient.ActionDelete) == nil
-
 			data[wikiTitleName] = title
 			data[versionsName] = versions
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
-			data[common.AllowedToDeleteName] = deleteRight
+			data[common.AllowedToDeleteName] = wikiService.DeleteRight(userId)
 			puzzleweb.InitNoELementMsg(data, len(versions), c)
 			return listTmpl, ""
 		}),
 		deleteHandler: common.CreateRedirect(func(c *gin.Context) string {
 			askedLang := c.Param(locale.LangName)
-			lang := locale.CheckLang(askedLang)
+			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
 			title := c.Param(titleName)
 
 			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, listMode, title)
@@ -230,9 +225,9 @@ func MakeWikiPage(wikiName string, groupId uint64, wikiId uint64, args ...string
 				return targetBuilder.String()
 			}
 
-			userId := session.GetUserId(c)
+			userId := session.GetUserId(logger, c)
 			version := c.Query(versionName)
-			err := client.DeleteContent(wikiId, groupId, userId, lang, title, version)
+			err := wikiService.DeleteContent(userId, lang, title, version)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
 			}

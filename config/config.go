@@ -26,7 +26,9 @@ import (
 	blogservice "github.com/dvaumoron/puzzleweb/blog/service"
 	forumservice "github.com/dvaumoron/puzzleweb/forum/service"
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
+	markdownservice "github.com/dvaumoron/puzzleweb/markdown/service"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
@@ -74,8 +76,9 @@ type AdminConfig struct {
 
 type BlogConfig struct {
 	BasicConfig[blogservice.BlogService]
-	PageSize    uint64
-	ExtractSize uint64
+	MarkdownService markdownservice.MarkdownService
+	PageSize        uint64
+	ExtractSize     uint64
 }
 
 type ForumConfig struct {
@@ -87,6 +90,11 @@ type ProfileConfig struct {
 	BasicConfig[profileservice.AdvancedProfileService]
 	AdminService adminservice.AdminService
 	LoginService loginservice.LoginService
+}
+
+type WikiConfig struct {
+	BasicConfig[wikiservice.WikiService]
+	MarkdownService markdownservice.MarkdownService
 }
 
 func LoadDefault() GlobalConfig {

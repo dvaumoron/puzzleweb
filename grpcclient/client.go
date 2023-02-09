@@ -15,33 +15,30 @@
  * limitations under the License.
  *
  */
-package markdownclient
+package grpcclient
 
 import (
 	"context"
-	"html/template"
 	"time"
 
-	pb "github.com/dvaumoron/puzzlemarkdownservice"
-	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func Apply(text string) (template.HTML, error) {
-	conn, err := grpc.Dial(config.Shared.MarkdownServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return "", common.LogOriginalError(nil, err)
-	}
-	defer conn.Close()
+type Client struct {
+	serviceAddr string
+	Logger      *zap.Logger
+}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+func Make(serviceAddr string, logger *zap.Logger) Client {
+	return Client{serviceAddr: serviceAddr, Logger: logger}
+}
 
-	markdownHtml, err := pb.NewMarkdownClient(conn).Apply(ctx, &pb.MarkdownText{Text: text})
-	if err != nil {
-		return "", common.LogOriginalError(nil, err)
-	}
-	return template.HTML(markdownHtml.Html), nil
+func (client Client) Dial() (*grpc.ClientConn, error) {
+	return grpc.Dial(client.serviceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+}
+
+func (Client) InitContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), time.Second)
 }

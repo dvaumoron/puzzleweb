@@ -20,49 +20,58 @@ package puzzleweb
 import (
 	"net/http"
 
-	rightclient "github.com/dvaumoron/puzzleweb/admin/client"
+	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/log"
-	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
+	"github.com/dvaumoron/puzzleweb/profile/service"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
 const siteName = "Site"
 
 type Site struct {
-	engine      *gin.Engine
-	root        Page
-	Page404Url  string
-	adders      []common.DataAdder
-	initialized bool
-	FaviconPath string
+	engine         *gin.Engine
+	logger         *zap.Logger
+	staticPath     string
+	pictureService service.PictureService
+	root           Page
+	Page404Url     string
+	adders         []common.DataAdder
+	initialized    bool
+	FaviconPath    string
 }
 
-func NewSite(args ...string) *Site {
+func NewSite(staticPath string, authConfig config.BasicConfig[adminservice.AuthService], pictureService service.PictureService, sessionManager session.SessionManager, args ...string) *Site {
+	logger := authConfig.Logger
+
 	size := len(args)
 	rootTmpl := "index.html"
 	if size != 0 && args[0] != "" {
 		rootTmpl = args[0]
 	}
 	if size > 1 {
-		log.Logger.Info("CreateSite should be called with at most 1 argument.")
+		logger.Info("CreateSite should be called with at most 1 argument.")
 	}
 
 	engine := gin.Default()
 
-	engine.Static("/static", config.Shared.StaticPath)
-	engine.GET("/profilePic/:UserId", profilePicHandler)
+	engine.Static("/static", staticPath)
 
-	site := &Site{engine: engine, root: MakeStaticPage("root", rightclient.PublicGroupId, rootTmpl)}
+	site := &Site{
+		engine: engine, logger: logger, staticPath: staticPath, pictureService: pictureService,
+		root: MakeStaticPage("root", authConfig, adminservice.PublicGroupId, rootTmpl),
+	}
 
-	engine.Use(session.Manage, func(c *gin.Context) {
+	engine.Use(sessionManager.Manage, func(c *gin.Context) {
 		c.Set(siteName, site)
 	})
+
+	engine.GET("/profilePic/:UserId", site.profilePicHandler)
 
 	return site
 }
@@ -87,7 +96,7 @@ func (site *Site) initEngine() *gin.Engine {
 	engine := site.engine
 	if !site.initialized {
 		if engine.HTMLRender == nil {
-			engine.HTMLRender = loadTemplates()
+			site.logger.Fatal("no HTMLRender initialized")
 		}
 
 		favicon := "/favicon.ico"
@@ -95,7 +104,7 @@ func (site *Site) initEngine() *gin.Engine {
 		if faviconPath == "" {
 			faviconPath = favicon
 		}
-		engine.StaticFile(favicon, config.Shared.StaticPath+faviconPath)
+		engine.StaticFile(favicon, site.staticPath+faviconPath)
 		site.root.Widget.LoadInto(engine)
 		if locale.MultipleLang {
 			engine.GET("/changeLang", changeLangHandler)
@@ -106,9 +115,9 @@ func (site *Site) initEngine() *gin.Engine {
 	return engine
 }
 
-func (site *Site) Run() error {
-	locale.InitMessages()
-	return site.initEngine().Run(checkPort(config.Shared.Port))
+func (site *Site) Run(localesPath string, port string) error {
+	locale.InitMessages(site.logger, localesPath)
+	return site.initEngine().Run(checkPort(port))
 }
 
 type SiteConfig struct {
@@ -116,8 +125,8 @@ type SiteConfig struct {
 	Port string
 }
 
-func Run(sites ...SiteConfig) error {
-	locale.InitMessages()
+func Run(logger *zap.Logger, localesPath string, sites ...SiteConfig) error {
+	locale.InitMessages(logger, localesPath)
 	var g errgroup.Group
 	for _, siteConfig := range sites {
 		port := checkPort(siteConfig.Port)
@@ -130,14 +139,14 @@ func Run(sites ...SiteConfig) error {
 	return g.Wait()
 }
 
-func profilePicHandler(c *gin.Context) {
-	userId := common.GetRequestedUserId(c)
+func (site *Site) profilePicHandler(c *gin.Context) {
+	userId := common.GetRequestedUserId(site.logger, c)
 	if userId == 0 {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
-	data, err := profileclient.GetPicture(userId)
+	data, err := site.pictureService.GetPicture(userId)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return

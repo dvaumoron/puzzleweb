@@ -26,12 +26,10 @@ import (
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	loginclient "github.com/dvaumoron/puzzleweb/login/client"
-	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
 	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 const roleNameName = "RoleName"
@@ -119,7 +117,13 @@ func (w adminWidget) LoadInto(router gin.IRouter) {
 	router.POST("/role/save", w.saveRoleHandler)
 }
 
-func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service.AdminService, args ...string) {
+func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...string) {
+	logger := adminConfig.Logger
+	adminService := adminConfig.Service
+	userService := adminConfig.UserService
+	profileService := adminConfig.ProfileService
+	defaultPageSize := adminConfig.PageSize
+
 	indexTmpl := "admin/index.html"
 	listUserTmpl := "admin/user/list.html"
 	viewUserTmpl := "admin/user/view.html"
@@ -177,9 +181,9 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 				return "", common.DefaultErrorRedirect(common.ErrNotAuthorized.Error())
 			}
 
-			pageNumber, start, end, filter := common.GetPagination(c)
+			pageNumber, start, end, filter := common.GetPagination(c, defaultPageSize)
 
-			total, users, err := loginclient.ListUsers(start, end, filter)
+			total, users, err := userService.ListUsers(start, end, filter)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -191,7 +195,7 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 			return listUserTmpl, ""
 		}),
 		viewUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			adminId := session.GetUserId(c)
+			adminId := session.GetUserId(logger, c)
 			userId := common.GetRequestedUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
@@ -202,7 +206,7 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			users, err := loginclient.GetUsers([]uint64{userId})
+			users, err := userService.GetUsers([]uint64{userId})
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -219,7 +223,7 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 			return viewUserTmpl, ""
 		}),
 		editUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			adminId := session.GetUserId(c)
+			adminId := session.GetUserId(logger, c)
 			userId := common.GetRequestedUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
@@ -235,7 +239,7 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			userIdToLogin, err := loginclient.GetUsers([]uint64{userId})
+			userIdToLogin, err := userService.GetUsers([]uint64{userId})
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -258,7 +262,7 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 						roles = append(roles, service.Role{Name: splitted[0], GroupName: splitted[1]})
 					}
 				}
-				err = adminService.UpdateUser(session.GetUserId(c), userId, roles)
+				err = adminService.UpdateUser(session.GetUserId(logger, c), userId, roles)
 			}
 
 			targetBuilder := userListUrlBuilder(c)
@@ -273,11 +277,11 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 			if userId != 0 {
 				// an empty slice delete the user right
 				// only the first service call do a right check
-				err = adminService.UpdateUser(session.GetUserId(c), userId, []service.Role{})
+				err = adminService.UpdateUser(session.GetUserId(logger, c), userId, []service.Role{})
 				if err == nil {
-					err = profileclient.Delete(userId)
+					err = profileService.Delete(userId)
 					if err == nil {
-						err = loginclient.DeleteUser(userId)
+						err = userService.Delete(userId)
 					}
 				}
 			}
@@ -289,7 +293,7 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 			return targetBuilder.String()
 		}),
 		listRoleHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			allRoles, err := adminService.GetAllRoles(session.GetUserId(c))
+			allRoles, err := adminService.GetAllRoles(session.GetUserId(logger, c))
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -307,7 +311,7 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 			data[groupName] = group
 
 			if roleName != "new" {
-				actions, err := adminService.GetActions(session.GetUserId(c), roleName, group)
+				actions, err := adminService.GetActions(session.GetUserId(logger, c), roleName, group)
 				if err != nil {
 					return "", common.DefaultErrorRedirect(err.Error())
 				}
@@ -341,7 +345,7 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 					}
 					actions = append(actions, action)
 				}
-				err = adminService.UpdateRole(session.GetUserId(c), service.Role{
+				err = adminService.UpdateRole(session.GetUserId(logger, c), service.Role{
 					Name: roleName, GroupName: group, Actions: actions,
 				})
 			}
@@ -358,7 +362,7 @@ func AddAdminPage(logger *zap.Logger, site *puzzleweb.Site, adminService service
 
 	site.AddDefaultData(func(data gin.H, c *gin.Context) {
 		data[viewAdminName] = adminService.AuthQuery(
-			session.GetUserId(c), service.AdminGroupId, pb.RightAction_ACCESS,
+			session.GetUserId(logger, c), service.AdminGroupId, pb.RightAction_ACCESS,
 		) == nil
 	})
 

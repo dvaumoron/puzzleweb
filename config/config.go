@@ -22,15 +22,17 @@ import (
 	"os"
 	"strconv"
 
+	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
+	loginservice "github.com/dvaumoron/puzzleweb/login/service"
+	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
 const defaultSessionTimeOut = 1200
 const defaultPageSize = 50
 
-var Shared = loadDefault()
-
-type Config struct {
+type GlobalConfig struct {
 	Domain string
 	Port   string
 
@@ -56,7 +58,25 @@ type Config struct {
 	BlogServiceAddr     string
 }
 
-func loadDefault() Config {
+type BasicConfig[ServiceType any] struct {
+	Logger  *zap.Logger
+	Service ServiceType
+}
+
+type AdminConfig struct {
+	BasicConfig[adminservice.AdminService]
+	UserService    loginservice.AdvancedUserService
+	ProfileService profileservice.AdvancedProfileService
+	PageSize       uint64
+}
+
+type ProfileConfig struct {
+	BasicConfig[profileservice.AdvancedProfileService]
+	AdminService adminservice.AdminService
+	LoginService loginservice.LoginService
+}
+
+func LoadDefault() GlobalConfig {
 	if godotenv.Overload() == nil {
 		fmt.Println("Loaded .env file")
 	}
@@ -102,7 +122,7 @@ func loadDefault() Config {
 
 	dateFormat := retrieveWithDefault("DATE_FORMAT", "2/1/2006 15:04:05")
 
-	return Config{
+	return GlobalConfig{
 		Domain: domain, Port: port, LogConfig: logConfig, SessionTimeOut: sessionTimeOut,
 		PageSize: pageSize, DateFormat: dateFormat,
 
@@ -117,25 +137,25 @@ func loadDefault() Config {
 	}
 }
 
-func (c *Config) LoadProfile() {
+func (c *GlobalConfig) LoadProfile() {
 	if c.ProfileServiceAddr == "" {
 		c.ProfileServiceAddr = requiredFromEnv("PROFILE_SERVICE_ADDR")
 	}
 }
 
-func (c *Config) LoadSettings() {
+func (c *GlobalConfig) LoadSettings() {
 	if c.SettingsServiceAddr == "" {
 		c.SettingsServiceAddr = requiredFromEnv("SETTINGS_SERVICE_ADDR")
 	}
 }
 
-func (c *Config) loadMarkdown() {
+func (c *GlobalConfig) loadMarkdown() {
 	if c.MarkdownServiceAddr == "" {
 		c.MarkdownServiceAddr = requiredFromEnv("MARKDOWN_SERVICE_ADDR")
 	}
 }
 
-func (c *Config) LoadWiki() {
+func (c *GlobalConfig) LoadWiki() {
 	if c.WikiServiceAddr == "" {
 		c.LoadProfile()
 		c.loadMarkdown()
@@ -143,14 +163,14 @@ func (c *Config) LoadWiki() {
 	}
 }
 
-func (c *Config) LoadForum() {
+func (c *GlobalConfig) LoadForum() {
 	if c.ForumServiceAddr == "" {
 		c.LoadProfile()
 		c.ForumServiceAddr = requiredFromEnv("FORUM_SERVICE_ADDR")
 	}
 }
 
-func (c *Config) LoadBlog() {
+func (c *GlobalConfig) LoadBlog() {
 	if c.BlogServiceAddr == "" {
 		c.LoadForum()
 		c.loadMarkdown()
@@ -166,19 +186,15 @@ func retrieveWithDefault(name string, defaultValue string) string {
 	return defaultValue
 }
 
-func retrievePath(name string, defaultValue string) string {
-	if value := os.Getenv(name); value != "" {
-		return checkPath(value)
+func retrievePath(name string, defaultPath string) string {
+	if path := os.Getenv(name); path != "" {
+		if last := len(path) - 1; path[last] == '/' {
+			path = path[:last]
+		}
+		return path
 	}
-	fmt.Println(name, "not found, using default :", defaultValue)
-	return defaultValue
-}
-
-func checkPath(path string) string {
-	if last := len(path) - 1; last != -1 && path[last] == '/' {
-		path = path[:last]
-	}
-	return path
+	fmt.Println(name, "not found, using default :", defaultPath)
+	return defaultPath
 }
 
 func requiredFromEnv(name string) string {

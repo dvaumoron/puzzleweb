@@ -18,86 +18,76 @@
 package client
 
 import (
-	"context"
-	"time"
-
 	pb "github.com/dvaumoron/puzzlesessionservice"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/dvaumoron/puzzleweb/grpcclient"
+	"github.com/dvaumoron/puzzleweb/session/service"
+	"go.uber.org/zap"
 )
 
-func Generate() (uint64, error) {
-	conn, err := grpc.Dial(config.Shared.SessionServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+// check matching with interface
+var _ service.SessionService = SessionClient{}
+
+type SessionClient struct {
+	grpcclient.Client
+}
+
+func Make(serviceAddr string, logger *zap.Logger) SessionClient {
+	return SessionClient{Client: grpcclient.Make(serviceAddr, logger)}
+}
+
+func (client SessionClient) Generate() (uint64, error) {
+	conn, err := client.Dial()
 	if err != nil {
-		return 0, common.LogOriginalError(nil, err)
+		return 0, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewSessionClient(conn).Generate(
 		ctx, &pb.SessionInfo{Info: map[string]string{}},
 	)
 	if err != nil {
-		return 0, common.LogOriginalError(nil, err)
+		return 0, common.LogOriginalError(client.Logger, err)
 	}
 	return response.Id, nil
 }
 
-func GetSession(id uint64) (map[string]string, error) {
-	return get(config.Shared.SessionServiceAddr, id)
-}
-
-func GetSettings(id uint64) (map[string]string, error) {
-	return get(config.Shared.SettingsServiceAddr, id)
-}
-
-func get(addr string, id uint64) (map[string]string, error) {
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client SessionClient) Get(id uint64) (map[string]string, error) {
+	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(nil, err)
+		return nil, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewSessionClient(conn).GetSessionInfo(
 		ctx, &pb.SessionId{Id: id},
 	)
 	if err != nil {
-		return nil, common.LogOriginalError(nil, err)
-
+		return nil, common.LogOriginalError(client.Logger, err)
 	}
 	return response.Info, nil
 }
 
-func UpdateSession(id uint64, session map[string]string) error {
-	return update(config.Shared.SessionServiceAddr, id, session)
-}
-
-func UpdateSettings(id uint64, settings map[string]string) error {
-	return update(config.Shared.SettingsServiceAddr, id, settings)
-}
-
-func update(addr string, id uint64, info map[string]string) error {
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client SessionClient) Update(id uint64, info map[string]string) error {
+	conn, err := client.Dial()
 	if err != nil {
-		common.LogOriginalError(err)
+		common.LogOriginalError(client.Logger, err)
 		return common.ErrTechnical
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
-	client := pb.NewSessionClient(conn)
-	response, err := client.UpdateSessionInfo(ctx, &pb.SessionUpdate{Id: id, Info: info})
+	response, err := pb.NewSessionClient(conn).UpdateSessionInfo(ctx, &pb.SessionUpdate{Id: id, Info: info})
 	if err != nil {
-		common.LogOriginalError(err)
+		common.LogOriginalError(client.Logger, err)
 		return common.ErrTechnical
 	}
 	if !response.Success {

@@ -17,27 +17,8 @@
  */
 package service
 
-import loginservice "github.com/dvaumoron/puzzleweb/login/service"
+import "html/template"
 
-type UserProfile struct {
-	loginservice.User
-	Desc string
-	Info map[string]string
-}
-
-type ProfileService interface {
-	GetProfiles([]uint64) (map[uint64]UserProfile, error)
-}
-
-type PictureService interface {
-	GetPicture(userId uint64) ([]byte, error)
-}
-
-type AdvancedProfileService interface {
-	ProfileService
-	PictureService
-	UpdateProfile(userId uint64, desc string, info map[string]string) error
-	UpdatePicture(userId uint64, data []byte) error
-	Delete(userId uint64) error
-	ViewRight(userId uint64) error
+type MarkdownService interface {
+	Apply(text string) (template.HTML, error)
 }

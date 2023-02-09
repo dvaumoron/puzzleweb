@@ -18,6 +18,7 @@
 package puzzleweb
 
 import (
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -25,7 +26,6 @@ import (
 	"path/filepath"
 
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 )
@@ -45,30 +45,35 @@ func (r puzzleHTMLRender) Instance(name string, data any) render.Render {
 	}
 }
 
-func loadTemplates() render.HTMLRender {
-	if templatesRender == nil {
-		tmpl := template.New("")
-		inSize := len(config.Shared.TemplatesPath) + 1
-		err := filepath.WalkDir(config.Shared.TemplatesPath+"/", func(path string, d fs.DirEntry, err error) error {
-			if err == nil && !d.IsDir() {
-				name := path[inSize:]
-				if name[len(name)-5:] == ".html" {
-					var data []byte
-					data, err = os.ReadFile(path)
-					if err == nil {
-						_, err = tmpl.New(name).Parse(string(data))
-					}
+func LoadTemplates(templatesPath string) render.HTMLRender {
+	if templatesPath == "" {
+		fmt.Println("empty templatesPath")
+		os.Exit(1)
+	}
+	if last := len(templatesPath) - 1; templatesPath[last] != '/' {
+		templatesPath += "/"
+	}
+
+	tmpl := template.New("")
+	inSize := len(templatesPath)
+	err := filepath.WalkDir(templatesPath, func(path string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			name := path[inSize:]
+			if name[len(name)-5:] == ".html" {
+				var data []byte
+				data, err = os.ReadFile(path)
+				if err == nil {
+					_, err = tmpl.New(name).Parse(string(data))
 				}
 			}
-			return err
-		})
-
-		if err != nil {
-			panic(err)
 		}
-		templatesRender = puzzleHTMLRender{templates: tmpl}
+		return err
+	})
+
+	if err != nil {
+		panic(err)
 	}
-	return templatesRender
+	return puzzleHTMLRender{templates: tmpl}
 }
 
 func CreateTemplate(redirecter common.TemplateRedirecter) gin.HandlerFunc {

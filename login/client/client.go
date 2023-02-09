@@ -23,18 +23,29 @@ import (
 	"time"
 
 	pb "github.com/dvaumoron/puzzleloginservice"
-	saltclient "github.com/dvaumoron/puzzlesaltclient"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/dvaumoron/puzzleweb/grpcclient"
+	"github.com/dvaumoron/puzzleweb/login/service"
+	"go.uber.org/zap"
 )
 
-type User struct {
-	Id          uint64
-	Login       string
-	RegistredAt string
+// check matching with interfaces
+var _ service.AdvancedUserService = LoginClient{}
+var _ service.LoginService = LoginClient{}
+
+type LoginClient struct {
+	grpcclient.Client
+	dateFormat  string
+	saltService service.SaltService
 }
+
+func Make(serviceAddr string, logger *zap.Logger, dateFormat string, saltService service.SaltService) LoginClient {
+	return LoginClient{
+		Client: grpcclient.Make(serviceAddr, logger), dateFormat: dateFormat, saltService: saltService,
+	}
+}
+
+type requestKind func(pb.LoginClient, context.Context, *pb.LoginRequest) (*pb.Response, error)
 
 type sortableContents []*pb.User
 
@@ -50,85 +61,62 @@ func (s sortableContents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func VerifyOrRegister(login string, password string, register bool) (bool, uint64, error) {
-	salted, err := saltclient.Make(config.Shared.SaltServiceAddr).Salt(login, password)
-	if err != nil {
-		return false, 0, common.LogOriginalError(nil, err)
-	}
+func (client LoginClient) Verify(login string, password string) (bool, uint64, error) {
+	return client.verifyOrRegister(login, password, verify)
+}
 
-	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return false, 0, common.LogOriginalError(nil, err)
-	}
-	defer conn.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	client := pb.NewLoginClient(conn)
-	request := &pb.LoginRequest{Login: login, Salted: salted}
-	var response *pb.Response
-	if register {
-		response, err = client.Register(ctx, request)
-	} else {
-		response, err = client.Verify(ctx, request)
-	}
-
-	if err != nil {
-		return false, 0, common.LogOriginalError(nil, err)
-	}
-	return response.Success, response.Id, nil
+func (client LoginClient) Register(login string, password string) (bool, uint64, error) {
+	return client.verifyOrRegister(login, password, register)
 }
 
 // You should remove duplicate id in list
-func GetUsers(userIds []uint64) (map[uint64]User, error) {
-	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client LoginClient) GetUsers(userIds []uint64) (map[uint64]service.User, error) {
+	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(nil, err)
+		return nil, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewLoginClient(conn).GetUsers(ctx, &pb.UserIds{Ids: userIds})
 	if err != nil {
-		return nil, common.LogOriginalError(nil, err)
+		return nil, common.LogOriginalError(client.Logger, err)
 	}
 
-	logins := map[uint64]User{}
+	logins := map[uint64]service.User{}
 	for _, value := range response.List {
-		logins[value.Id] = convertUser(value)
+		logins[value.Id] = convertUser(value, client.dateFormat)
 	}
 	return logins, nil
 }
 
-func ChangeLogin(userId uint64, oldLogin string, newLogin string, password string) error {
-	salter := saltclient.Make(config.Shared.SaltServiceAddr)
-	oldSalted, err := salter.Salt(oldLogin, password)
+func (client LoginClient) ChangeLogin(userId uint64, oldLogin string, newLogin string, password string) error {
+	oldSalted, err := client.saltService.Salt(oldLogin, password)
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 
-	newSalted, err := salter.Salt(newLogin, password)
+	newSalted, err := client.saltService.Salt(newLogin, password)
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 
-	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewLoginClient(conn).ChangeLogin(ctx, &pb.ChangeRequest{
 		UserId: userId, NewLogin: newLogin, OldSalted: oldSalted, NewSalted: newSalted,
 	})
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -136,32 +124,31 @@ func ChangeLogin(userId uint64, oldLogin string, newLogin string, password strin
 	return nil
 }
 
-func ChangePassword(userId uint64, login string, oldPassword string, newPassword string) error {
-	salter := saltclient.Make(config.Shared.SaltServiceAddr)
-	oldSalted, err := salter.Salt(login, oldPassword)
+func (client LoginClient) ChangePassword(userId uint64, login string, oldPassword string, newPassword string) error {
+	oldSalted, err := client.saltService.Salt(login, oldPassword)
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 
-	newSalted, err := salter.Salt(login, newPassword)
+	newSalted, err := client.saltService.Salt(login, newPassword)
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 
-	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewLoginClient(conn).ChangePassword(ctx, &pb.ChangeRequest{
 		UserId: userId, OldSalted: oldSalted, NewSalted: newSalted,
 	})
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -169,46 +156,46 @@ func ChangePassword(userId uint64, login string, oldPassword string, newPassword
 	return nil
 }
 
-func ListUsers(start uint64, end uint64, filter string) (uint64, []User, error) {
-	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client LoginClient) ListUsers(start uint64, end uint64, filter string) (uint64, []service.User, error) {
+	conn, err := client.Dial()
 	if err != nil {
-		return 0, nil, common.LogOriginalError(nil, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewLoginClient(conn).ListUsers(ctx, &pb.RangeRequest{
 		Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return 0, nil, common.LogOriginalError(nil, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 
 	list := response.List
 	sort.Sort(sortableContents(list))
-	users := make([]User, 0, len(list))
+	users := make([]service.User, 0, len(list))
 	for _, user := range list {
-		users = append(users, convertUser(user))
+		users = append(users, convertUser(user, client.dateFormat))
 	}
 	return response.Total, users, nil
 }
 
 // no right check
-func DeleteUser(userId uint64) error {
-	conn, err := grpc.Dial(config.Shared.LoginServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client LoginClient) Delete(userId uint64) error {
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewLoginClient(conn).Delete(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -216,7 +203,37 @@ func DeleteUser(userId uint64) error {
 	return nil
 }
 
-func convertUser(user *pb.User) User {
+func (client LoginClient) verifyOrRegister(login string, password string, kind requestKind) (bool, uint64, error) {
+	salted, err := client.saltService.Salt(login, password)
+	if err != nil {
+		return false, 0, common.LogOriginalError(client.Logger, err)
+	}
+
+	conn, err := client.Dial()
+	if err != nil {
+		return false, 0, common.LogOriginalError(client.Logger, err)
+	}
+	defer conn.Close()
+
+	ctx, cancel := client.InitContext()
+	defer cancel()
+
+	response, err := kind(pb.NewLoginClient(conn), ctx, &pb.LoginRequest{Login: login, Salted: salted})
+	if err != nil {
+		return false, 0, common.LogOriginalError(client.Logger, err)
+	}
+	return response.Success, response.Id, nil
+}
+
+func verify(loginClient pb.LoginClient, ctx context.Context, request *pb.LoginRequest) (*pb.Response, error) {
+	return loginClient.Verify(ctx, request)
+}
+
+func register(loginClient pb.LoginClient, ctx context.Context, request *pb.LoginRequest) (*pb.Response, error) {
+	return loginClient.Register(ctx, request)
+}
+
+func convertUser(user *pb.User, dateFormat string) service.User {
 	registredAt := time.Unix(user.RegistredAt, 0)
-	return User{Id: user.Id, Login: user.Login, RegistredAt: registredAt.Format(config.Shared.DateFormat)}
+	return service.User{Id: user.Id, Login: user.Login, RegistredAt: registredAt.Format(dateFormat)}
 }

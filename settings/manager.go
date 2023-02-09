@@ -15,12 +15,12 @@
  * limitations under the License.
  *
  */
-package client
+package settings
 
 import (
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/log"
-	sessionclient "github.com/dvaumoron/puzzleweb/session/client"
+	"github.com/dvaumoron/puzzleweb/session/service"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -29,34 +29,41 @@ const settingsName = "Settings"
 
 type InitSettingsFunc func(*gin.Context) map[string]string
 
-var InitSettings InitSettingsFunc = initSettings
-
-func initSettings(c *gin.Context) map[string]string {
-	return map[string]string{
-		locale.LangName: locale.GetLang(c),
-	}
+type SettingsManager struct {
+	config.BasicConfig[service.SessionService]
+	InitSettings InitSettingsFunc
 }
 
-func Get(userId uint64, c *gin.Context) map[string]string {
+func NewManager(settingsConfig config.BasicConfig[service.SessionService]) *SettingsManager {
+	return &SettingsManager{BasicConfig: settingsConfig, InitSettings: initSettings}
+}
+
+func initSettings(c *gin.Context) map[string]string {
+	return map[string]string{locale.LangName: locale.GetLang(c)}
+}
+
+func (m *SettingsManager) Get(userId uint64, c *gin.Context) map[string]string {
 	userSettings := c.GetStringMapString(settingsName)
 	if len(userSettings) != 0 {
 		return userSettings
 	}
 
-	userSettings, err := sessionclient.GetSettings(userId)
+	userSettings, err := m.Service.Get(userId)
 	if err != nil {
-		log.Logger.Warn("Failed to retrieve user settings.", zap.Error(err))
+		m.Logger.Warn("Failed to retrieve user settings.", zap.Error(err))
 	}
 
 	if len(userSettings) == 0 {
-		userSettings = InitSettings(c)
-		err = sessionclient.UpdateSettings(userId, userSettings)
+		userSettings = m.InitSettings(c)
+		err = m.Service.Update(userId, userSettings)
 		if err != nil {
-			log.Logger.Warn("Failed to create user settings.", zap.Error(err))
+			m.Logger.Warn("Failed to create user settings.", zap.Error(err))
 		}
 	}
 	c.Set(settingsName, userSettings)
 	return userSettings
 }
 
-var Update = sessionclient.UpdateSettings
+func (m *SettingsManager) Update(userId uint64, settings map[string]string) error {
+	return m.Service.Update(userId, settings)
+}

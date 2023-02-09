@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -101,14 +100,14 @@ func GetRequestedUserId(logger *zap.Logger, c *gin.Context) uint64 {
 	return userId
 }
 
-func GetPagination(c *gin.Context) (uint64, uint64, uint64, string) {
+func GetPagination(c *gin.Context, defaultPageSize uint64) (uint64, uint64, uint64, string) {
 	pageNumber, _ := strconv.ParseUint(c.Query("pageNumber"), 10, 64)
 	if pageNumber == 0 {
 		pageNumber = 1
 	}
 	pageSize, _ := strconv.ParseUint(c.Query("pageSize"), 10, 64)
 	if pageSize == 0 {
-		pageSize = config.Shared.PageSize
+		pageSize = defaultPageSize
 	}
 	filter := c.Query("filter")
 

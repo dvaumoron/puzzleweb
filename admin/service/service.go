@@ -17,7 +17,9 @@
  */
 package service
 
-import pb "github.com/dvaumoron/puzzlerightservice"
+import (
+	pb "github.com/dvaumoron/puzzlerightservice"
+)
 
 const AdminName = "admin"
 const PublicName = "public"

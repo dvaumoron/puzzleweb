@@ -17,27 +17,8 @@
  */
 package service
 
-import loginservice "github.com/dvaumoron/puzzleweb/login/service"
-
-type UserProfile struct {
-	loginservice.User
-	Desc string
-	Info map[string]string
-}
-
-type ProfileService interface {
-	GetProfiles([]uint64) (map[uint64]UserProfile, error)
-}
-
-type PictureService interface {
-	GetPicture(userId uint64) ([]byte, error)
-}
-
-type AdvancedProfileService interface {
-	ProfileService
-	PictureService
-	UpdateProfile(userId uint64, desc string, info map[string]string) error
-	UpdatePicture(userId uint64, data []byte) error
-	Delete(userId uint64) error
-	ViewRight(userId uint64) error
+type SessionService interface {
+	Generate() (uint64, error)
+	Get(id uint64) (map[string]string, error)
+	Update(id uint64, info map[string]string) error
 }

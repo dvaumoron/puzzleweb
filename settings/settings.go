@@ -23,38 +23,23 @@ import (
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/dvaumoron/puzzleweb/session"
-	"github.com/dvaumoron/puzzleweb/settings/client"
 	"github.com/gin-gonic/gin"
 )
 
 type settingsWidget struct {
 	editHandler gin.HandlerFunc
+	saveHandler gin.HandlerFunc
 }
-
-var saveHandler gin.HandlerFunc = common.CreateRedirect(func(c *gin.Context) string {
-	userId := session.GetUserId(c)
-	if userId == 0 {
-		return common.DefaultErrorRedirect(common.UnknownUserKey)
-	}
-
-	var targetBuilder strings.Builder
-	targetBuilder.WriteString(common.GetBaseUrl(1, c))
-	targetBuilder.WriteString("edit")
-	if err := client.Update(userId, c.PostFormMap("settings")); err != nil {
-		common.WriteError(&targetBuilder, err.Error())
-	}
-	return targetBuilder.String()
-})
 
 func (w settingsWidget) LoadInto(router gin.IRouter) {
 	router.GET("/edit", w.editHandler)
-	router.POST("/save", saveHandler)
+	router.POST("/save", w.saveHandler)
 }
 
-func AddSettingsPage(site *puzzleweb.Site, args ...string) {
-	config.Shared.LoadSettings()
+func AddSettingsPage(site *puzzleweb.Site, settingsConfig config.BasicConfig[SettingsManager], args ...string) {
+	logger := settingsConfig.Logger
+	settingsManager := settingsConfig.Service
 
 	size := len(args)
 	editTmpl := "settings/edit.html"
@@ -62,19 +47,33 @@ func AddSettingsPage(site *puzzleweb.Site, args ...string) {
 		editTmpl = args[0]
 	}
 	if size > 1 {
-		log.Logger.Info("AddSettingsPage should be called with 1 or 2 arguments.")
+		logger.Info("AddSettingsPage should be called with 1 or 2 arguments.")
 	}
 
 	p := puzzleweb.MakeHiddenPage("settings")
 	p.Widget = settingsWidget{
 		editHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			userId := session.GetUserId(c)
+			userId := session.GetUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
 			}
 
-			data["Settings"] = client.Get(userId, c)
+			data["Settings"] = settingsManager.Get(userId, c)
 			return editTmpl, ""
+		}),
+		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
+			userId := session.GetUserId(logger, c)
+			if userId == 0 {
+				return common.DefaultErrorRedirect(common.UnknownUserKey)
+			}
+
+			var targetBuilder strings.Builder
+			targetBuilder.WriteString(common.GetBaseUrl(1, c))
+			targetBuilder.WriteString("edit")
+			if err := settingsManager.Update(userId, c.PostFormMap("settings")); err != nil {
+				common.WriteError(&targetBuilder, err.Error())
+			}
+			return targetBuilder.String()
 		}),
 	}
 

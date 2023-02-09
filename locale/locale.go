@@ -23,7 +23,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/log"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -49,7 +48,7 @@ func (a *Tags) Add(lang language.Tag) {
 
 var Availables Tags = Tags{list: make([]language.Tag, 0, 1)}
 
-func InitMessages(logger *zap.Logger) {
+func InitMessages(logger *zap.Logger, localesPath string) {
 	if matcher != nil {
 		return
 	}
@@ -71,7 +70,7 @@ func InitMessages(logger *zap.Logger) {
 		messages[lang] = messagesLang
 
 		var pathBuilder strings.Builder
-		pathBuilder.WriteString(config.Shared.LocalesPath)
+		pathBuilder.WriteString(localesPath)
 		pathBuilder.WriteString("/message_")
 		pathBuilder.WriteString(lang)
 		pathBuilder.WriteString(".property")

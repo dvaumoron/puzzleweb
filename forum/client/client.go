@@ -25,14 +25,12 @@ import (
 
 	pb "github.com/dvaumoron/puzzleforumservice"
 	pbright "github.com/dvaumoron/puzzlerightservice"
-	rightservice "github.com/dvaumoron/puzzleweb/admin/service"
+	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
 	service "github.com/dvaumoron/puzzleweb/forum/service"
+	"github.com/dvaumoron/puzzleweb/grpcclient"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // check matching with interfaces
@@ -40,18 +38,17 @@ var _ service.ForumService = ForumClient{}
 var _ service.CommentService = ForumClient{}
 
 type ForumClient struct {
-	serviceAddr    string
-	logger         *zap.Logger
+	grpcclient.Client
 	forumId        uint64
 	groupId        uint64
 	dateFormat     string
-	authService    rightservice.AuthService
+	authService    adminservice.AuthService
 	profileService profileservice.ProfileService
 }
 
-func Make(serviceAddr string, logger *zap.Logger, forumId uint64, groupId uint64, dateFormat string, authService rightservice.AuthService, profileService profileservice.ProfileService) ForumClient {
+func Make(serviceAddr string, logger *zap.Logger, forumId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) ForumClient {
 	return ForumClient{
-		serviceAddr: serviceAddr, logger: logger, forumId: forumId, groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, logger), forumId: forumId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }
@@ -78,20 +75,20 @@ func (client ForumClient) CreateThread(userId uint64, title string, message stri
 		return err
 	}
 
-	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewForumClient(conn).CreateThread(ctx, &pb.CreateRequest{
 		ContainerId: client.forumId, UserId: userId, Title: title, Text: message,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -105,20 +102,20 @@ func (client ForumClient) CreateCommentThread(userId uint64, elemTitle string) e
 		return err
 	}
 
-	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewForumClient(conn).CreateThread(ctx, &pb.CreateRequest{
 		ContainerId: client.forumId, UserId: userId, Text: elemTitle,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -132,20 +129,20 @@ func (client ForumClient) CreateMessage(userId uint64, threadId uint64, message 
 		return err
 	}
 
-	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewForumClient(conn).CreateMessage(ctx, &pb.CreateRequest{
 		ContainerId: threadId, UserId: userId, Text: message,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -159,13 +156,13 @@ func (client ForumClient) GetThread(userId uint64, threadId uint64, start uint64
 		return 0, service.ForumContent{}, nil, err
 	}
 
-	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.logger, err)
+		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	forumClient := pb.NewForumClient(conn)
@@ -173,14 +170,14 @@ func (client ForumClient) GetThread(userId uint64, threadId uint64, start uint64
 		ContainerId: client.forumId, Id: threadId,
 	})
 	if err != nil {
-		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.logger, err)
+		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.Logger, err)
 	}
 
 	response2, err := forumClient.GetMessages(ctx, &pb.SearchRequest{
 		ContainerId: threadId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.logger, err)
+		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.Logger, err)
 	}
 
 	list := response2.List
@@ -204,20 +201,20 @@ func (client ForumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 		return 0, nil, err
 	}
 
-	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewForumClient(conn).GetThreads(ctx, &pb.SearchRequest{
 		ContainerId: client.forumId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 	list := response.List
 	if len(list) == 0 {
@@ -226,7 +223,7 @@ func (client ForumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 
 	users, err := client.profileService.GetProfiles(extractUserIds(list))
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 	return response.Total, sortConvertContents(list, users, client.dateFormat), err
 }
@@ -237,23 +234,23 @@ func (client ForumClient) GetCommentThread(userId uint64, elemTitle string, star
 		return 0, nil, err
 	}
 
-	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	objectId := client.forumId
 	forumClient := pb.NewForumClient(conn)
 	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 	if response.Total == 0 {
-		return 0, nil, logCommentThreadNotFound(client.logger, objectId, elemTitle)
+		return 0, nil, logCommentThreadNotFound(client.Logger, objectId, elemTitle)
 	}
 	threadId := response.List[0].Id
 
@@ -261,7 +258,7 @@ func (client ForumClient) GetCommentThread(userId uint64, elemTitle string, star
 		ContainerId: threadId, Start: start, End: end,
 	})
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 
 	list := response2.List
@@ -284,29 +281,29 @@ func (client ForumClient) DeleteCommentThread(userId uint64, elemTitle string) e
 		return err
 	}
 
-	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	objectId := client.forumId
 	forumClient := pb.NewForumClient(conn)
 	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if response.Total == 0 {
-		return logCommentThreadNotFound(client.logger, objectId, elemTitle)
+		return logCommentThreadNotFound(client.Logger, objectId, elemTitle)
 	}
 	threadId := response.List[0].Id
 
 	response2, err := forumClient.DeleteThread(ctx, &pb.IdRequest{ContainerId: objectId, Id: threadId})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response2.Success {
 		return common.ErrUpdate
@@ -338,18 +335,18 @@ func (client ForumClient) deleteContent(userId uint64, kind deleteRequestKind, r
 		return err
 	}
 
-	conn, err := grpc.Dial(config.Shared.ForumServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := kind(pb.NewForumClient(conn), ctx, request)
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate

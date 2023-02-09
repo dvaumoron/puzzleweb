@@ -18,39 +18,35 @@
 package client
 
 import (
-	"context"
 	"html/template"
 	"sort"
 	"time"
 
 	pb "github.com/dvaumoron/puzzleblogservice"
 	pbright "github.com/dvaumoron/puzzlerightservice"
-	rightservice "github.com/dvaumoron/puzzleweb/admin/service"
+	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/blog/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/grpcclient"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // check matching with interface
 var _ service.BlogService = BlogClient{}
 
 type BlogClient struct {
-	serviceAddr    string
-	logger         *zap.Logger
+	grpcclient.Client
 	blogId         uint64
 	groupId        uint64
 	dateFormat     string
-	authService    rightservice.AuthService
+	authService    adminservice.AuthService
 	profileService profileservice.ProfileService
 }
 
-func Make(serviceAddr string, logger *zap.Logger, blogId uint64, groupId uint64, dateFormat string, authService rightservice.AuthService, profileService profileservice.ProfileService) BlogClient {
+func Make(serviceAddr string, logger *zap.Logger, blogId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) BlogClient {
 	return BlogClient{
-		serviceAddr: serviceAddr, logger: logger, blogId: blogId, groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, logger), blogId: blogId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }
@@ -75,20 +71,20 @@ func (client BlogClient) CreatePost(userId uint64, title string, content string)
 		return err
 	}
 
-	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewBlogClient(conn).CreatePost(ctx, &pb.CreateRequest{
 		BlogId: client.blogId, UserId: userId, Title: title, Text: content,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -102,20 +98,20 @@ func (client BlogClient) GetPost(userId uint64, postId uint64) (service.BlogPost
 		return service.BlogPost{}, err
 	}
 
-	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return service.BlogPost{}, common.LogOriginalError(client.logger, err)
+		return service.BlogPost{}, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewBlogClient(conn).GetPost(ctx, &pb.IdRequest{
 		BlogId: client.blogId, PostId: postId,
 	})
 	if err != nil {
-		return service.BlogPost{}, common.LogOriginalError(client.logger, err)
+		return service.BlogPost{}, common.LogOriginalError(client.Logger, err)
 	}
 
 	creatorId := response.UserId
@@ -132,20 +128,20 @@ func (client BlogClient) GetPosts(userId uint64, start uint64, end uint64, filte
 		return nil, err
 	}
 
-	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err)
+		return nil, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewBlogClient(conn).GetPosts(ctx, &pb.SearchRequest{
 		BlogId: client.blogId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err)
+		return nil, common.LogOriginalError(client.Logger, err)
 	}
 	list := response.List
 	if len(list) == 0 {
@@ -160,20 +156,20 @@ func (client BlogClient) DeletePost(userId uint64, postId uint64) error {
 		return err
 	}
 
-	conn, err := grpc.Dial(config.Shared.BlogServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewBlogClient(conn).DeletePost(ctx, &pb.IdRequest{
 		BlogId: client.blogId, PostId: postId,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate

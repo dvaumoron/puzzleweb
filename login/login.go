@@ -23,11 +23,11 @@ import (
 
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/log"
-	"github.com/dvaumoron/puzzleweb/login/client"
+	loginservice "github.com/dvaumoron/puzzleweb/login/service"
 	"github.com/dvaumoron/puzzleweb/session"
-	settingsclient "github.com/dvaumoron/puzzleweb/settings/client"
+	"github.com/dvaumoron/puzzleweb/settings"
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,69 +36,27 @@ const prevUrlWithErrorName = "PrevUrlWithError"
 
 type loginWidget struct {
 	displayHandler gin.HandlerFunc
+	submitHandler  gin.HandlerFunc
+	logoutHandler  gin.HandlerFunc
 }
-
-var submitHandler = common.CreateRedirect(func(c *gin.Context) string {
-	login := c.PostForm(common.LoginName)
-	password := c.PostForm(common.PasswordName)
-	register := c.PostForm("Register") == "true" // TODO confirm password
-
-	success, userId, err := client.VerifyOrRegister(login, password, register)
-	errorMsg := ""
-	if err != nil {
-		errorMsg = err.Error()
-	} else if !success {
-		if register {
-			errorMsg = locale.GetText("ExistingLogin", c)
-		} else {
-			errorMsg = locale.GetText("WrongLogin", c)
-		}
-	}
-
-	if errorMsg != "" {
-		return c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
-	}
-
-	s := session.Get(c)
-	s.Store(common.LoginName, login)
-	s.Store(common.UserIdName, fmt.Sprint(userId))
-
-	locale.SetLangCookie(c, settingsclient.Get(userId, c)[locale.LangName])
-
-	return c.PostForm(common.RedirectName)
-})
-
-var logoutHandler = common.CreateRedirect(func(c *gin.Context) string {
-	s := session.Get(c)
-	s.Delete(common.LoginName)
-	s.Delete(common.UserIdName)
-	return c.Query(common.RedirectName)
-})
 
 func (w loginWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.displayHandler)
-	router.POST("/submit", submitHandler)
-	router.GET("/logout", logoutHandler)
+	router.POST("/submit", w.submitHandler)
+	router.GET("/logout", w.logoutHandler)
 }
 
-func loginData(data gin.H, c *gin.Context) {
-	escapedUrl := url.QueryEscape(c.Request.URL.Path)
-	if login := session.Get(c).Load(common.LoginName); login == "" {
-		data[loginUrlName] = "/login?redirect=" + escapedUrl
-	} else {
-		data[common.LoginName] = login
-		data[loginUrlName] = "/login/logout?redirect=" + escapedUrl
-	}
-}
+func AddLoginPage(site *puzzleweb.Site, loginConfig config.BasicConfig[loginservice.LoginService], settingsManager *settings.SettingsManager, args ...string) {
+	logger := loginConfig.Logger
+	loginService := loginConfig.Service
 
-func AddLoginPage(site *puzzleweb.Site, args ...string) {
 	size := len(args)
 	tmpl := "login.html"
 	if size != 0 && args[0] != "" {
 		tmpl = args[0]
 	}
 	if size > 1 {
-		log.Logger.Info("AddLoginPage should be called with 2 or 3 arguments.")
+		logger.Info("AddLoginPage should be called with 2 or 3 arguments.")
 	}
 
 	p := puzzleweb.MakeHiddenPage("login")
@@ -120,9 +78,60 @@ func AddLoginPage(site *puzzleweb.Site, args ...string) {
 
 			return tmpl, ""
 		}),
+		submitHandler: common.CreateRedirect(func(c *gin.Context) string {
+			login := c.PostForm(common.LoginName)
+			password := c.PostForm(common.PasswordName)
+			register := c.PostForm("Register") == "true" // TODO confirm password
+
+			success := true
+			var userId uint64
+			var err error
+			if register {
+				success, userId, err = loginService.Register(login, password)
+			} else {
+				success, userId, err = loginService.Verify(login, password)
+			}
+
+			errorMsg := ""
+			if err != nil {
+				errorMsg = err.Error()
+			} else if !success {
+				if register {
+					errorMsg = locale.GetText("ExistingLogin", c)
+				} else {
+					errorMsg = locale.GetText("WrongLogin", c)
+				}
+			}
+
+			if errorMsg != "" {
+				return c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
+			}
+
+			s := session.Get(logger, c)
+			s.Store(common.LoginName, login)
+			s.Store(common.UserIdName, fmt.Sprint(userId))
+
+			locale.SetLangCookie(c, settingsManager.Get(userId, c)[locale.LangName])
+
+			return c.PostForm(common.RedirectName)
+		}),
+		logoutHandler: common.CreateRedirect(func(c *gin.Context) string {
+			s := session.Get(logger, c)
+			s.Delete(common.LoginName)
+			s.Delete(common.UserIdName)
+			return c.Query(common.RedirectName)
+		}),
 	}
 
-	site.AddDefaultData(loginData)
+	site.AddDefaultData(func(data gin.H, c *gin.Context) {
+		escapedUrl := url.QueryEscape(c.Request.URL.Path)
+		if login := session.Get(logger, c).Load(common.LoginName); login == "" {
+			data[loginUrlName] = "/login?redirect=" + escapedUrl
+		} else {
+			data[common.LoginName] = login
+			data[loginUrlName] = "/login/logout?redirect=" + escapedUrl
+		}
+	})
 
 	site.AddPage(p)
 }

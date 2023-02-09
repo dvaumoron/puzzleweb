@@ -18,33 +18,47 @@
 package client
 
 import (
-	"context"
-	"time"
-
 	pb "github.com/dvaumoron/puzzleprofileservice"
+	pbright "github.com/dvaumoron/puzzlerightservice"
+	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
-	loginclient "github.com/dvaumoron/puzzleweb/login/client"
+	"github.com/dvaumoron/puzzleweb/grpcclient"
+	loginservice "github.com/dvaumoron/puzzleweb/login/service"
 	"github.com/dvaumoron/puzzleweb/profile/service"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"go.uber.org/zap"
 )
 
-func UpdateProfile(userId uint64, desc string, info map[string]string) error {
-	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+var _ service.AdvancedProfileService = ProfileClient{}
+
+type ProfileClient struct {
+	grpcclient.Client
+	groupId     uint64
+	userService loginservice.UserService
+	authService adminservice.AuthService
+}
+
+func Make(serviceAddr string, logger *zap.Logger, groupId uint64, userService loginservice.UserService, authService adminservice.AuthService) ProfileClient {
+	return ProfileClient{
+		Client: grpcclient.Make(serviceAddr, logger), groupId: groupId,
+		userService: userService, authService: authService,
+	}
+}
+
+func (client ProfileClient) UpdateProfile(userId uint64, desc string, info map[string]string) error {
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewProfileClient(conn).UpdateProfile(ctx, &pb.UserProfile{
 		UserId: userId, Desc: desc, Info: info,
 	})
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -52,19 +66,19 @@ func UpdateProfile(userId uint64, desc string, info map[string]string) error {
 	return nil
 }
 
-func UpdatePicture(userId uint64, data []byte) error {
-	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client ProfileClient) UpdatePicture(userId uint64, data []byte) error {
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewProfileClient(conn).UpdatePicture(ctx, &pb.Picture{UserId: userId, Data: data})
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -72,44 +86,44 @@ func UpdatePicture(userId uint64, data []byte) error {
 	return nil
 }
 
-func GetPicture(userId uint64) ([]byte, error) {
-	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client ProfileClient) GetPicture(userId uint64) ([]byte, error) {
+	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(nil, err)
+		return nil, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewProfileClient(conn).GetPicture(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		return nil, common.LogOriginalError(nil, err)
+		return nil, common.LogOriginalError(client.Logger, err)
 	}
 	return response.Data, nil
 }
 
-func GetProfiles(userIds []uint64) (map[uint64]service.UserProfile, error) {
-	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client ProfileClient) GetProfiles(userIds []uint64) (map[uint64]service.UserProfile, error) {
+	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(nil, err)
+		return nil, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
 	// duplicate removal
 	userIds = common.MakeSet(userIds).Slice()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewProfileClient(conn).ListProfiles(ctx, &pb.UserIds{
 		Ids: userIds,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(nil, err)
+		return nil, common.LogOriginalError(client.Logger, err)
 	}
 
-	users, err := loginclient.GetUsers(userIds)
+	users, err := client.userService.GetUsers(userIds)
 	if err != nil {
 		return nil, err
 	}
@@ -123,22 +137,26 @@ func GetProfiles(userIds []uint64) (map[uint64]service.UserProfile, error) {
 }
 
 // no right check
-func Delete(userId uint64) error {
-	conn, err := grpc.Dial(config.Shared.ProfileServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (client ProfileClient) Delete(userId uint64) error {
+	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := client.InitContext()
 	defer cancel()
 
 	response, err := pb.NewProfileClient(conn).Delete(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		return common.LogOriginalError(nil, err)
+		return common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
 	}
 	return nil
+}
+
+func (client ProfileClient) ViewRight(userId uint64) error {
+	return client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
 }

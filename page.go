@@ -20,7 +20,6 @@ package puzzleweb
 import (
 	"strings"
 
-	pbright "github.com/dvaumoron/puzzlerightservice"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
@@ -64,7 +63,7 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 
 func localizedTmpl(authConfig config.BasicConfig[adminservice.AuthService], groupId uint64, tmpl string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
-		err := authConfig.Service.AuthQuery(session.GetUserId(authConfig.Logger, c), groupId, pbright.RightAction_ACCESS)
+		err := authConfig.Service.AuthQuery(session.GetUserId(authConfig.Logger, c), groupId, adminservice.ActionAccess)
 		if err != nil {
 			return "", common.DefaultErrorRedirect(err.Error())
 		}

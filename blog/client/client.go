@@ -23,7 +23,6 @@ import (
 	"time"
 
 	pb "github.com/dvaumoron/puzzleblogservice"
-	pbright "github.com/dvaumoron/puzzlerightservice"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/blog/service"
 	"github.com/dvaumoron/puzzleweb/common"
@@ -66,7 +65,7 @@ func (s sortableContents) Swap(i, j int) {
 }
 
 func (client BlogClient) CreatePost(userId uint64, title string, content string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_CREATE)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return err
 	}
@@ -93,7 +92,7 @@ func (client BlogClient) CreatePost(userId uint64, title string, content string)
 }
 
 func (client BlogClient) GetPost(userId uint64, postId uint64) (service.BlogPost, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return service.BlogPost{}, err
 	}
@@ -123,7 +122,7 @@ func (client BlogClient) GetPost(userId uint64, postId uint64) (service.BlogPost
 }
 
 func (client BlogClient) GetPosts(userId uint64, start uint64, end uint64, filter string) ([]service.BlogPost, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +150,7 @@ func (client BlogClient) GetPosts(userId uint64, start uint64, end uint64, filte
 }
 
 func (client BlogClient) DeletePost(userId uint64, postId uint64) error {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_DELETE)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
 	}

@@ -17,30 +17,33 @@
  */
 package service
 
-import (
-	pb "github.com/dvaumoron/puzzlerightservice"
-)
-
 const AdminName = "admin"
 const PublicName = "public"
 const PublicGroupId = 0 // groupId for content always allowed to access
 const AdminGroupId = 1  // groupId corresponding to role administration
 
+const (
+	ActionAccess = "access"
+	ActionCreate = "create"
+	ActionUpdate = "update"
+	ActionDelete = "delete"
+)
+
 type Role struct {
 	Name      string
 	GroupId   uint64
 	GroupName string
-	Actions   []pb.RightAction
+	Actions   []string
 }
 
 type AuthService interface {
-	AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error
+	AuthQuery(userId uint64, groupId uint64, action string) error
 }
 
 type AdminService interface {
 	AuthService
 	GetAllRoles(adminId uint64) ([]Role, error)
-	GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAction, error)
+	GetActions(adminId uint64, roleName string, groupName string) ([]string, error)
 	UpdateUser(adminId uint64, userId uint64, roles []Role) error
 	UpdateRole(adminId uint64, role Role) error
 	GetUserRoles(adminId uint64, userId uint64) ([]Role, error)

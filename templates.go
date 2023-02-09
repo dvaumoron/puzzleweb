@@ -30,8 +30,6 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-var templatesRender render.HTMLRender
-
 // As HTMLProduction from gin, but without unused Delims.
 type puzzleHTMLRender struct {
 	templates *template.Template

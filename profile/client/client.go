@@ -19,7 +19,6 @@ package client
 
 import (
 	pb "github.com/dvaumoron/puzzleprofileservice"
-	pbright "github.com/dvaumoron/puzzlerightservice"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/grpcclient"
@@ -158,5 +157,5 @@ func (client ProfileClient) Delete(userId uint64) error {
 }
 
 func (client ProfileClient) ViewRight(userId uint64) error {
-	return client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
+	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 }

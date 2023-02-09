@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strings"
 
-	pb "github.com/dvaumoron/puzzlerightservice"
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
@@ -45,8 +44,6 @@ const (
 )
 
 var errBadName = errors.New("ErrorBadRoleName")
-
-var actionToKey = [4]string{accessKey, createKey, updateKey, deleteKey}
 
 type GroupDisplay struct {
 	Id           uint64
@@ -211,7 +208,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			updateRight := adminService.AuthQuery(adminId, service.AdminGroupId, pb.RightAction_UPDATE) == nil
+			updateRight := adminService.AuthQuery(adminId, service.AdminGroupId, service.ActionUpdate) == nil
 
 			user := users[userId]
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
@@ -317,10 +314,10 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 				}
 
 				actionSet := common.MakeSet(actions)
-				setActionChecked(data, actionSet, pb.RightAction_ACCESS, "Access")
-				setActionChecked(data, actionSet, pb.RightAction_CREATE, "Create")
-				setActionChecked(data, actionSet, pb.RightAction_UPDATE, "Update")
-				setActionChecked(data, actionSet, pb.RightAction_DELETE, "Delete")
+				setActionChecked(data, actionSet, service.ActionAccess, "Access")
+				setActionChecked(data, actionSet, service.ActionCreate, "Create")
+				setActionChecked(data, actionSet, service.ActionUpdate, "Update")
+				setActionChecked(data, actionSet, service.ActionDelete, "Delete")
 			}
 
 			return editRoleTmpl, ""
@@ -330,21 +327,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			err := errBadName
 			if roleName != "new" {
 				group := c.PostForm(groupName)
-				actions := make([]pb.RightAction, 0, 4)
-				for _, actionStr := range c.PostFormArray("actions") {
-					var action pb.RightAction
-					switch actionStr {
-					case "access":
-						action = pb.RightAction_ACCESS
-					case "create":
-						action = pb.RightAction_CREATE
-					case "update":
-						action = pb.RightAction_UPDATE
-					case "delete":
-						action = pb.RightAction_DELETE
-					}
-					actions = append(actions, action)
-				}
+				actions := c.PostFormArray("actions")
 				err = adminService.UpdateRole(session.GetUserId(logger, c), service.Role{
 					Name: roleName, GroupName: group, Actions: actions,
 				})
@@ -362,7 +345,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 
 	site.AddDefaultData(func(data gin.H, c *gin.Context) {
 		data[viewAdminName] = adminService.AuthQuery(
-			session.GetUserId(logger, c), service.AdminGroupId, pb.RightAction_ACCESS,
+			session.GetUserId(logger, c), service.AdminGroupId, service.ActionAccess,
 		) == nil
 	})
 
@@ -394,21 +377,21 @@ func rolesAppender(group *GroupDisplay, role service.Role, messages map[string]s
 	group.Roles = append(group.Roles, MakeRoleDisplay(role, messages))
 }
 
-// convert a RightAction slice in a displayable string slice,
+// convert a string slice of codes in a displayable string slice,
 // always in the same order : access, create, update, delete
-func displayActions(actions []pb.RightAction, messages map[string]string) []string {
+func displayActions(actions []string, messages map[string]string) []string {
 	actionSet := common.MakeSet(actions)
 	res := make([]string, len(actions))
-	if actionSet.Contains(pb.RightAction_ACCESS) {
+	if actionSet.Contains(service.ActionAccess) {
 		res = append(res, messages[accessKey])
 	}
-	if actionSet.Contains(pb.RightAction_CREATE) {
+	if actionSet.Contains(service.ActionCreate) {
 		res = append(res, messages[createKey])
 	}
-	if actionSet.Contains(pb.RightAction_UPDATE) {
+	if actionSet.Contains(service.ActionUpdate) {
 		res = append(res, messages[updateKey])
 	}
-	if actionSet.Contains(pb.RightAction_DELETE) {
+	if actionSet.Contains(service.ActionDelete) {
 		res = append(res, messages[deleteKey])
 	}
 	return res
@@ -435,7 +418,7 @@ func addableRolesAppender(group *GroupDisplay, role service.Role, messages map[s
 	group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role, messages))
 }
 
-func setActionChecked(data gin.H, actionSet common.Set[pb.RightAction], toTest pb.RightAction, name string) {
+func setActionChecked(data gin.H, actionSet common.Set[string], toTest string, name string) {
 	if actionSet.Contains(toTest) {
 		data[name] = true
 	}

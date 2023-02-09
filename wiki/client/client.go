@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	pbright "github.com/dvaumoron/puzzlerightservice"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/grpcclient"
@@ -54,7 +53,7 @@ func Make(serviceAddr string, logger *zap.Logger, wikiId uint64, groupId uint64,
 }
 
 func (client WikiClient) LoadContent(userId uint64, lang string, title string, versionStr string) (*service.WikiContent, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +69,7 @@ func (client WikiClient) LoadContent(userId uint64, lang string, title string, v
 }
 
 func (client WikiClient) StoreContent(userId uint64, lang string, title string, last string, markdown string) (bool, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_CREATE)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return false, err
 	}
@@ -84,7 +83,7 @@ func (client WikiClient) StoreContent(userId uint64, lang string, title string, 
 }
 
 func (client WikiClient) GetVersions(userId uint64, lang string, title string) ([]service.Version, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +91,7 @@ func (client WikiClient) GetVersions(userId uint64, lang string, title string) (
 }
 
 func (client WikiClient) DeleteContent(userId uint64, lang string, title string, versionStr string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_DELETE)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
 	}
@@ -106,7 +105,7 @@ func (client WikiClient) DeleteContent(userId uint64, lang string, title string,
 }
 
 func (client WikiClient) DeleteRight(userId uint64) bool {
-	return client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_DELETE) == nil
+	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete) == nil
 }
 
 func (client WikiClient) loadContent(wikiRef string, version uint64) (*service.WikiContent, error) {

@@ -67,7 +67,7 @@ func (client RightClient) GetGroupName(groupId uint64) string {
 	return client.groupIdToName[groupId]
 }
 
-func (client RightClient) AuthQuery(userId uint64, groupId uint64, action pb.RightAction) error {
+func (client RightClient) AuthQuery(userId uint64, groupId uint64, action string) error {
 	conn, err := client.Dial()
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -78,7 +78,7 @@ func (client RightClient) AuthQuery(userId uint64, groupId uint64, action pb.Rig
 	defer cancel()
 
 	response, err := pb.NewRightClient(conn).AuthQuery(ctx, &pb.RightRequest{
-		UserId: userId, ObjectId: groupId, Action: action,
+		UserId: userId, ObjectId: groupId, Action: convertActionForRequest(action),
 	})
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -97,7 +97,7 @@ func (client RightClient) GetAllRoles(adminId uint64) ([]service.Role, error) {
 	return client.getGroupRoles(adminId, groupIds)
 }
 
-func (client RightClient) GetActions(adminId uint64, roleName string, groupName string) ([]pb.RightAction, error) {
+func (client RightClient) GetActions(adminId uint64, roleName string, groupName string) ([]string, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return nil, common.LogOriginalError(client.Logger, err)
@@ -124,7 +124,7 @@ func (client RightClient) GetActions(adminId uint64, roleName string, groupName 
 	if err != nil {
 		return nil, common.LogOriginalError(client.Logger, err)
 	}
-	return actions.List, nil
+	return convertActionsFromRequest(actions.List), nil
 }
 
 func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []service.Role) error {
@@ -187,7 +187,8 @@ func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 	}
 
 	response, err = rightClient.UpdateRole(ctx, &pb.Role{
-		Name: role.Name, ObjectId: client.nameToGroupId[role.GroupName], List: role.Actions,
+		Name: role.Name, ObjectId: client.nameToGroupId[role.GroupName],
+		List: convertActionsForRequest(role.Actions),
 	})
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -266,8 +267,54 @@ func convertRolesFromRequest(roles []*pb.Role, groupIdToName map[uint64]string) 
 	for _, role := range roles {
 		groupId := role.ObjectId
 		resRoles = append(resRoles, service.Role{
-			Name: role.Name, GroupId: groupId, GroupName: groupIdToName[groupId], Actions: role.List,
+			Name: role.Name, GroupId: groupId, GroupName: groupIdToName[groupId],
+			Actions: convertActionsFromRequest(role.List),
 		})
 	}
 	return resRoles
+}
+
+func convertActionsFromRequest(actions []pb.RightAction) []string {
+	resActions := make([]string, 0, len(actions))
+	for _, action := range actions {
+		resActions = append(resActions, convertActionFromRequest(action))
+	}
+	return resActions
+}
+
+func convertActionFromRequest(action pb.RightAction) string {
+	switch action {
+	case pb.RightAction_ACCESS:
+		return service.ActionAccess
+	case pb.RightAction_CREATE:
+		return service.ActionCreate
+	case pb.RightAction_UPDATE:
+		return service.ActionUpdate
+	case pb.RightAction_DELETE:
+		return service.ActionDelete
+	}
+	return service.ActionAccess
+}
+
+func convertActionForRequest(action string) pb.RightAction {
+	switch action {
+	case service.ActionAccess:
+		return pb.RightAction_ACCESS
+	case service.ActionCreate:
+		return pb.RightAction_CREATE
+	case service.ActionUpdate:
+		return pb.RightAction_UPDATE
+	case service.ActionDelete:
+		return pb.RightAction_DELETE
+	}
+	return 0
+}
+
+func convertActionsForRequest(actions []string) []pb.RightAction {
+	resActions := make([]pb.RightAction, 0, 4)
+	// use Set to remove duplicate
+	for action := range common.MakeSet(actions) {
+		resActions = append(resActions, convertActionForRequest(action))
+	}
+	return resActions
 }

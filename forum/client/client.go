@@ -24,7 +24,6 @@ import (
 	"time"
 
 	pb "github.com/dvaumoron/puzzleforumservice"
-	pbright "github.com/dvaumoron/puzzlerightservice"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/forum/service"
@@ -70,7 +69,7 @@ func (s sortableContents) Swap(i, j int) {
 }
 
 func (client ForumClient) CreateThread(userId uint64, title string, message string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_CREATE)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return err
 	}
@@ -97,7 +96,7 @@ func (client ForumClient) CreateThread(userId uint64, title string, message stri
 }
 
 func (client ForumClient) CreateCommentThread(userId uint64, elemTitle string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_CREATE)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return err
 	}
@@ -124,7 +123,7 @@ func (client ForumClient) CreateCommentThread(userId uint64, elemTitle string) e
 }
 
 func (client ForumClient) CreateMessage(userId uint64, threadId uint64, message string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_UPDATE)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionUpdate)
 	if err != nil {
 		return err
 	}
@@ -151,7 +150,7 @@ func (client ForumClient) CreateMessage(userId uint64, threadId uint64, message 
 }
 
 func (client ForumClient) GetThread(userId uint64, threadId uint64, start uint64, end uint64, filter string) (uint64, service.ForumContent, []service.ForumContent, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return 0, service.ForumContent{}, nil, err
 	}
@@ -196,7 +195,7 @@ func (client ForumClient) GetThread(userId uint64, threadId uint64, start uint64
 }
 
 func (client ForumClient) GetThreads(userId uint64, start uint64, end uint64, filter string) (uint64, []service.ForumContent, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -229,7 +228,7 @@ func (client ForumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 }
 
 func (client ForumClient) GetCommentThread(userId uint64, elemTitle string, start uint64, end uint64) (uint64, []service.ForumContent, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_ACCESS)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -276,7 +275,7 @@ func (client ForumClient) DeleteThread(userId uint64, threadId uint64) error {
 }
 
 func (client ForumClient) DeleteCommentThread(userId uint64, elemTitle string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_DELETE)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
 	}
@@ -318,19 +317,19 @@ func (client ForumClient) DeleteMessage(userId uint64, threadId uint64, messageI
 }
 
 func (client ForumClient) CreateThreadRight(userId uint64) bool {
-	return client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_CREATE) == nil
+	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate) == nil
 }
 
 func (client ForumClient) CreateMessageRight(userId uint64) bool {
-	return client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_UPDATE) == nil
+	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionUpdate) == nil
 }
 
 func (client ForumClient) DeleteRight(userId uint64) bool {
-	return client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_DELETE) == nil
+	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete) == nil
 }
 
 func (client ForumClient) deleteContent(userId uint64, kind deleteRequestKind, request *pb.IdRequest) error {
-	err := client.authService.AuthQuery(userId, client.groupId, pbright.RightAction_DELETE)
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
 	}

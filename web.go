@@ -59,7 +59,7 @@ func NewSite(authConfig config.ServiceConfig[adminservice.AuthService], localesM
 
 	return &Site{
 		logger: logger, localesManager: localesManager,
-		root: MakeStaticPage("root", authConfig, adminservice.PublicGroupId, rootTmpl),
+		root: MakeStaticPage("root", adminservice.PublicGroupId, rootTmpl, authConfig),
 	}
 }
 

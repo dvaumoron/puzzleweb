@@ -37,7 +37,7 @@
         <main>
             <h2>
                 {{.UserLogin}}&nbsp;{{.Messages.RegistredAtLabel}}&nbsp;{{.UserRegistredAt}}&nbsp;
-                {{if .IsAdmin}}
+                {{if .AllowedToUpdate}}
                     [<a href="{{.BaseUrl}}edit/{{.UserId}}">{{.Messages.EditLinkLabel}}</a>]
                     [<a href="{{.BaseUrl}}delete/{{.UserId}}">{{.Messages.DeleteLinkLabel}}</a>]
                 {{end}}

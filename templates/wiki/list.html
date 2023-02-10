@@ -40,16 +40,28 @@
                 {{$baseUrl := .BaseUrl}}
                 {{$wikiTitle := .WikiTitle}}
                 {{$viewLinkLabel := .Messages.ViewLinkLabel}}
-                {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
-                {{range .Versions}}
-                    <li>
-                        <ul>
-                            <li>{{.Number}}</li>
-                            <li>{{.Creator.Login}}</li>
-                            <li><a href="{{$baseUrl}}view/{{$wikiTitle}}?version={{.Number}}">{{$viewLinkLabel}}</a></li>
-                            <li><a href="{{$baseUrl}}delete/{{$wikiTitle}}?version={{.Number}}">{{$deleteLinkLabel}}</a></li>
-                        </ul>
-                    <li>
+                {{if .AllowedToDelete}}
+                    {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
+                    {{range .Versions}}
+                        <li>
+                            <ul>
+                                <li>{{.Number}}</li>
+                                <li>{{.Creator.Login}}</li>
+                                <li><a href="{{$baseUrl}}view/{{$wikiTitle}}?version={{.Number}}">{{$viewLinkLabel}}</a></li>
+                                <li><a href="{{$baseUrl}}delete/{{$wikiTitle}}?version={{.Number}}">{{$deleteLinkLabel}}</a></li>
+                            </ul>
+                        <li>
+                    {{end}}
+                {{else}}
+                    {{range .Versions}}
+                        <li>
+                            <ul>
+                                <li>{{.Number}}</li>
+                                <li>{{.Creator.Login}}</li>
+                                <li><a href="{{$baseUrl}}view/{{$wikiTitle}}?version={{.Number}}">{{$viewLinkLabel}}</a></li>
+                            </ul>
+                        <li>
+                    {{end}}
                 {{end}}
             </ul>
         </main>

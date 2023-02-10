@@ -262,10 +262,12 @@ func (c *GlobalConfig) loadBlog() {
 	}
 }
 
+func CreateServiceExtConfig[ServiceType any](c *GlobalConfig, service ServiceType) ServiceExtConfig[ServiceType] {
+	return ServiceExtConfig[ServiceType]{Logger: c.Logger, Service: service, Ext: c.TemplatesExt}
+}
+
 func (c *GlobalConfig) ExtractAuthConfig() ServiceConfig[adminservice.AuthService] {
-	return ServiceConfig[adminservice.AuthService]{
-		Logger: c.Logger, Service: c.RightClient,
-	}
+	return ServiceConfig[adminservice.AuthService]{Logger: c.Logger, Service: c.RightClient}
 }
 
 func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
@@ -286,40 +288,26 @@ func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {
 }
 
 func (c *GlobalConfig) ExtractLoginConfig() ServiceExtConfig[loginservice.LoginService] {
-	return ServiceExtConfig[loginservice.LoginService]{
-		Logger: c.Logger, Service: c.LoginService, Ext: c.TemplatesExt,
-	}
+	return CreateServiceExtConfig[loginservice.LoginService](c, c.LoginService)
 }
 
 func (c *GlobalConfig) ExtractAdminConfig() AdminConfig {
 	return AdminConfig{
-		ServiceExtConfig: ServiceExtConfig[adminservice.AdminService]{
-			Logger: c.Logger, Service: c.RightClient, Ext: c.TemplatesExt,
-		},
-		UserService: c.LoginService, ProfileService: c.ProfileService, PageSize: c.PageSize,
+		ServiceExtConfig: CreateServiceExtConfig[adminservice.AdminService](c, c.RightClient),
+		UserService:      c.LoginService, ProfileService: c.ProfileService, PageSize: c.PageSize,
 	}
 }
 
 func (c *GlobalConfig) ExtractProfileConfig() ProfileConfig {
 	c.loadProfile()
 	return ProfileConfig{
-		ServiceExtConfig: ServiceExtConfig[profileservice.AdvancedProfileService]{
-			Logger: c.Logger, Service: c.ProfileService, Ext: c.TemplatesExt,
-		},
-		AdminService: c.RightClient, LoginService: c.LoginService,
+		ServiceExtConfig: CreateServiceExtConfig(c, c.ProfileService),
+		AdminService:     c.RightClient, LoginService: c.LoginService,
 	}
 }
 
 func (c *GlobalConfig) ExtractSettingsConfig() ServiceConfig[sessionservice.SessionService] {
-	return ServiceConfig[sessionservice.SessionService]{
-		Logger: c.Logger, Service: c.SettingsService,
-	}
-}
-
-func CreateServiceExtConfig[ServiceType any](c *GlobalConfig, service ServiceType) ServiceExtConfig[ServiceType] {
-	return ServiceExtConfig[ServiceType]{
-		Logger: c.Logger, Service: service, Ext: c.TemplatesExt,
-	}
+	return ServiceConfig[sessionservice.SessionService]{Logger: c.Logger, Service: c.SettingsService}
 }
 
 func (c *GlobalConfig) CreateWikiConfig(wikiId uint64, groupId uint64, args ...string) WikiConfig {

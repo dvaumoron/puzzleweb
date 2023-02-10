@@ -24,8 +24,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/profile/service"
-	"github.com/dvaumoron/puzzleweb/session"
+	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"go.uber.org/zap"
@@ -35,19 +34,18 @@ import (
 const siteName = "Site"
 
 type Site struct {
-	engine         *gin.Engine
-	logger         *zap.Logger
-	staticPath     string
-	localesManager *locale.LocalesManager
-	pictureService service.PictureService
-	root           Page
-	Page404Url     string
-	adders         []common.DataAdder
-	initialized    bool
-	FaviconPath    string
+	logger             *zap.Logger
+	localesManager     *locale.LocalesManager
+	root               Page
+	Page404Url         string
+	adders             []common.DataAdder
+	FaviconPath        string
+	HTMLRender         render.HTMLRender
+	MaxMultipartMemory int64
+	pictureService     profileservice.PictureService
 }
 
-func NewSite(staticPath string, authConfig config.BasicConfig[adminservice.AuthService], pictureService service.PictureService, sessionManager session.SessionManager, localesManager *locale.LocalesManager, args ...string) *Site {
+func MakeSite(authConfig config.ServiceConfig[adminservice.AuthService], localesManager *locale.LocalesManager, args ...string) Site {
 	logger := authConfig.Logger
 
 	size := len(args)
@@ -56,26 +54,13 @@ func NewSite(staticPath string, authConfig config.BasicConfig[adminservice.AuthS
 		rootTmpl = args[0]
 	}
 	if size > 1 {
-		logger.Info("CreateSite should be called with at most 1 argument.")
+		logger.Info("MakeSite should be called with 2 or 3 arguments.")
 	}
 
-	engine := gin.Default()
-
-	engine.Static("/static", staticPath)
-
-	site := &Site{
-		engine: engine, logger: logger, staticPath: staticPath,
-		localesManager: localesManager, pictureService: pictureService,
+	return Site{
+		logger: logger, localesManager: localesManager,
 		root: MakeStaticPage("root", authConfig, adminservice.PublicGroupId, rootTmpl),
 	}
-
-	engine.Use(sessionManager.Manage, func(c *gin.Context) {
-		c.Set(siteName, site)
-	})
-
-	engine.GET("/profilePic/:UserId", site.profilePicHandler)
-
-	return site
 }
 
 func (site *Site) AddPage(page Page) {
@@ -86,53 +71,60 @@ func (site *Site) AddDefaultData(adder common.DataAdder) {
 	site.adders = append(site.adders, adder)
 }
 
-func (site *Site) SetHTMLRender(r render.HTMLRender) {
-	site.engine.HTMLRender = r
-}
+func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
+	staticPath := siteConfig.StaticPath
 
-func (site *Site) SetMaxMultipartMemory(memorySize int64) {
-	site.engine.MaxMultipartMemory = memorySize
-}
+	engine := gin.Default()
 
-func (site *Site) initEngine(localesPath string) *gin.Engine {
-	engine := site.engine
-	if !site.initialized {
-		site.localesManager.InitMessages(localesPath)
-
-		if engine.HTMLRender == nil {
-			site.logger.Fatal("no HTMLRender initialized")
-		}
-
-		favicon := "/favicon.ico"
-		faviconPath := site.FaviconPath
-		if faviconPath == "" {
-			faviconPath = favicon
-		}
-		engine.StaticFile(favicon, site.staticPath+faviconPath)
-		site.root.Widget.LoadInto(engine)
-		if site.localesManager.MultipleLang {
-			engine.GET("/changeLang", changeLangHandler)
-		}
-		engine.NoRoute(common.CreateRedirectString(site.Page404Url))
-		site.initialized = true
+	if memorySize := site.MaxMultipartMemory; memorySize != 0 {
+		engine.MaxMultipartMemory = memorySize
 	}
+
+	if htmlRender := site.HTMLRender; htmlRender == nil {
+		siteConfig.Logger.Fatal("no HTMLRender initialized")
+		engine.HTMLRender = htmlRender
+	}
+
+	engine.Static("/static", staticPath)
+
+	favicon := "/favicon.ico"
+	faviconPath := site.FaviconPath
+	if faviconPath == "" {
+		faviconPath = favicon
+	}
+	engine.StaticFile(favicon, staticPath+faviconPath)
+
+	engine.Use(makeSessionManager(siteConfig.ExtractSessionConfig()).Manage, func(c *gin.Context) {
+		c.Set(siteName, site)
+	})
+
+	if siteConfig.PictureService != nil {
+		engine.GET("/profilePic/:UserId", site.profilePicHandler)
+	}
+
+	if site.localesManager.MultipleLang {
+		engine.GET("/changeLang", changeLangHandler)
+	}
+
+	site.root.Widget.LoadInto(engine)
+	engine.NoRoute(common.CreateRedirectString(site.Page404Url))
 	return engine
 }
 
-func (site *Site) Run(localesPath string, port string) error {
-	return site.initEngine(localesPath).Run(checkPort(port))
+func (site *Site) Run(siteConfig config.SiteConfig) error {
+	return site.initEngine(siteConfig).Run(checkPort(siteConfig.Port))
 }
 
-type SiteConfig struct {
-	Site *Site
-	Port string
+type SiteAndConfig struct {
+	Site   *Site
+	Config config.SiteConfig
 }
 
-func Run(localesPath string, sites ...SiteConfig) error {
+func Run(sites ...SiteAndConfig) error {
 	var g errgroup.Group
-	for _, siteConfig := range sites {
-		port := checkPort(siteConfig.Port)
-		handler := siteConfig.Site.initEngine(localesPath).Handler()
+	for _, siteAndConfig := range sites {
+		port := checkPort(siteAndConfig.Config.Port)
+		handler := siteAndConfig.Site.initEngine(siteAndConfig.Config).Handler()
 		g.Go(func() error {
 			server := &http.Server{Addr: port, Handler: handler}
 			return server.ListenAndServe()

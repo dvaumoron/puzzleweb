@@ -25,7 +25,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
 )
 
@@ -109,7 +108,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig, args ...string)
 				return "", targetBuilder.String()
 			}
 
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			version := c.Query(versionName)
 			content, err := wikiService.LoadContent(userId, lang, title, version)
 			if err != nil {
@@ -148,7 +147,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig, args ...string)
 				return "", targetBuilder.String()
 			}
 
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			content, err := wikiService.LoadContent(userId, lang, title, "")
 			if err == nil {
 				return "", common.DefaultErrorRedirect(err.Error())
@@ -175,7 +174,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig, args ...string)
 				return targetBuilder.String()
 			}
 
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			last := c.PostForm(versionName)
 			content := c.PostForm("content")
 
@@ -200,7 +199,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig, args ...string)
 				return "", targetBuilder.String()
 			}
 
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			versions, err := wikiService.GetVersions(userId, lang, title)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
@@ -225,7 +224,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig, args ...string)
 				return targetBuilder.String()
 			}
 
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			version := c.Query(versionName)
 			err := wikiService.DeleteContent(userId, lang, title, version)
 			if err != nil {

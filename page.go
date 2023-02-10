@@ -23,7 +23,6 @@ import (
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
 )
 
@@ -61,9 +60,9 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func localizedTmpl(authConfig config.BasicConfig[adminservice.AuthService], groupId uint64, tmpl string) common.TemplateRedirecter {
+func localizedTmpl(authConfig config.ServiceConfig[adminservice.AuthService], groupId uint64, tmpl string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
-		err := authConfig.Service.AuthQuery(session.GetUserId(authConfig.Logger, c), groupId, adminservice.ActionAccess)
+		err := authConfig.Service.AuthQuery(GetSessionUserId(c), groupId, adminservice.ActionAccess)
 		if err != nil {
 			return "", common.DefaultErrorRedirect(err.Error())
 		}
@@ -79,17 +78,17 @@ func localizedTmpl(authConfig config.BasicConfig[adminservice.AuthService], grou
 	}
 }
 
-func newStaticWidget(authConfig config.BasicConfig[adminservice.AuthService], groupId uint64, tmpl string) *staticWidget {
+func newStaticWidget(authConfig config.ServiceConfig[adminservice.AuthService], groupId uint64, tmpl string) *staticWidget {
 	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(authConfig, groupId, tmpl))}
 }
 
-func MakeStaticPage(name string, authConfig config.BasicConfig[adminservice.AuthService], groupId uint64, tmpl string) Page {
+func MakeStaticPage(name string, authConfig config.ServiceConfig[adminservice.AuthService], groupId uint64, tmpl string) Page {
 	p := MakePage(name)
 	p.Widget = newStaticWidget(authConfig, groupId, tmpl)
 	return p
 }
 
-func MakeHiddenStaticPage(name string, authConfig config.BasicConfig[adminservice.AuthService], groupId uint64, tmpl string) Page {
+func MakeHiddenStaticPage(name string, authConfig config.ServiceConfig[adminservice.AuthService], groupId uint64, tmpl string) Page {
 	p := MakeHiddenPage(name)
 	p.Widget = newStaticWidget(authConfig, groupId, tmpl)
 	return p

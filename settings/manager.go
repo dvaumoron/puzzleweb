@@ -31,12 +31,12 @@ const settingsName = "Settings"
 type InitSettingsFunc func(*gin.Context) map[string]string
 
 type SettingsManager struct {
-	config.BasicConfig[service.SessionService]
+	config.ServiceConfig[service.SessionService]
 	InitSettings InitSettingsFunc
 }
 
-func NewManager(settingsConfig config.BasicConfig[service.SessionService]) *SettingsManager {
-	return &SettingsManager{BasicConfig: settingsConfig, InitSettings: initSettings}
+func NewManager(settingsConfig config.ServiceConfig[service.SessionService]) *SettingsManager {
+	return &SettingsManager{ServiceConfig: settingsConfig, InitSettings: initSettings}
 }
 
 func initSettings(c *gin.Context) map[string]string {

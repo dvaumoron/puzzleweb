@@ -27,7 +27,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
 )
 
@@ -192,7 +191,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			return listUserTmpl, ""
 		}),
 		viewUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			adminId := session.GetUserId(logger, c)
+			adminId := puzzleweb.GetSessionUserId(c)
 			userId := common.GetRequestedUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
@@ -220,7 +219,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			return viewUserTmpl, ""
 		}),
 		editUserHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			adminId := session.GetUserId(logger, c)
+			adminId := puzzleweb.GetSessionUserId(c)
 			userId := common.GetRequestedUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
@@ -259,7 +258,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 						roles = append(roles, service.Role{Name: splitted[0], GroupName: splitted[1]})
 					}
 				}
-				err = adminService.UpdateUser(session.GetUserId(logger, c), userId, roles)
+				err = adminService.UpdateUser(puzzleweb.GetSessionUserId(c), userId, roles)
 			}
 
 			targetBuilder := userListUrlBuilder(c)
@@ -274,7 +273,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			if userId != 0 {
 				// an empty slice delete the user right
 				// only the first service call do a right check
-				err = adminService.UpdateUser(session.GetUserId(logger, c), userId, []service.Role{})
+				err = adminService.UpdateUser(puzzleweb.GetSessionUserId(c), userId, []service.Role{})
 				if err == nil {
 					err = profileService.Delete(userId)
 					if err == nil {
@@ -290,7 +289,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			return targetBuilder.String()
 		}),
 		listRoleHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			allRoles, err := adminService.GetAllRoles(session.GetUserId(logger, c))
+			allRoles, err := adminService.GetAllRoles(puzzleweb.GetSessionUserId(c))
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -308,7 +307,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			data[groupName] = group
 
 			if roleName != "new" {
-				actions, err := adminService.GetActions(session.GetUserId(logger, c), roleName, group)
+				actions, err := adminService.GetActions(puzzleweb.GetSessionUserId(c), roleName, group)
 				if err != nil {
 					return "", common.DefaultErrorRedirect(err.Error())
 				}
@@ -328,7 +327,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 			if roleName != "new" {
 				group := c.PostForm(groupName)
 				actions := c.PostFormArray("actions")
-				err = adminService.UpdateRole(session.GetUserId(logger, c), service.Role{
+				err = adminService.UpdateRole(puzzleweb.GetSessionUserId(c), service.Role{
 					Name: roleName, GroupName: group, Actions: actions,
 				})
 			}
@@ -345,7 +344,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...
 
 	site.AddDefaultData(func(data gin.H, c *gin.Context) {
 		data[viewAdminName] = adminService.AuthQuery(
-			session.GetUserId(logger, c), service.AdminGroupId, service.ActionAccess,
+			puzzleweb.GetSessionUserId(c), service.AdminGroupId, service.ActionAccess,
 		) == nil
 	})
 

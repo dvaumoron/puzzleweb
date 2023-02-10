@@ -28,6 +28,7 @@ import (
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
 	markdownservice "github.com/dvaumoron/puzzleweb/markdown/service"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -35,6 +36,71 @@ import (
 
 const defaultSessionTimeOut = 1200
 const defaultPageSize = 50
+
+type LocalesConfig struct {
+	Logger         *zap.Logger
+	Domain         string
+	SessionTimeOut int
+	Path           string
+	AllLang        []string
+}
+
+type ServiceConfig[ServiceType any] struct {
+	Logger  *zap.Logger
+	Service ServiceType
+}
+
+type SessionConfig struct {
+	ServiceConfig[sessionservice.SessionService]
+	Domain  string
+	TimeOut int
+}
+
+type SiteConfig struct {
+	ServiceConfig[sessionservice.SessionService]
+	PictureService profileservice.PictureService
+
+	Domain         string
+	Port           string
+	SessionTimeOut int
+	StaticPath     string
+}
+
+func (sc *SiteConfig) ExtractSessionConfig() SessionConfig {
+	return SessionConfig{
+		ServiceConfig: sc.ServiceConfig, Domain: sc.Domain, TimeOut: sc.SessionTimeOut,
+	}
+}
+
+type AdminConfig struct {
+	ServiceConfig[adminservice.AdminService]
+	UserService    loginservice.AdvancedUserService
+	ProfileService profileservice.AdvancedProfileService
+	PageSize       uint64
+}
+
+type BlogConfig struct {
+	ServiceConfig[blogservice.BlogService]
+	MarkdownService markdownservice.MarkdownService
+	PageSize        uint64
+	ExtractSize     uint64
+}
+
+type ForumConfig struct {
+	ServiceConfig[forumservice.ForumService]
+	PageSize uint64
+}
+
+type ProfileConfig struct {
+	ServiceConfig[profileservice.AdvancedProfileService]
+	AdminService adminservice.AdminService
+	LoginService loginservice.LoginService
+}
+
+type WikiConfig struct {
+	ServiceConfig[wikiservice.WikiService]
+	MarkdownService markdownservice.MarkdownService
+}
 
 type GlobalConfig struct {
 	Domain string
@@ -60,41 +126,6 @@ type GlobalConfig struct {
 	MarkdownServiceAddr string
 	ForumServiceAddr    string
 	BlogServiceAddr     string
-}
-
-type BasicConfig[ServiceType any] struct {
-	Logger  *zap.Logger
-	Service ServiceType
-}
-
-type AdminConfig struct {
-	BasicConfig[adminservice.AdminService]
-	UserService    loginservice.AdvancedUserService
-	ProfileService profileservice.AdvancedProfileService
-	PageSize       uint64
-}
-
-type BlogConfig struct {
-	BasicConfig[blogservice.BlogService]
-	MarkdownService markdownservice.MarkdownService
-	PageSize        uint64
-	ExtractSize     uint64
-}
-
-type ForumConfig struct {
-	BasicConfig[forumservice.ForumService]
-	PageSize uint64
-}
-
-type ProfileConfig struct {
-	BasicConfig[profileservice.AdvancedProfileService]
-	AdminService adminservice.AdminService
-	LoginService loginservice.LoginService
-}
-
-type WikiConfig struct {
-	BasicConfig[wikiservice.WikiService]
-	MarkdownService markdownservice.MarkdownService
 }
 
 func LoadDefault() GlobalConfig {

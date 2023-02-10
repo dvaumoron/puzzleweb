@@ -23,7 +23,7 @@ import (
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/session"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,7 +37,7 @@ func (w settingsWidget) LoadInto(router gin.IRouter) {
 	router.POST("/save", w.saveHandler)
 }
 
-func AddSettingsPage(site *puzzleweb.Site, settingsConfig config.BasicConfig[*SettingsManager], args ...string) {
+func AddSettingsPage(site *puzzleweb.Site, settingsConfig config.ServiceConfig[*SettingsManager], args ...string) {
 	logger := settingsConfig.Logger
 	settingsManager := settingsConfig.Service
 
@@ -53,7 +53,7 @@ func AddSettingsPage(site *puzzleweb.Site, settingsConfig config.BasicConfig[*Se
 	p := puzzleweb.MakeHiddenPage("settings")
 	p.Widget = settingsWidget{
 		editHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
 			}
@@ -62,7 +62,7 @@ func AddSettingsPage(site *puzzleweb.Site, settingsConfig config.BasicConfig[*Se
 			return editTmpl, ""
 		}),
 		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			if userId == 0 {
 				return common.DefaultErrorRedirect(common.UnknownUserKey)
 			}

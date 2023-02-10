@@ -25,7 +25,6 @@ import (
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -87,7 +86,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig, args ...str
 	p := puzzleweb.MakePage(forumName)
 	p.Widget = forumWidget{
 		listThreadHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 
 			pageNumber, start, end, filter := common.GetPagination(c, defaultPageSize)
 
@@ -111,7 +110,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig, args ...str
 			title := c.PostForm("title")
 			message := c.PostForm("message")
 
-			err := forumService.CreateThread(session.GetUserId(logger, c), title, message)
+			err := forumService.CreateThread(puzzleweb.GetSessionUserId(c), title, message)
 
 			var targetBuilder strings.Builder
 			targetBuilder.WriteString(common.GetBaseUrl(1, c))
@@ -123,7 +122,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig, args ...str
 		deleteThreadHandler: common.CreateRedirect(func(c *gin.Context) string {
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err == nil {
-				err = forumService.DeleteThread(session.GetUserId(logger, c), threadId)
+				err = forumService.DeleteThread(puzzleweb.GetSessionUserId(c), threadId)
 			} else {
 				logger.Warn("Failed to parse threadId.", zap.Error(err))
 				err = common.ErrTechnical
@@ -145,7 +144,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig, args ...str
 
 			pageNumber, start, end, filter := common.GetPagination(c, defaultPageSize)
 
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			total, thread, messages, err := forumService.GetThread(userId, threadId, start, end, filter)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
@@ -167,7 +166,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig, args ...str
 			}
 			message := c.PostForm("message")
 
-			err = forumService.CreateMessage(session.GetUserId(logger, c), threadId, message)
+			err = forumService.CreateMessage(puzzleweb.GetSessionUserId(c), threadId, message)
 
 			targetBuilder := threadUrlBuilder(common.GetBaseUrl(3, c), threadId)
 			if err != nil {
@@ -187,7 +186,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig, args ...str
 				return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
-			err = forumService.DeleteMessage(session.GetUserId(logger, c), threadId, messageId)
+			err = forumService.DeleteMessage(puzzleweb.GetSessionUserId(c), threadId, messageId)
 
 			targetBuilder := threadUrlBuilder(common.GetBaseUrl(4, c), threadId)
 			if err != nil {

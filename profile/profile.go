@@ -28,7 +28,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/admin"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/gin-gonic/gin"
 )
 
@@ -85,7 +84,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig, ar
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
-			currentUserId := session.GetUserId(logger, c)
+			currentUserId := puzzleweb.GetSessionUserId(c)
 			if viewedUserId != currentUserId {
 				if err := profileService.ViewRight(currentUserId); err != nil {
 					return "", common.DefaultErrorRedirect(err.Error())
@@ -115,7 +114,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig, ar
 			return viewTmpl, ""
 		}),
 		editHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
 			}
@@ -132,7 +131,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig, ar
 			return editTmpl, ""
 		}),
 		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			if userId == 0 {
 				return common.DefaultErrorRedirect(common.UnknownUserKey)
 			}
@@ -176,12 +175,12 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig, ar
 			return targetBuilder.String()
 		}),
 		changeLoginHandler: common.CreateRedirect(func(c *gin.Context) string {
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			if userId == 0 {
 				return common.DefaultErrorRedirect(common.UnknownUserKey)
 			}
 
-			session := session.Get(logger, c)
+			session := puzzleweb.GetSession(c)
 			oldLogin := session.Load(common.LoginName)
 			newLogin := c.PostForm(common.LoginName)
 			password := c.PostForm(common.PasswordName)
@@ -197,12 +196,12 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig, ar
 			return targetBuilder.String()
 		}),
 		changePasswordHandler: common.CreateRedirect(func(c *gin.Context) string {
-			userId := session.GetUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			if userId == 0 {
 				return common.DefaultErrorRedirect(common.UnknownUserKey)
 			}
 
-			login := session.Get(logger, c).Load(common.LoginName)
+			login := puzzleweb.GetSession(c).Load(common.LoginName)
 			oldPassword := c.PostForm("oldPassword")
 			newPassword := c.PostForm("newPassword")
 			confirmPassword := c.PostForm("confirmPassword")

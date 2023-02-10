@@ -26,7 +26,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/login/service"
-	"github.com/dvaumoron/puzzleweb/session"
 	"github.com/dvaumoron/puzzleweb/settings"
 	"github.com/gin-gonic/gin"
 )
@@ -46,7 +45,7 @@ func (w loginWidget) LoadInto(router gin.IRouter) {
 	router.GET("/logout", w.logoutHandler)
 }
 
-func AddLoginPage(site *puzzleweb.Site, loginConfig config.BasicConfig[service.LoginService], settingsManager *settings.SettingsManager, args ...string) {
+func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceConfig[service.LoginService], settingsManager *settings.SettingsManager, args ...string) {
 	logger := loginConfig.Logger
 	loginService := loginConfig.Service
 
@@ -109,7 +108,7 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.BasicConfig[service.L
 				return c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
 			}
 
-			s := session.Get(logger, c)
+			s := puzzleweb.GetSession(c)
 			s.Store(common.LoginName, login)
 			s.Store(common.UserIdName, fmt.Sprint(userId))
 
@@ -118,7 +117,7 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.BasicConfig[service.L
 			return c.PostForm(common.RedirectName)
 		}),
 		logoutHandler: common.CreateRedirect(func(c *gin.Context) string {
-			s := session.Get(logger, c)
+			s := puzzleweb.GetSession(c)
 			s.Delete(common.LoginName)
 			s.Delete(common.UserIdName)
 			return c.Query(common.RedirectName)
@@ -127,7 +126,7 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.BasicConfig[service.L
 
 	site.AddDefaultData(func(data gin.H, c *gin.Context) {
 		escapedUrl := url.QueryEscape(c.Request.URL.Path)
-		if login := session.Get(logger, c).Load(common.LoginName); login == "" {
+		if login := puzzleweb.GetSession(c).Load(common.LoginName); login == "" {
 			data[loginUrlName] = "/login?redirect=" + escapedUrl
 		} else {
 			data[common.LoginName] = login

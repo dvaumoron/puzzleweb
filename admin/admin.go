@@ -113,54 +113,20 @@ func (w adminWidget) LoadInto(router gin.IRouter) {
 	router.POST("/role/save", w.saveRoleHandler)
 }
 
-func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig, args ...string) {
+func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 	logger := adminConfig.Logger
 	adminService := adminConfig.Service
 	userService := adminConfig.UserService
 	profileService := adminConfig.ProfileService
 	defaultPageSize := adminConfig.PageSize
 
-	indexTmpl := "admin/index.html"
-	listUserTmpl := "admin/user/list.html"
-	viewUserTmpl := "admin/user/view.html"
-	editUserTmpl := "admin/user/edit.html"
-	listRoleTmpl := "admin/role/list.html"
-	editRoleTmpl := "admin/role/edit.html"
-	switch len(args) {
-	default:
-		logger.Info("AddAdminPage should be called with 3 to 9 arguments.")
-		fallthrough
-	case 6:
-		if args[5] != "" {
-			editRoleTmpl = args[5]
-		}
-		fallthrough
-	case 5:
-		if args[4] != "" {
-			listRoleTmpl = args[4]
-		}
-		fallthrough
-	case 4:
-		if args[3] != "" {
-			editUserTmpl = args[3]
-		}
-		fallthrough
-	case 3:
-		if args[2] != "" {
-			viewUserTmpl = args[2]
-		}
-		fallthrough
-	case 2:
-		if args[1] != "" {
-			listUserTmpl = args[1]
-		}
-	case 1:
-		if args[0] != "" {
-			indexTmpl = args[0]
-		}
-		fallthrough
-	case 0:
-	}
+	ext := adminConfig.Ext
+	indexTmpl := "admin/index" + ext
+	listUserTmpl := "admin/user/list" + ext
+	viewUserTmpl := "admin/user/view" + ext
+	editUserTmpl := "admin/user/edit" + ext
+	listRoleTmpl := "admin/role/list" + ext
+	editRoleTmpl := "admin/role/edit" + ext
 
 	p := puzzleweb.MakeHiddenPage("admin")
 	p.Widget = adminWidget{

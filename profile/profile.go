@@ -51,30 +51,15 @@ func (w profileWidget) LoadInto(router gin.IRouter) {
 	router.POST("/changePassword", w.changePasswordHandler)
 }
 
-func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig, args ...string) {
+func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 	logger := profileConfig.Logger
 	profileService := profileConfig.Service
 	adminService := profileConfig.AdminService
 	loginService := profileConfig.LoginService
 
-	viewTmpl := "profile/view.html"
-	editTmpl := "profile/edit.html"
-	switch len(args) {
-	default:
-		logger.Info("AddProfilePage should be called with 2 to 4 arguments.")
-		fallthrough
-	case 2:
-		if args[1] != "" {
-			editTmpl = args[1]
-		}
-		fallthrough
-	case 1:
-		if args[0] != "" {
-			viewTmpl = args[0]
-		}
-		fallthrough
-	case 0:
-	}
+	ext := profileConfig.Ext
+	viewTmpl := "profile/view" + ext
+	editTmpl := "profile/edit" + ext
 
 	p := puzzleweb.MakeHiddenPage("profile")
 	p.Widget = profileWidget{

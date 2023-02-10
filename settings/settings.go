@@ -37,18 +37,10 @@ func (w settingsWidget) LoadInto(router gin.IRouter) {
 	router.POST("/save", w.saveHandler)
 }
 
-func AddSettingsPage(site *puzzleweb.Site, settingsConfig config.ServiceConfig[*SettingsManager], args ...string) {
-	logger := settingsConfig.Logger
+func AddSettingsPage(site *puzzleweb.Site, settingsConfig config.ServiceExtConfig[*SettingsManager], args ...string) {
 	settingsManager := settingsConfig.Service
 
-	size := len(args)
-	editTmpl := "settings/edit.html"
-	if size != 0 && args[0] != "" {
-		editTmpl = args[0]
-	}
-	if size > 1 {
-		logger.Info("AddSettingsPage should be called with 1 or 2 arguments.")
-	}
+	editTmpl := "settings/edit" + settingsConfig.Ext
 
 	p := puzzleweb.MakeHiddenPage("settings")
 	p.Widget = settingsWidget{

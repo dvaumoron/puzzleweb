@@ -46,8 +46,6 @@ import (
 )
 
 const defaultSessionTimeOut = 1200
-const defaultPageSize = 50
-const defaultExtractSize = 200
 
 type LocalesConfig struct {
 	Logger         *zap.Logger
@@ -60,6 +58,12 @@ type LocalesConfig struct {
 type ServiceConfig[ServiceType any] struct {
 	Logger  *zap.Logger
 	Service ServiceType
+}
+
+type ServiceExtConfig[ServiceType any] struct {
+	Logger  *zap.Logger
+	Service ServiceType
+	Ext     string
 }
 
 type SessionConfig struct {
@@ -85,7 +89,7 @@ func (sc *SiteConfig) ExtractSessionConfig() SessionConfig {
 }
 
 type AdminConfig struct {
-	ServiceConfig[adminservice.AdminService]
+	ServiceExtConfig[adminservice.AdminService]
 	UserService    loginservice.AdvancedUserService
 	ProfileService profileservice.AdvancedProfileService
 	PageSize       uint64
@@ -104,7 +108,7 @@ type ForumConfig struct {
 }
 
 type ProfileConfig struct {
-	ServiceConfig[profileservice.AdvancedProfileService]
+	ServiceExtConfig[profileservice.AdvancedProfileService]
 	AdminService adminservice.AdminService
 	LoginService loginservice.LoginService
 }
@@ -127,6 +131,7 @@ type GlobalConfig struct {
 	StaticPath    string
 	LocalesPath   string
 	TemplatesPath string
+	TemplatesExt  string
 
 	Logger *zap.Logger
 
@@ -176,8 +181,8 @@ func LoadDefault() *GlobalConfig {
 	}
 
 	dateFormat := retrieveWithDefault("DATE_FORMAT", "2/1/2006 15:04:05")
-	pageSize := retrieveUintWithDefault("PAGE_SIZE", defaultPageSize)
-	extractSize := retrieveUintWithDefault("EXTRACT_SIZE", defaultExtractSize)
+	pageSize := retrieveUintWithDefault("PAGE_SIZE", 20)
+	extractSize := retrieveUintWithDefault("EXTRACT_SIZE", 200)
 
 	fileLogConfigPath := os.Getenv("LOG_CONFIG_PATH")
 	if fileLogConfigPath != "" {
@@ -202,6 +207,7 @@ func LoadDefault() *GlobalConfig {
 		StaticPath:    retrievePath("STATIC_PATH", "static"),
 		LocalesPath:   retrievePath("LOCALES_PATH", "locales"),
 		TemplatesPath: retrievePath("TEMPLATES_PATH", "templates"),
+		TemplatesExt:  retrieveWithDefault("TEMPLATES_EXT", ".html"),
 
 		Logger:          logger,
 		SessionService:  sessionService,
@@ -275,24 +281,26 @@ func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {
 	}
 }
 
-func (c *GlobalConfig) ExtractLoginConfig() ServiceConfig[loginservice.LoginService] {
-	return ServiceConfig[loginservice.LoginService]{
-		Logger: c.Logger, Service: c.LoginService,
+func (c *GlobalConfig) ExtractLoginConfig() ServiceExtConfig[loginservice.LoginService] {
+	return ServiceExtConfig[loginservice.LoginService]{
+		Logger: c.Logger, Service: c.LoginService, Ext: c.TemplatesExt,
 	}
 }
 
 func (c *GlobalConfig) ExtractAdminConfig() AdminConfig {
 	return AdminConfig{
-		ServiceConfig: ServiceConfig[adminservice.AdminService]{Logger: c.Logger, Service: c.RightClient},
-		UserService:   c.LoginService, ProfileService: c.ProfileService, PageSize: c.PageSize,
+		ServiceExtConfig: ServiceExtConfig[adminservice.AdminService]{
+			Logger: c.Logger, Service: c.RightClient, Ext: c.TemplatesExt,
+		},
+		UserService: c.LoginService, ProfileService: c.ProfileService, PageSize: c.PageSize,
 	}
 }
 
 func (c *GlobalConfig) ExtractProfileConfig() ProfileConfig {
 	c.loadProfile()
 	return ProfileConfig{
-		ServiceConfig: ServiceConfig[profileservice.AdvancedProfileService]{
-			Logger: c.Logger, Service: c.ProfileService,
+		ServiceExtConfig: ServiceExtConfig[profileservice.AdvancedProfileService]{
+			Logger: c.Logger, Service: c.ProfileService, Ext: c.TemplatesExt,
 		},
 		AdminService: c.RightClient, LoginService: c.LoginService,
 	}

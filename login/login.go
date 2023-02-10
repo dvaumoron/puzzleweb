@@ -45,18 +45,10 @@ func (w loginWidget) LoadInto(router gin.IRouter) {
 	router.GET("/logout", w.logoutHandler)
 }
 
-func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceConfig[service.LoginService], settingsManager *settings.SettingsManager, args ...string) {
-	logger := loginConfig.Logger
+func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceExtConfig[service.LoginService], settingsManager *settings.SettingsManager) {
 	loginService := loginConfig.Service
 
-	size := len(args)
-	tmpl := "login.html"
-	if size != 0 && args[0] != "" {
-		tmpl = args[0]
-	}
-	if size > 1 {
-		logger.Info("AddLoginPage should be called with 2 or 3 arguments.")
-	}
+	tmpl := "login" + loginConfig.Ext
 
 	p := puzzleweb.MakeHiddenPage("login")
 	p.Widget = loginWidget{

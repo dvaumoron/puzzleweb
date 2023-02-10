@@ -316,6 +316,12 @@ func (c *GlobalConfig) ExtractSettingsConfig() ServiceConfig[sessionservice.Sess
 	}
 }
 
+func CreateServiceExtConfig[ServiceType any](c *GlobalConfig, service ServiceType) ServiceExtConfig[ServiceType] {
+	return ServiceExtConfig[ServiceType]{
+		Logger: c.Logger, Service: service, Ext: c.TemplatesExt,
+	}
+}
+
 func (c *GlobalConfig) CreateWikiConfig(wikiId uint64, groupId uint64, args ...string) WikiConfig {
 	c.loadWiki()
 	return WikiConfig{

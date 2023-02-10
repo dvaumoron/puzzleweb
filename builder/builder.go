@@ -37,9 +37,7 @@ func BuildDefaultSite() (*puzzleweb.Site, *config.GlobalConfig) {
 	login.AddLoginPage(site, globalConfig.ExtractLoginConfig(), settingsManager)
 	admin.AddAdminPage(site, globalConfig.ExtractAdminConfig())
 	profile.AddProfilePage(site, globalConfig.ExtractProfileConfig())
-	settings.AddSettingsPage(site, config.ServiceExtConfig[*settings.SettingsManager]{
-		Logger: globalConfig.Logger, Service: settingsManager, Ext: globalConfig.TemplatesExt,
-	})
+	settings.AddSettingsPage(site, config.CreateServiceExtConfig(globalConfig, settingsManager))
 
 	return site, globalConfig
 }

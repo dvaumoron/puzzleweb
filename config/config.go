@@ -95,27 +95,31 @@ type AdminConfig struct {
 	PageSize       uint64
 }
 
-type BlogConfig struct {
-	ServiceConfig[blogservice.BlogService]
-	MarkdownService markdownservice.MarkdownService
-	PageSize        uint64
-	ExtractSize     uint64
-}
-
-type ForumConfig struct {
-	ServiceConfig[forumservice.ForumService]
-	PageSize uint64
-}
-
 type ProfileConfig struct {
 	ServiceExtConfig[profileservice.AdvancedProfileService]
 	AdminService adminservice.AdminService
 	LoginService loginservice.LoginService
 }
 
+type BlogConfig struct {
+	ServiceConfig[blogservice.BlogService]
+	MarkdownService markdownservice.MarkdownService
+	CommentService  forumservice.CommentService
+	PageSize        uint64
+	ExtractSize     uint64
+	Args            []string
+}
+
+type ForumConfig struct {
+	ServiceConfig[forumservice.ForumService]
+	PageSize uint64
+	Args     []string
+}
+
 type WikiConfig struct {
 	ServiceConfig[wikiservice.WikiService]
 	MarkdownService markdownservice.MarkdownService
+	Args            []string
 }
 
 type GlobalConfig struct {
@@ -194,10 +198,10 @@ func LoadDefault() *GlobalConfig {
 	}
 	logger := log.NewLogger(logConfig)
 
-	sessionService := sessionclient.Make(requiredFromEnv("SESSION_SERVICE_ADDR"), logger)
+	sessionService := sessionclient.New(requiredFromEnv("SESSION_SERVICE_ADDR"), logger)
 	saltService := puzzlesaltclient.Make(requiredFromEnv("SALT_SERVICE_ADDR"))
-	settingsService := sessionclient.Make(requiredFromEnv("SETTINGS_SERVICE_ADDR"), logger)
-	loginService := loginclient.Make(requiredFromEnv("LOGIN_SERVICE_ADDR"), logger, dateFormat, saltService)
+	settingsService := sessionclient.New(requiredFromEnv("SETTINGS_SERVICE_ADDR"), logger)
+	loginService := loginclient.New(requiredFromEnv("LOGIN_SERVICE_ADDR"), logger, dateFormat, saltService)
 	rightClient := adminclient.Make(requiredFromEnv("RIGHT_SERVICE_ADDR"), logger)
 
 	return &GlobalConfig{
@@ -222,7 +226,7 @@ func (c *GlobalConfig) loadProfile() {
 	if c.ProfileService == nil {
 		// if not setted in configuration, profile are public
 		profileGroupId := retrieveUintWithDefault("PROFILE_GROUP_ID", adminservice.PublicGroupId)
-		c.ProfileService = profileclient.Make(
+		c.ProfileService = profileclient.New(
 			requiredFromEnv("PROFILE_SERVICE_ADDR"), c.Logger, profileGroupId,
 			c.LoginService, c.RightClient,
 		)
@@ -231,7 +235,7 @@ func (c *GlobalConfig) loadProfile() {
 
 func (c *GlobalConfig) loadMarkdown() {
 	if c.MarkdownService == nil {
-		c.MarkdownService = markdownclient.Make(requiredFromEnv("MARKDOWN_SERVICE_ADDR"), c.Logger)
+		c.MarkdownService = markdownclient.New(requiredFromEnv("MARKDOWN_SERVICE_ADDR"), c.Logger)
 	}
 }
 
@@ -312,33 +316,36 @@ func (c *GlobalConfig) ExtractSettingsConfig() ServiceConfig[sessionservice.Sess
 	}
 }
 
-func (c *GlobalConfig) CreateWikiConfig(wikiId uint64, groupId uint64) WikiConfig {
+func (c *GlobalConfig) CreateWikiConfig(wikiId uint64, groupId uint64, args ...string) WikiConfig {
 	c.loadWiki()
 	return WikiConfig{
-		ServiceConfig: ServiceConfig[wikiservice.WikiService]{Logger: c.Logger, Service: wikiclient.Make(
+		ServiceConfig: ServiceConfig[wikiservice.WikiService]{Logger: c.Logger, Service: wikiclient.New(
 			c.WikiServiceAddr, c.Logger, wikiId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		)},
-		MarkdownService: c.MarkdownService,
+		MarkdownService: c.MarkdownService, Args: args,
 	}
 }
 
-func (c *GlobalConfig) CreateForumConfig(forumId uint64, groupId uint64) ForumConfig {
+func (c *GlobalConfig) CreateForumConfig(forumId uint64, groupId uint64, args ...string) ForumConfig {
 	c.loadForum()
 	return ForumConfig{
-		ServiceConfig: ServiceConfig[forumservice.ForumService]{Logger: c.Logger, Service: forumclient.Make(
+		ServiceConfig: ServiceConfig[forumservice.ForumService]{Logger: c.Logger, Service: forumclient.New(
 			c.ForumServiceAddr, c.Logger, forumId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		)},
-		PageSize: c.PageSize,
+		PageSize: c.PageSize, Args: args,
 	}
 }
 
-func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64) BlogConfig {
+func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...string) BlogConfig {
 	c.loadBlog()
 	return BlogConfig{
-		ServiceConfig: ServiceConfig[blogservice.BlogService]{Logger: c.Logger, Service: blogclient.Make(
+		ServiceConfig: ServiceConfig[blogservice.BlogService]{Logger: c.Logger, Service: blogclient.New(
 			c.BlogServiceAddr, c.Logger, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		)},
-		MarkdownService: c.MarkdownService, PageSize: c.PageSize, ExtractSize: c.ExtractSize,
+		MarkdownService: c.MarkdownService, CommentService: forumclient.New(
+			c.ForumServiceAddr, c.Logger, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+		),
+		PageSize: c.PageSize, ExtractSize: c.ExtractSize, Args: args,
 	}
 }
 

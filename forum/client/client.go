@@ -32,10 +32,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// check matching with interface
-var _ service.FullForumService = ForumClient{}
-
-type ForumClient struct {
+type forumClient struct {
 	grpcclient.Client
 	forumId        uint64
 	groupId        uint64
@@ -44,8 +41,8 @@ type ForumClient struct {
 	profileService profileservice.ProfileService
 }
 
-func Make(serviceAddr string, logger *zap.Logger, forumId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) ForumClient {
-	return ForumClient{
+func New(serviceAddr string, logger *zap.Logger, forumId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.FullForumService {
+	return forumClient{
 		Client: grpcclient.Make(serviceAddr, logger), forumId: forumId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
@@ -67,7 +64,7 @@ func (s sortableContents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (client ForumClient) CreateThread(userId uint64, title string, message string) error {
+func (client forumClient) CreateThread(userId uint64, title string, message string) error {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return err
@@ -94,7 +91,7 @@ func (client ForumClient) CreateThread(userId uint64, title string, message stri
 	return nil
 }
 
-func (client ForumClient) CreateCommentThread(userId uint64, elemTitle string) error {
+func (client forumClient) CreateCommentThread(userId uint64, elemTitle string) error {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return err
@@ -121,7 +118,7 @@ func (client ForumClient) CreateCommentThread(userId uint64, elemTitle string) e
 	return nil
 }
 
-func (client ForumClient) CreateMessage(userId uint64, threadId uint64, message string) error {
+func (client forumClient) CreateMessage(userId uint64, threadId uint64, message string) error {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionUpdate)
 	if err != nil {
 		return err
@@ -148,7 +145,7 @@ func (client ForumClient) CreateMessage(userId uint64, threadId uint64, message 
 	return nil
 }
 
-func (client ForumClient) GetThread(userId uint64, threadId uint64, start uint64, end uint64, filter string) (uint64, service.ForumContent, []service.ForumContent, error) {
+func (client forumClient) GetThread(userId uint64, threadId uint64, start uint64, end uint64, filter string) (uint64, service.ForumContent, []service.ForumContent, error) {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return 0, service.ForumContent{}, nil, err
@@ -193,7 +190,7 @@ func (client ForumClient) GetThread(userId uint64, threadId uint64, start uint64
 	return response2.Total, thread, messages, nil
 }
 
-func (client ForumClient) GetThreads(userId uint64, start uint64, end uint64, filter string) (uint64, []service.ForumContent, error) {
+func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, filter string) (uint64, []service.ForumContent, error) {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return 0, nil, err
@@ -226,7 +223,7 @@ func (client ForumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 	return response.Total, sortConvertContents(list, users, client.dateFormat), err
 }
 
-func (client ForumClient) GetCommentThread(userId uint64, elemTitle string, start uint64, end uint64) (uint64, []service.ForumContent, error) {
+func (client forumClient) GetCommentThread(userId uint64, elemTitle string, start uint64, end uint64) (uint64, []service.ForumContent, error) {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return 0, nil, err
@@ -267,13 +264,13 @@ func (client ForumClient) GetCommentThread(userId uint64, elemTitle string, star
 	return response2.Total, sortConvertContents(list, users, client.dateFormat), nil
 }
 
-func (client ForumClient) DeleteThread(userId uint64, threadId uint64) error {
+func (client forumClient) DeleteThread(userId uint64, threadId uint64) error {
 	return client.deleteContent(
 		userId, deleteThread, &pb.IdRequest{ContainerId: client.forumId, Id: threadId},
 	)
 }
 
-func (client ForumClient) DeleteCommentThread(userId uint64, elemTitle string) error {
+func (client forumClient) DeleteCommentThread(userId uint64, elemTitle string) error {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
@@ -309,25 +306,25 @@ func (client ForumClient) DeleteCommentThread(userId uint64, elemTitle string) e
 	return nil
 }
 
-func (client ForumClient) DeleteMessage(userId uint64, threadId uint64, messageId uint64) error {
+func (client forumClient) DeleteMessage(userId uint64, threadId uint64, messageId uint64) error {
 	return client.deleteContent(
 		userId, deleteMessage, &pb.IdRequest{ContainerId: threadId, Id: messageId},
 	)
 }
 
-func (client ForumClient) CreateThreadRight(userId uint64) bool {
+func (client forumClient) CreateThreadRight(userId uint64) bool {
 	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate) == nil
 }
 
-func (client ForumClient) CreateMessageRight(userId uint64) bool {
+func (client forumClient) CreateMessageRight(userId uint64) bool {
 	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionUpdate) == nil
 }
 
-func (client ForumClient) DeleteRight(userId uint64) bool {
+func (client forumClient) DeleteRight(userId uint64) bool {
 	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete) == nil
 }
 
-func (client ForumClient) deleteContent(userId uint64, kind deleteRequestKind, request *pb.IdRequest) error {
+func (client forumClient) deleteContent(userId uint64, kind deleteRequestKind, request *pb.IdRequest) error {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err

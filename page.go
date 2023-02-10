@@ -82,13 +82,13 @@ func newStaticWidget(authConfig config.ServiceConfig[adminservice.AuthService], 
 	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(authConfig, groupId, tmpl))}
 }
 
-func MakeStaticPage(name string, authConfig config.ServiceConfig[adminservice.AuthService], groupId uint64, tmpl string) Page {
+func MakeStaticPage(name string, groupId uint64, tmpl string, authConfig config.ServiceConfig[adminservice.AuthService]) Page {
 	p := MakePage(name)
 	p.Widget = newStaticWidget(authConfig, groupId, tmpl)
 	return p
 }
 
-func MakeHiddenStaticPage(name string, authConfig config.ServiceConfig[adminservice.AuthService], groupId uint64, tmpl string) Page {
+func MakeHiddenStaticPage(name string, groupId uint64, tmpl string, authConfig config.ServiceConfig[adminservice.AuthService]) Page {
 	p := MakeHiddenPage(name)
 	p.Widget = newStaticWidget(authConfig, groupId, tmpl)
 	return p

@@ -55,7 +55,7 @@ func (w wikiWidget) LoadInto(router gin.IRouter) {
 	router.GET("/:lang/delete/:title", w.deleteHandler)
 }
 
-func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig, args ...string) puzzleweb.Page {
+func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page {
 	logger := wikiConfig.Logger
 	wikiService := wikiConfig.Service
 	markdownService := wikiConfig.MarkdownService
@@ -64,6 +64,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig, args ...string)
 	viewTmpl := "wiki/view.html"
 	editTmpl := "wiki/edit.html"
 	listTmpl := "wiki/list.html"
+	args := wikiConfig.Args
 	switch len(args) {
 	default:
 		logger.Info("MakeWikiPage should be called with 2 to 6 arguments.")

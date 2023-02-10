@@ -27,18 +27,15 @@ import (
 	"go.uber.org/zap"
 )
 
-// check matching with interface
-var _ service.MarkdownService = MarkdownClient{}
-
-type MarkdownClient struct {
+type markdownClient struct {
 	grpcclient.Client
 }
 
-func Make(serviceAddr string, logger *zap.Logger) MarkdownClient {
-	return MarkdownClient{Client: grpcclient.Make(serviceAddr, logger)}
+func New(serviceAddr string, logger *zap.Logger) service.MarkdownService {
+	return markdownClient{Client: grpcclient.Make(serviceAddr, logger)}
 }
 
-func (client MarkdownClient) Apply(text string) (template.HTML, error) {
+func (client markdownClient) Apply(text string) (template.HTML, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return "", common.LogOriginalError(client.Logger, err)

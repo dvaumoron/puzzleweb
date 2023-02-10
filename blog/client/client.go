@@ -31,10 +31,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// check matching with interface
-var _ service.BlogService = BlogClient{}
-
-type BlogClient struct {
+type blogClient struct {
 	grpcclient.Client
 	blogId         uint64
 	groupId        uint64
@@ -43,8 +40,8 @@ type BlogClient struct {
 	profileService profileservice.ProfileService
 }
 
-func Make(serviceAddr string, logger *zap.Logger, blogId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) BlogClient {
-	return BlogClient{
+func New(serviceAddr string, logger *zap.Logger, blogId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.BlogService {
+	return blogClient{
 		Client: grpcclient.Make(serviceAddr, logger), blogId: blogId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
@@ -64,7 +61,7 @@ func (s sortableContents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (client BlogClient) CreatePost(userId uint64, title string, content string) error {
+func (client blogClient) CreatePost(userId uint64, title string, content string) error {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return err
@@ -91,7 +88,7 @@ func (client BlogClient) CreatePost(userId uint64, title string, content string)
 	return nil
 }
 
-func (client BlogClient) GetPost(userId uint64, postId uint64) (service.BlogPost, error) {
+func (client blogClient) GetPost(userId uint64, postId uint64) (service.BlogPost, error) {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return service.BlogPost{}, err
@@ -121,7 +118,7 @@ func (client BlogClient) GetPost(userId uint64, postId uint64) (service.BlogPost
 	return convertPost(response, users[creatorId], client.dateFormat), nil
 }
 
-func (client BlogClient) GetPosts(userId uint64, start uint64, end uint64, filter string) ([]service.BlogPost, error) {
+func (client blogClient) GetPosts(userId uint64, start uint64, end uint64, filter string) ([]service.BlogPost, error) {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return nil, err
@@ -149,7 +146,7 @@ func (client BlogClient) GetPosts(userId uint64, start uint64, end uint64, filte
 	return client.sortConvertPosts(list)
 }
 
-func (client BlogClient) DeletePost(userId uint64, postId uint64) error {
+func (client blogClient) DeletePost(userId uint64, postId uint64) error {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
@@ -176,7 +173,7 @@ func (client BlogClient) DeletePost(userId uint64, postId uint64) error {
 	return nil
 }
 
-func (client BlogClient) sortConvertPosts(list []*pb.Content) ([]service.BlogPost, error) {
+func (client blogClient) sortConvertPosts(list []*pb.Content) ([]service.BlogPost, error) {
 	sort.Sort(sortableContents(list))
 
 	size := len(list)

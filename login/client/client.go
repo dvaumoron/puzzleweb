@@ -29,17 +29,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// check matching with interface
-var _ service.FullLoginService = LoginClient{}
-
-type LoginClient struct {
+type loginClient struct {
 	grpcclient.Client
 	dateFormat  string
 	saltService service.SaltService
 }
 
-func Make(serviceAddr string, logger *zap.Logger, dateFormat string, saltService service.SaltService) LoginClient {
-	return LoginClient{
+func New(serviceAddr string, logger *zap.Logger, dateFormat string, saltService service.SaltService) service.FullLoginService {
+	return loginClient{
 		Client: grpcclient.Make(serviceAddr, logger), dateFormat: dateFormat, saltService: saltService,
 	}
 }
@@ -60,16 +57,16 @@ func (s sortableContents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (client LoginClient) Verify(login string, password string) (bool, uint64, error) {
+func (client loginClient) Verify(login string, password string) (bool, uint64, error) {
 	return client.verifyOrRegister(login, password, verify)
 }
 
-func (client LoginClient) Register(login string, password string) (bool, uint64, error) {
+func (client loginClient) Register(login string, password string) (bool, uint64, error) {
 	return client.verifyOrRegister(login, password, register)
 }
 
 // You should remove duplicate id in list
-func (client LoginClient) GetUsers(userIds []uint64) (map[uint64]service.User, error) {
+func (client loginClient) GetUsers(userIds []uint64) (map[uint64]service.User, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return nil, common.LogOriginalError(client.Logger, err)
@@ -91,7 +88,7 @@ func (client LoginClient) GetUsers(userIds []uint64) (map[uint64]service.User, e
 	return logins, nil
 }
 
-func (client LoginClient) ChangeLogin(userId uint64, oldLogin string, newLogin string, password string) error {
+func (client loginClient) ChangeLogin(userId uint64, oldLogin string, newLogin string, password string) error {
 	oldSalted, err := client.saltService.Salt(oldLogin, password)
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -123,7 +120,7 @@ func (client LoginClient) ChangeLogin(userId uint64, oldLogin string, newLogin s
 	return nil
 }
 
-func (client LoginClient) ChangePassword(userId uint64, login string, oldPassword string, newPassword string) error {
+func (client loginClient) ChangePassword(userId uint64, login string, oldPassword string, newPassword string) error {
 	oldSalted, err := client.saltService.Salt(login, oldPassword)
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -155,7 +152,7 @@ func (client LoginClient) ChangePassword(userId uint64, login string, oldPasswor
 	return nil
 }
 
-func (client LoginClient) ListUsers(start uint64, end uint64, filter string) (uint64, []service.User, error) {
+func (client loginClient) ListUsers(start uint64, end uint64, filter string) (uint64, []service.User, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return 0, nil, common.LogOriginalError(client.Logger, err)
@@ -182,7 +179,7 @@ func (client LoginClient) ListUsers(start uint64, end uint64, filter string) (ui
 }
 
 // no right check
-func (client LoginClient) Delete(userId uint64) error {
+func (client loginClient) Delete(userId uint64) error {
 	conn, err := client.Dial()
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -202,7 +199,7 @@ func (client LoginClient) Delete(userId uint64) error {
 	return nil
 }
 
-func (client LoginClient) verifyOrRegister(login string, password string, kind requestKind) (bool, uint64, error) {
+func (client loginClient) verifyOrRegister(login string, password string, kind requestKind) (bool, uint64, error) {
 	salted, err := client.saltService.Salt(login, password)
 	if err != nil {
 		return false, 0, common.LogOriginalError(client.Logger, err)

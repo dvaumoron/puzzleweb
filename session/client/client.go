@@ -25,18 +25,15 @@ import (
 	"go.uber.org/zap"
 )
 
-// check matching with interface
-var _ service.SessionService = SessionClient{}
-
-type SessionClient struct {
+type sessionClient struct {
 	grpcclient.Client
 }
 
-func Make(serviceAddr string, logger *zap.Logger) SessionClient {
-	return SessionClient{Client: grpcclient.Make(serviceAddr, logger)}
+func New(serviceAddr string, logger *zap.Logger) service.SessionService {
+	return sessionClient{Client: grpcclient.Make(serviceAddr, logger)}
 }
 
-func (client SessionClient) Generate() (uint64, error) {
+func (client sessionClient) Generate() (uint64, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return 0, common.LogOriginalError(client.Logger, err)
@@ -55,7 +52,7 @@ func (client SessionClient) Generate() (uint64, error) {
 	return response.Id, nil
 }
 
-func (client SessionClient) Get(id uint64) (map[string]string, error) {
+func (client sessionClient) Get(id uint64) (map[string]string, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return nil, common.LogOriginalError(client.Logger, err)
@@ -74,7 +71,7 @@ func (client SessionClient) Get(id uint64) (map[string]string, error) {
 	return response.Info, nil
 }
 
-func (client SessionClient) Update(id uint64, info map[string]string) error {
+func (client sessionClient) Update(id uint64, info map[string]string) error {
 	conn, err := client.Dial()
 	if err != nil {
 		common.LogOriginalError(client.Logger, err)

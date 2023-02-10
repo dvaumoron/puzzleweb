@@ -27,23 +27,21 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ service.AdvancedProfileService = ProfileClient{}
-
-type ProfileClient struct {
+type profileClient struct {
 	grpcclient.Client
 	groupId     uint64
 	userService loginservice.UserService
 	authService adminservice.AuthService
 }
 
-func Make(serviceAddr string, logger *zap.Logger, groupId uint64, userService loginservice.UserService, authService adminservice.AuthService) ProfileClient {
-	return ProfileClient{
+func New(serviceAddr string, logger *zap.Logger, groupId uint64, userService loginservice.UserService, authService adminservice.AuthService) service.AdvancedProfileService {
+	return profileClient{
 		Client: grpcclient.Make(serviceAddr, logger), groupId: groupId,
 		userService: userService, authService: authService,
 	}
 }
 
-func (client ProfileClient) UpdateProfile(userId uint64, desc string, info map[string]string) error {
+func (client profileClient) UpdateProfile(userId uint64, desc string, info map[string]string) error {
 	conn, err := client.Dial()
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -65,7 +63,7 @@ func (client ProfileClient) UpdateProfile(userId uint64, desc string, info map[s
 	return nil
 }
 
-func (client ProfileClient) UpdatePicture(userId uint64, data []byte) error {
+func (client profileClient) UpdatePicture(userId uint64, data []byte) error {
 	conn, err := client.Dial()
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -85,7 +83,7 @@ func (client ProfileClient) UpdatePicture(userId uint64, data []byte) error {
 	return nil
 }
 
-func (client ProfileClient) GetPicture(userId uint64) ([]byte, error) {
+func (client profileClient) GetPicture(userId uint64) ([]byte, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return nil, common.LogOriginalError(client.Logger, err)
@@ -102,7 +100,7 @@ func (client ProfileClient) GetPicture(userId uint64) ([]byte, error) {
 	return response.Data, nil
 }
 
-func (client ProfileClient) GetProfiles(userIds []uint64) (map[uint64]service.UserProfile, error) {
+func (client profileClient) GetProfiles(userIds []uint64) (map[uint64]service.UserProfile, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return nil, common.LogOriginalError(client.Logger, err)
@@ -136,7 +134,7 @@ func (client ProfileClient) GetProfiles(userIds []uint64) (map[uint64]service.Us
 }
 
 // no right check
-func (client ProfileClient) Delete(userId uint64) error {
+func (client profileClient) Delete(userId uint64) error {
 	conn, err := client.Dial()
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
@@ -156,6 +154,6 @@ func (client ProfileClient) Delete(userId uint64) error {
 	return nil
 }
 
-func (client ProfileClient) ViewRight(userId uint64) error {
+func (client profileClient) ViewRight(userId uint64) error {
 	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 }

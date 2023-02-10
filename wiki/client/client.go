@@ -26,7 +26,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/grpcclient"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
-	"github.com/dvaumoron/puzzleweb/wiki/cache"
 	"github.com/dvaumoron/puzzleweb/wiki/service"
 	pb "github.com/dvaumoron/puzzlewikiservice"
 	"go.uber.org/zap"
@@ -37,7 +36,7 @@ var _ service.WikiService = WikiClient{}
 
 type WikiClient struct {
 	grpcclient.Client
-	cache          *cache.WikiCache
+	cache          *wikiCache
 	wikiId         uint64
 	groupId        uint64
 	dateFormat     string
@@ -47,7 +46,7 @@ type WikiClient struct {
 
 func Make(serviceAddr string, logger *zap.Logger, wikiId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) WikiClient {
 	return WikiClient{
-		Client: grpcclient.Make(serviceAddr, logger), cache: cache.New(), wikiId: wikiId, groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, logger), cache: newCache(), wikiId: wikiId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }
@@ -132,7 +131,7 @@ func (client WikiClient) loadContent(wikiRef string, version uint64) (*service.W
 	}
 
 	if lastVersion := maxVersion(versions.List); lastVersion != nil {
-		content := client.cache.Load(wikiRef)
+		content := client.cache.load(wikiRef)
 		if content != nil && lastVersion.Number == content.Version {
 			return content, nil
 		}
@@ -154,7 +153,7 @@ func (client WikiClient) innerLoadContent(ctx context.Context, wikiClient pb.Wik
 
 	content := &service.WikiContent{Version: version, Markdown: response.Text}
 	if askedVersion == 0 {
-		client.cache.Store(wikiRef, content)
+		client.cache.store(wikiRef, content)
 	}
 	return content, nil
 }
@@ -177,7 +176,7 @@ func (client WikiClient) storeContent(userId uint64, wikiRef string, last uint64
 	}
 	success := response.Success
 	if success {
-		client.cache.Store(wikiRef, &service.WikiContent{
+		client.cache.store(wikiRef, &service.WikiContent{
 			Version: response.Version, Markdown: markdown,
 		})
 	}
@@ -223,9 +222,9 @@ func (client WikiClient) deleteContent(wikiRef string, version uint64) error {
 		return common.ErrUpdate
 	}
 
-	content := client.cache.Load(wikiRef)
+	content := client.cache.load(wikiRef)
 	if content != nil && version == content.Version {
-		client.cache.Delete(wikiRef)
+		client.cache.delete(wikiRef)
 	}
 	return nil
 }

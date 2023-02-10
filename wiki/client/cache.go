@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  */
-package cache
+package client
 
 import (
 	"sync"
@@ -23,29 +23,29 @@ import (
 	"github.com/dvaumoron/puzzleweb/wiki/service"
 )
 
-type WikiCache struct {
+type wikiCache struct {
 	mutex sync.RWMutex
 	cache map[string]*service.WikiContent
 }
 
-func New() *WikiCache {
-	return &WikiCache{cache: map[string]*service.WikiContent{}}
+func newCache() *wikiCache {
+	return &wikiCache{cache: map[string]*service.WikiContent{}}
 }
 
-func (wiki *WikiCache) Load(wikiRef string) *service.WikiContent {
+func (wiki *wikiCache) load(wikiRef string) *service.WikiContent {
 	wiki.mutex.RLock()
 	content := wiki.cache[wikiRef]
 	wiki.mutex.RUnlock()
 	return content
 }
 
-func (wiki *WikiCache) Store(wikiRef string, content *service.WikiContent) {
+func (wiki *wikiCache) store(wikiRef string, content *service.WikiContent) {
 	wiki.mutex.Lock()
 	wiki.cache[wikiRef] = content
 	wiki.mutex.Unlock()
 }
 
-func (wiki *WikiCache) Delete(wikiRef string) {
+func (wiki *wikiCache) delete(wikiRef string) {
 	wiki.mutex.Lock()
 	delete(wiki.cache, wikiRef)
 	wiki.mutex.Unlock()

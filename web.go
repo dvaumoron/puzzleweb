@@ -45,7 +45,7 @@ type Site struct {
 	pictureService     profileservice.PictureService
 }
 
-func MakeSite(authConfig config.ServiceConfig[adminservice.AuthService], localesManager *locale.LocalesManager, args ...string) Site {
+func NewSite(authConfig config.ServiceConfig[adminservice.AuthService], localesManager *locale.LocalesManager, args ...string) *Site {
 	logger := authConfig.Logger
 
 	size := len(args)
@@ -57,7 +57,7 @@ func MakeSite(authConfig config.ServiceConfig[adminservice.AuthService], locales
 		logger.Info("MakeSite should be called with 2 or 3 arguments.")
 	}
 
-	return Site{
+	return &Site{
 		logger: logger, localesManager: localesManager,
 		root: MakeStaticPage("root", authConfig, adminservice.PublicGroupId, rootTmpl),
 	}
@@ -98,7 +98,8 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 		c.Set(siteName, site)
 	})
 
-	if siteConfig.PictureService != nil {
+	if pictureService := siteConfig.PictureService; pictureService != nil {
+		site.pictureService = pictureService
 		engine.GET("/profilePic/:UserId", site.profilePicHandler)
 	}
 

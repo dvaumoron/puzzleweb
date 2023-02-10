@@ -29,9 +29,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// check matching with interfaces
-var _ service.AdvancedUserService = LoginClient{}
-var _ service.LoginService = LoginClient{}
+// check matching with interface
+var _ service.FullLoginService = LoginClient{}
 
 type LoginClient struct {
 	grpcclient.Client

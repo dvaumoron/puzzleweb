@@ -32,9 +32,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// check matching with interfaces
-var _ service.ForumService = ForumClient{}
-var _ service.CommentService = ForumClient{}
+// check matching with interface
+var _ service.FullForumService = ForumClient{}
 
 type ForumClient struct {
 	grpcclient.Client

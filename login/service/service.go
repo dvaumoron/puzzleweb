@@ -40,6 +40,11 @@ type LoginService interface {
 	ChangePassword(userId uint64, login string, oldPassword string, newPassword string) error
 }
 
+type FullLoginService interface {
+	LoginService
+	AdvancedUserService
+}
+
 type SaltService interface {
 	Salt(login string, password string) (string, error)
 }

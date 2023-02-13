@@ -95,7 +95,7 @@ func MapToValueSlice[K comparable, V any](objects map[K]V) []V {
 func GetRequestedUserId(logger *zap.Logger, c *gin.Context) uint64 {
 	userId, err := strconv.ParseUint(c.Param(UserIdName), 10, 64)
 	if err != nil {
-		logger.Warn("Failed to parse userId from request.", zap.Error(err))
+		logger.Warn("Failed to parse userId from request", zap.Error(err))
 	}
 	return userId
 }

@@ -23,7 +23,9 @@ import (
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type Widget interface {
@@ -68,6 +70,7 @@ func localizedTmpl(authConfig config.ServiceConfig[adminservice.AuthService], gr
 		}
 		localesManager := GetLocalesManager(c)
 		if lang := localesManager.GetLang(c); lang != localesManager.DefaultLang {
+			authConfig.Logger.Info("Using alternative static page", zap.String(locale.LangName, lang))
 			var builder strings.Builder
 			builder.WriteString(lang)
 			builder.WriteString("/")

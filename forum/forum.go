@@ -31,7 +31,7 @@ import (
 
 const threadIdName = "threadId"
 
-const parsingThreadIdErrorMsg = "Failed to parse threadId."
+const parsingThreadIdErrorMsg = "Failed to parse threadId"
 
 type forumWidget struct {
 	listThreadHandler    gin.HandlerFunc
@@ -64,7 +64,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 	args := forumConfig.Args
 	switch len(args) {
 	default:
-		logger.Info("MakeForumPage should be called with 3 to 6 arguments.")
+		logger.Info("MakeForumPage should be called with 3 to 6 arguments")
 		fallthrough
 	case 3:
 		if args[2] != "" {
@@ -125,7 +125,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			if err == nil {
 				err = forumService.DeleteThread(puzzleweb.GetSessionUserId(c), threadId)
 			} else {
-				logger.Warn("Failed to parse threadId.", zap.Error(err))
+				logger.Warn(parsingThreadIdErrorMsg, zap.Error(err))
 				err = common.ErrTechnical
 			}
 
@@ -183,7 +183,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			}
 			messageId, err := strconv.ParseUint(c.Param("messageId"), 10, 64)
 			if err != nil {
-				logger.Warn("Failed to parse messageId.", zap.Error(err))
+				logger.Warn("Failed to parse messageId", zap.Error(err))
 				return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 

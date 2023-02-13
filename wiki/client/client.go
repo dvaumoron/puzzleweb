@@ -58,7 +58,7 @@ func (client wikiClient) LoadContent(userId uint64, lang string, title string, v
 	if versionStr != "" {
 		version, err = strconv.ParseUint(versionStr, 10, 64)
 		if err != nil {
-			client.Logger.Info("Failed to parse wiki version, falling to last.", zap.Error(err))
+			client.Logger.Info("Failed to parse wiki version, falling to last", zap.Error(err))
 		}
 	}
 	return client.loadContent(buildRef(lang, title), version)
@@ -72,7 +72,7 @@ func (client wikiClient) StoreContent(userId uint64, lang string, title string, 
 
 	version, err := strconv.ParseUint(last, 10, 64)
 	if err != nil {
-		client.Logger.Warn("Failed to parse wiki last version.", zap.Error(err))
+		client.Logger.Warn("Failed to parse wiki last version", zap.Error(err))
 		return false, common.ErrTechnical
 	}
 	return client.storeContent(userId, buildRef(lang, title), version, markdown)
@@ -94,7 +94,7 @@ func (client wikiClient) DeleteContent(userId uint64, lang string, title string,
 
 	version, err := strconv.ParseUint(versionStr, 10, 64)
 	if err != nil {
-		client.Logger.Warn("Failed to parse wiki version to delete.", zap.Error(err))
+		client.Logger.Warn("Failed to parse wiki version to delete", zap.Error(err))
 		return common.ErrTechnical
 	}
 	return client.deleteContent(buildRef(lang, title), version)

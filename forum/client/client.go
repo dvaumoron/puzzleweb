@@ -145,6 +145,44 @@ func (client forumClient) CreateMessage(userId uint64, threadId uint64, message 
 	return nil
 }
 
+func (client forumClient) CreateComment(userId uint64, elemTitle string, comment string) error {
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
+	if err != nil {
+		return err
+	}
+
+	conn, err := client.Dial()
+	if err != nil {
+		return common.LogOriginalError(client.Logger, err)
+	}
+	defer conn.Close()
+
+	ctx, cancel := client.InitContext()
+	defer cancel()
+
+	objectId := client.forumId
+	forumClient := pb.NewForumClient(conn)
+	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
+	if err != nil {
+		return common.LogOriginalError(client.Logger, err)
+	}
+	if response.Total == 0 {
+		return logCommentThreadNotFound(client.Logger, objectId, elemTitle)
+	}
+	threadId := response.List[0].Id
+
+	response2, err := forumClient.CreateMessage(ctx, &pb.CreateRequest{
+		ContainerId: threadId, UserId: userId, Text: comment,
+	})
+	if err != nil {
+		return common.LogOriginalError(client.Logger, err)
+	}
+	if !response2.Success {
+		return common.ErrUpdate
+	}
+	return nil
+}
+
 func (client forumClient) GetThread(userId uint64, threadId uint64, start uint64, end uint64, filter string) (uint64, service.ForumContent, []service.ForumContent, error) {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
@@ -218,7 +256,7 @@ func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 
 	users, err := client.profileService.GetProfiles(extractUserIds(list))
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.Logger, err)
+		return 0, nil, err
 	}
 	return response.Total, sortConvertContents(list, users, client.dateFormat), err
 }

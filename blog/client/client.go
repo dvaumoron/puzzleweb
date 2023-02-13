@@ -118,15 +118,15 @@ func (client blogClient) GetPost(userId uint64, postId uint64) (service.BlogPost
 	return convertPost(response, users[creatorId], client.dateFormat), nil
 }
 
-func (client blogClient) GetPosts(userId uint64, start uint64, end uint64, filter string) ([]service.BlogPost, error) {
+func (client blogClient) GetPosts(userId uint64, start uint64, end uint64, filter string) (uint64, []service.BlogPost, error) {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
@@ -137,13 +137,18 @@ func (client blogClient) GetPosts(userId uint64, start uint64, end uint64, filte
 		BlogId: client.blogId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 	list := response.List
 	if len(list) == 0 {
-		return nil, nil
+		return response.Total, nil, nil
 	}
-	return client.sortConvertPosts(list)
+
+	posts, err := client.sortConvertPosts(list)
+	if err != nil {
+		return 0, nil, err
+	}
+	return response.Total, posts, nil
 }
 
 func (client blogClient) DeletePost(userId uint64, postId uint64) error {
@@ -171,6 +176,14 @@ func (client blogClient) DeletePost(userId uint64, postId uint64) error {
 		return common.ErrUpdate
 	}
 	return nil
+}
+
+func (client blogClient) CreateRight(userId uint64) bool {
+	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate) == nil
+}
+
+func (client blogClient) DeleteRight(userId uint64) bool {
+	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete) == nil
 }
 
 func (client blogClient) sortConvertPosts(list []*pb.Content) ([]service.BlogPost, error) {

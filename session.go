@@ -40,12 +40,12 @@ func makeSessionManager(sessionConfig config.SessionConfig) sessionManager {
 func (m sessionManager) getSessionId(c *gin.Context) (uint64, error) {
 	cookie, err := c.Cookie(cookieName)
 	if err != nil {
-		m.Logger.Info("Failed to retrieve session cookie.", zap.Error(err))
+		m.Logger.Info("Failed to retrieve session cookie", zap.Error(err))
 		return m.generateSessionCookie(c)
 	}
 	sessionId, err := strconv.ParseUint(cookie, 10, 64)
 	if err != nil {
-		m.Logger.Info("Failed to parse session cookie.", zap.Error(err))
+		m.Logger.Info("Failed to parse session cookie", zap.Error(err))
 		return m.generateSessionCookie(c)
 	}
 	return sessionId, nil
@@ -87,14 +87,14 @@ func (s *Session) Delete(key string) {
 func (m sessionManager) Manage(c *gin.Context) {
 	sessionId, err := m.getSessionId(c)
 	if err != nil {
-		m.Logger.Error("Failed to generate sessionId.")
+		m.Logger.Error("Failed to generate sessionId")
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
 	session, err := m.Service.Get(sessionId)
 	if err != nil {
-		logSessionError(c, "Failed to retrieve session.", sessionId)
+		logSessionError(c, "Failed to retrieve session", sessionId)
 		return
 	}
 
@@ -103,7 +103,7 @@ func (m sessionManager) Manage(c *gin.Context) {
 
 	if s := GetSession(c); s.change {
 		if m.Service.Update(sessionId, s.session) != nil {
-			logSessionError(c, "Failed to save session.", sessionId)
+			logSessionError(c, "Failed to save session", sessionId)
 		}
 	}
 }
@@ -117,7 +117,7 @@ func GetSession(c *gin.Context) *Session {
 	untyped, _ := c.Get(sessionName)
 	typed, ok := untyped.(*Session)
 	if !ok {
-		getSite(c).logger.Error("There is no session in context.")
+		getSite(c).logger.Error("There is no session in context")
 		typed = &Session{session: map[string]string{}, change: true}
 		c.Set(sessionName, typed)
 	}
@@ -127,7 +127,7 @@ func GetSession(c *gin.Context) *Session {
 func GetSessionUserId(c *gin.Context) uint64 {
 	userId, err := strconv.ParseUint(GetSession(c).Load(common.UserIdName), 10, 64)
 	if err != nil {
-		getSite(c).logger.Info("Failed to parse userId from session.", zap.Error(err))
+		getSite(c).logger.Info("Failed to parse userId from session", zap.Error(err))
 	}
 	return userId
 }

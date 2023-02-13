@@ -40,10 +40,12 @@ type ForumService interface {
 
 type CommentService interface {
 	CreateCommentThread(userId uint64, elemTitle string) error
-	CreateMessage(userId uint64, threadId uint64, message string) error
+	CreateComment(userId uint64, elemTitle string, message string) error
 	GetCommentThread(userId uint64, elemTitle string, start uint64, end uint64) (uint64, []ForumContent, error)
 	DeleteCommentThread(userId uint64, elemTitle string) error
 	DeleteMessage(userId uint64, threadId uint64, messageId uint64) error
+	CreateMessageRight(userId uint64) bool
+	DeleteRight(userId uint64) bool
 }
 
 type FullForumService interface {

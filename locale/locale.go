@@ -49,7 +49,7 @@ func NewManager(localesConfig config.LocalesConfig) *LocalesManager {
 	allLang := localesConfig.AllLang
 	size := len(allLang)
 	if size == 0 {
-		logger.Fatal("No locales declared.")
+		logger.Fatal("No locales declared")
 	}
 	multipleLang := size > 1
 
@@ -73,7 +73,7 @@ func NewManager(localesConfig config.LocalesConfig) *LocalesManager {
 		path := pathBuilder.String()
 		file, err := os.Open(path)
 		if err != nil {
-			logger.Fatal("Failed to load locale file.", zap.String(pathName, path), zap.Error(err))
+			logger.Fatal("Failed to load locale file", zap.String(pathName, path), zap.Error(err))
 		}
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
@@ -89,7 +89,7 @@ func NewManager(localesConfig config.LocalesConfig) *LocalesManager {
 			}
 		}
 		if err = scanner.Err(); err != nil {
-			logger.Error("Error reading locale file.", zap.String(pathName, path), zap.Error(err))
+			logger.Error("Error reading locale file", zap.String(pathName, path), zap.Error(err))
 		}
 	}
 
@@ -127,7 +127,7 @@ func (m *LocalesManager) CheckLang(lang string) string {
 			return lang
 		}
 	}
-	m.logger.Info("Asked not declared locale.", zap.String("askedLocale", lang))
+	m.logger.Info("Asked not declared locale", zap.String("askedLocale", lang))
 	return m.DefaultLang
 }
 

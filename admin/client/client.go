@@ -52,7 +52,7 @@ func Make(serviceAddr string, logger *zap.Logger) RightClient {
 func (client RightClient) RegisterGroup(groupId uint64, groupName string) {
 	for usedId := range client.groupIdToName {
 		if groupId == usedId {
-			client.Logger.Fatal("Duplicate groupId.")
+			client.Logger.Fatal("Duplicate groupId")
 		}
 	}
 	client.groupIdToName[groupId] = groupName

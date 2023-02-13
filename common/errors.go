@@ -36,7 +36,7 @@ var ErrTechnical = errors.New("ErrorTechnicalProblem")
 var ErrUpdate = errors.New("ErrorUpdate")
 
 func LogOriginalError(logger *zap.Logger, err error) error {
-	logger.Warn("Original error.", zap.Error(err))
+	logger.Warn("Original error", zap.Error(err))
 	return ErrTechnical
 }
 

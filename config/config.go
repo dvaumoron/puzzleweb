@@ -66,6 +66,10 @@ type ServiceExtConfig[ServiceType any] struct {
 	Ext     string
 }
 
+func (sc ServiceExtConfig[ServiceType]) ExtractServiceConfig() ServiceConfig[ServiceType] {
+	return ServiceConfig[ServiceType]{Logger: sc.Logger, Service: sc.Service}
+}
+
 type SessionConfig struct {
 	ServiceConfig[sessionservice.SessionService]
 	Domain  string
@@ -268,6 +272,10 @@ func CreateServiceExtConfig[ServiceType any](c *GlobalConfig, service ServiceTyp
 
 func (c *GlobalConfig) ExtractAuthConfig() ServiceConfig[adminservice.AuthService] {
 	return ServiceConfig[adminservice.AuthService]{Logger: c.Logger, Service: c.RightClient}
+}
+
+func (c *GlobalConfig) ExtractAuthExtConfig() ServiceExtConfig[adminservice.AuthService] {
+	return CreateServiceExtConfig[adminservice.AuthService](c, c.RightClient)
 }
 
 func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {

@@ -34,6 +34,8 @@ type BlogPost struct {
 type BlogService interface {
 	CreatePost(userId uint64, title string, content string) error
 	GetPost(userId uint64, postId uint64) (BlogPost, error)
-	GetPosts(userId uint64, start uint64, end uint64, filter string) ([]BlogPost, error)
+	GetPosts(userId uint64, start uint64, end uint64, filter string) (uint64, []BlogPost, error)
 	DeletePost(userId uint64, postId uint64) error
+	CreateRight(userId uint64) bool
+	DeleteRight(userId uint64) bool
 }

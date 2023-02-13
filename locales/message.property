@@ -50,3 +50,6 @@ ErrorWrongConfirmPassword=
 
 # wiki
 BaseVersionOutdated=
+
+# blog
+NoComment=

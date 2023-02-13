@@ -45,21 +45,13 @@ type Site struct {
 	pictureService     profileservice.PictureService
 }
 
-func NewSite(authConfig config.ServiceConfig[adminservice.AuthService], localesManager *locale.LocalesManager, args ...string) *Site {
-	logger := authConfig.Logger
-
-	size := len(args)
-	rootTmpl := "index.html"
-	if size != 0 && args[0] != "" {
-		rootTmpl = args[0]
-	}
-	if size > 1 {
-		logger.Info("MakeSite should be called with 2 or 3 arguments.")
-	}
+func NewSite(authConfig config.ServiceExtConfig[adminservice.AuthService], localesManager *locale.LocalesManager) *Site {
+	ext := authConfig.Ext
+	rootTmpl := "index" + ext
 
 	return &Site{
-		logger: logger, localesManager: localesManager,
-		root: MakeStaticPage("root", adminservice.PublicGroupId, rootTmpl, authConfig),
+		logger: authConfig.Logger, localesManager: localesManager,
+		root: MakeStaticPage("root", adminservice.PublicGroupId, rootTmpl, authConfig.ExtractServiceConfig()),
 	}
 }
 

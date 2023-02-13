@@ -32,7 +32,7 @@ func BuildDefaultSite() (*puzzleweb.Site, *config.GlobalConfig) {
 	localesManager := locale.NewManager(globalConfig.ExtractLocalesConfig())
 	settingsManager := settings.NewManager(globalConfig.ExtractSettingsConfig())
 
-	site := puzzleweb.NewSite(globalConfig.ExtractAuthConfig(), localesManager)
+	site := puzzleweb.NewSite(globalConfig.ExtractAuthExtConfig(), localesManager)
 
 	login.AddLoginPage(site, globalConfig.ExtractLoginConfig(), settingsManager)
 	admin.AddAdminPage(site, globalConfig.ExtractAdminConfig())

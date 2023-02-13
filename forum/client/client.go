@@ -64,15 +64,15 @@ func (s sortableContents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (client forumClient) CreateThread(userId uint64, title string, message string) error {
+func (client forumClient) CreateThread(userId uint64, title string, message string) (uint64, error) {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return 0, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
@@ -83,12 +83,12 @@ func (client forumClient) CreateThread(userId uint64, title string, message stri
 		ContainerId: client.forumId, UserId: userId, Title: title, Text: message,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return 0, common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
-		return common.ErrUpdate
+		return 0, common.ErrUpdate
 	}
-	return nil
+	return response.Id, nil
 }
 
 func (client forumClient) CreateCommentThread(userId uint64, elemTitle string) error {
@@ -166,10 +166,21 @@ func (client forumClient) CreateComment(userId uint64, elemTitle string, comment
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)
 	}
+
+	var threadId uint64
 	if response.Total == 0 {
-		return logCommentThreadNotFound(client.Logger, objectId, elemTitle)
+		logCommentThreadNotFound(client.Logger, objectId, elemTitle)
+
+		response2, err := forumClient.CreateThread(ctx, &pb.CreateRequest{
+			ContainerId: client.forumId, UserId: userId, Title: elemTitle,
+		})
+		if err != nil {
+			return common.LogOriginalError(client.Logger, err)
+		}
+		threadId = response2.Id
+	} else {
+		threadId = response.List[0].Id
 	}
-	threadId := response.List[0].Id
 
 	response2, err := forumClient.CreateMessage(ctx, &pb.CreateRequest{
 		ContainerId: threadId, UserId: userId, Text: comment,

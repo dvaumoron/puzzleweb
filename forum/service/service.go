@@ -27,7 +27,7 @@ type ForumContent struct {
 }
 
 type ForumService interface {
-	CreateThread(userId uint64, title string, message string) error
+	CreateThread(userId uint64, title string, message string) (uint64, error)
 	CreateMessage(userId uint64, threadId uint64, message string) error
 	GetThread(userId uint64, threadId uint64, start uint64, end uint64, filter string) (uint64, ForumContent, []ForumContent, error)
 	GetThreads(userId uint64, start uint64, end uint64, filter string) (uint64, []ForumContent, error)

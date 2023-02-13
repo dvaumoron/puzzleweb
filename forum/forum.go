@@ -111,14 +111,11 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			title := c.PostForm("title")
 			message := c.PostForm("message")
 
-			err := forumService.CreateThread(puzzleweb.GetSessionUserId(c), title, message)
-
-			var targetBuilder strings.Builder
-			targetBuilder.WriteString(common.GetBaseUrl(1, c))
+			threadId, err := forumService.CreateThread(puzzleweb.GetSessionUserId(c), title, message)
 			if err != nil {
-				common.WriteError(&targetBuilder, err.Error())
+				return common.DefaultErrorRedirect(err.Error())
 			}
-			return targetBuilder.String()
+			return threadUrlBuilder(common.GetBaseUrl(1, c), threadId).String()
 		}),
 		deleteThreadHandler: common.CreateRedirect(func(c *gin.Context) string {
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)

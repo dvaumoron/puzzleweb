@@ -330,7 +330,7 @@ func (client forumClient) DeleteCommentThread(userId uint64, elemTitle string) e
 		return common.LogOriginalError(client.Logger, err)
 	}
 	if response.Total == 0 {
-		return logCommentThreadNotFound(client.Logger, objectId, elemTitle)
+		return nil
 	}
 	threadId := response.List[0].Id
 
@@ -348,6 +348,42 @@ func (client forumClient) DeleteMessage(userId uint64, threadId uint64, messageI
 	return client.deleteContent(
 		userId, deleteMessage, &pb.IdRequest{ContainerId: threadId, Id: messageId},
 	)
+}
+
+func (client forumClient) DeleteComment(userId uint64, elemTitle string, commentId uint64) error {
+	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
+	if err != nil {
+		return err
+	}
+
+	conn, err := client.Dial()
+	if err != nil {
+		return common.LogOriginalError(client.Logger, err)
+	}
+	defer conn.Close()
+
+	ctx, cancel := client.InitContext()
+	defer cancel()
+
+	objectId := client.forumId
+	forumClient := pb.NewForumClient(conn)
+	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
+	if err != nil {
+		return common.LogOriginalError(client.Logger, err)
+	}
+	if response.Total == 0 {
+		return logCommentThreadNotFound(client.Logger, objectId, elemTitle)
+	}
+	threadId := response.List[0].Id
+
+	response2, err := forumClient.DeleteThread(ctx, &pb.IdRequest{ContainerId: threadId, Id: commentId})
+	if err != nil {
+		return common.LogOriginalError(client.Logger, err)
+	}
+	if !response2.Success {
+		return common.ErrUpdate
+	}
+	return nil
 }
 
 func (client forumClient) CreateThreadRight(userId uint64) bool {

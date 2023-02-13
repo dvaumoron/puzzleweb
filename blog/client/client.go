@@ -61,15 +61,15 @@ func (s sortableContents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (client blogClient) CreatePost(userId uint64, title string, content string) error {
+func (client blogClient) CreatePost(userId uint64, title string, content string) (uint64, error) {
 	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return 0, common.LogOriginalError(client.Logger, err)
 	}
 	defer conn.Close()
 
@@ -80,12 +80,12 @@ func (client blogClient) CreatePost(userId uint64, title string, content string)
 		BlogId: client.blogId, UserId: userId, Title: title, Text: content,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return 0, common.LogOriginalError(client.Logger, err)
 	}
 	if !response.Success {
-		return common.ErrUpdate
+		return 0, common.ErrUpdate
 	}
-	return nil
+	return response.Id, nil
 }
 
 func (client blogClient) GetPost(userId uint64, postId uint64) (service.BlogPost, error) {

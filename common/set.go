@@ -49,3 +49,34 @@ func (s Set[V]) Slice() []V {
 	}
 	return extracted
 }
+
+func MapToValueSlice[K comparable, V any](objects map[K]V) []V {
+	res := make([]V, 0, len(objects))
+	for _, object := range objects {
+		res = append(res, object)
+	}
+	return res
+}
+
+type Stack[T any] struct {
+	inner []T
+}
+
+func (s *Stack[T]) Push(e T) {
+	s.inner = append(s.inner, e)
+}
+
+func (s *Stack[T]) Peek() T {
+	return s.inner[len(s.inner)-1]
+}
+
+func (s *Stack[T]) Pop() T {
+	last := len(s.inner) - 1
+	res := s.inner[last]
+	s.inner = s.inner[:last]
+	return res
+}
+
+func NewStack[T any]() *Stack[T] {
+	return &Stack[T]{}
+}

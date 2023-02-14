@@ -23,6 +23,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 )
 
 const RedirectName = "Redirect"
@@ -38,6 +39,8 @@ const LoginName = "Login"         // current connected user
 const UserLoginName = "UserLogin" // viewed user
 const RegistredAtName = "RegistredAt"
 const UserDescName = "UserDesc"
+
+var htmlVoidElement Set[string] = MakeSet([]string{"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"})
 
 type DataAdder func(gin.H, *gin.Context)
 type Redirecter func(*gin.Context) string
@@ -84,14 +87,6 @@ func CreateRedirectString(target string) gin.HandlerFunc {
 	}
 }
 
-func MapToValueSlice[K comparable, V any](objects map[K]V) []V {
-	res := make([]V, 0, len(objects))
-	for _, object := range objects {
-		res = append(res, object)
-	}
-	return res
-}
-
 func GetRequestedUserId(logger *zap.Logger, c *gin.Context) uint64 {
 	userId, err := strconv.ParseUint(c.Param(UserIdName), 10, 64)
 	if err != nil {
@@ -126,4 +121,61 @@ func InitPagination(data gin.H, filter string, pageNumber uint64, end uint64, to
 		data["NextPageNumber"] = pageNumber + 1
 	}
 	data["Total"] = total
+}
+
+// html must be well formed
+func FilterExtractHtml(html string, extractSize uint64) string {
+	buffer := make([]rune, 0, len(html))
+	chars := make(chan rune)
+	go sendChar(chars, html)
+	var count uint64
+	tagStack := NewStack[string]()
+	for char := range chars {
+		if char == '<' {
+			char2 := <-chars
+			if char2 == '/' {
+				buffer = append(buffer, '<', '/')
+				buffer = copyTagName(buffer, chars)
+				buffer = append(buffer, '>')
+				tagStack.Pop()
+			} else {
+				temp := make([]rune, 0, 20)
+				temp = copyTagName(temp, chars)
+				if tagName := string(temp); !htmlVoidElement.Contains(tagName) {
+					tagStack.Push(tagName)
+				}
+				buffer = append(buffer, '<')
+				buffer = slices.Grow(buffer, len(temp))
+				copy(buffer, temp)
+				copyTagAttribute(buffer, chars)
+				buffer = append(buffer, '>')
+			}
+		} else {
+			buffer = append(buffer, char)
+			count++
+			if count > extractSize {
+				buffer = append(buffer, '.', '.', '.')
+				break
+			}
+		}
+	}
+	// TODO stack pop
+	return string(buffer)
+}
+
+func sendChar(chars chan<- rune, s string) {
+	for _, char := range s {
+		chars <- char
+	}
+	close(chars)
+}
+
+func copyTagName(buffer []rune, chars <-chan rune) []rune {
+	// TODO
+	return buffer
+}
+
+func copyTagAttribute(buffer []rune, chars <-chan rune) []rune {
+	// TODO
+	return buffer
 }

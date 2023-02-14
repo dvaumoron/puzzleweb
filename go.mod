@@ -15,6 +15,7 @@ require (
 	github.com/gin-gonic/gin v1.8.1
 	github.com/joho/godotenv v1.4.0
 	go.uber.org/zap v1.24.0
+	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.6.0
 	google.golang.org/grpc v1.52.3

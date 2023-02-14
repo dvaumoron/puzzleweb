@@ -25,6 +25,7 @@ import (
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/forum/service"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -61,6 +62,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 	commentService := blogConfig.CommentService
 	markdownService := blogConfig.MarkdownService
 	defaultPageSize := blogConfig.PageSize
+	extractSize := blogConfig.ExtractSize
 
 	listTmpl := "blog/list.html"
 	viewTmpl := "blog/view.html"
@@ -106,6 +108,8 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
+
+			filterCommentsExtract(comments, extractSize)
 
 			common.InitPagination(data, "", pageNumber, end, total)
 			data["Post"] = post
@@ -252,4 +256,10 @@ func postUrlBuilder(base string, postId uint64) *strings.Builder {
 	targetBuilder.WriteString("view/")
 	targetBuilder.WriteString(fmt.Sprint(postId))
 	return targetBuilder
+}
+
+func filterCommentsExtract(comments []service.ForumContent, extractSize uint64) {
+	for index := range comments {
+		comments[index].Text = common.FilterExtractHtml(comments[index].Text, extractSize)
+	}
 }

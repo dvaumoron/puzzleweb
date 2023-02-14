@@ -77,6 +77,10 @@ func (s *Stack[T]) Pop() T {
 	return res
 }
 
+func (s *Stack[T]) Empty() bool {
+	return len(s.inner) == 0
+}
+
 func NewStack[T any]() *Stack[T] {
 	return &Stack[T]{}
 }

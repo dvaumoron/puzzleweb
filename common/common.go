@@ -40,7 +40,7 @@ const UserLoginName = "UserLogin" // viewed user
 const RegistredAtName = "RegistredAt"
 const UserDescName = "UserDesc"
 
-var htmlVoidElement Set[string] = MakeSet([]string{"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"})
+var htmlVoidElement = MakeSet([]string{"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"})
 
 type DataAdder func(gin.H, *gin.Context)
 type Redirecter func(*gin.Context) string
@@ -159,7 +159,13 @@ func FilterExtractHtml(html string, extractSize uint64) string {
 			}
 		}
 	}
-	// TODO stack pop
+
+	for !tagStack.Empty() {
+		buffer = append(buffer, '<', '/')
+		buffer = append(buffer, []rune(tagStack.Pop())...)
+		buffer = append(buffer, '>')
+	}
+
 	return string(buffer)
 }
 

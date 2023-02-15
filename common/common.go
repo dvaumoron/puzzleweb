@@ -20,6 +20,7 @@ package common
 import (
 	"net/http"
 	"strconv"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -135,19 +136,22 @@ func FilterExtractHtml(html string, extractSize uint64) string {
 			char2 := <-chars
 			if char2 == '/' {
 				buffer = append(buffer, '<', '/')
-				buffer = copyTagName(buffer, chars)
+				buffer, _ = copyTagName(buffer, chars)
 				buffer = append(buffer, '>')
 				tagStack.Pop()
 			} else {
 				temp := make([]rune, 0, 20)
-				temp = copyTagName(temp, chars)
+				temp, notEnded := copyTagName(temp, chars)
 				if tagName := string(temp); !htmlVoidElement.Contains(tagName) {
 					tagStack.Push(tagName)
 				}
 				buffer = append(buffer, '<')
 				buffer = slices.Grow(buffer, len(temp))
 				copy(buffer, temp)
-				copyTagAttribute(buffer, chars)
+				if notEnded {
+					buffer = append(buffer, ' ')
+					copyTagAttribute(buffer, chars)
+				}
 				buffer = append(buffer, '>')
 			}
 		} else {
@@ -176,12 +180,27 @@ func sendChar(chars chan<- rune, s string) {
 	close(chars)
 }
 
-func copyTagName(buffer []rune, chars <-chan rune) []rune {
-	// TODO
-	return buffer
+func copyTagName(buffer []rune, chars <-chan rune) ([]rune, bool) {
+	notEnded := true
+	for char := range chars {
+		if unicode.IsSpace(char) {
+			break
+		}
+		if char == '>' {
+			notEnded = false
+			break
+		}
+		buffer = append(buffer, char)
+	}
+	return buffer, notEnded
 }
 
 func copyTagAttribute(buffer []rune, chars <-chan rune) []rune {
-	// TODO
+	for char := range chars {
+		if char == '>' {
+			break
+		}
+		buffer = append(buffer, char)
+	}
 	return buffer
 }

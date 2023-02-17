@@ -8,7 +8,13 @@
     <div>
         <label>
             {{.Messages.PasswordLabel}}
-            <input type="password" name="Password"/>
+            <input type="password" id="passwordField" name="Password"/>
+        </label>
+    </div>
+    <div id="confirmPasswordBlock" class="hidden">
+        <label>
+            {{.Messages.ConfirmPasswordLabel}}
+            <input type="password" id="confirmPasswordField" name="ConfirmPassword"/>
         </label>
     </div>
     <div class="hidden">
@@ -17,5 +23,8 @@
         <input type="text" name="PrevUrlWithError" value="{{.PrevUrlWithError}}"/>
     </div>
     <div><button type="submit">{{.Messages.LoginLinkLabel}}</button></div>
-    <div><button type="button" id="loginRegisterButton">{{.Messages.RegisterLinkLabel}}</button></div>
+    <div>
+        <button type="button" id="loginRegisterButton">{{.Messages.RegisterLinkLabel}}</button>
+        <button type="button" id="loginRegisterButton2">{{.Messages.RegisterLinkLabel}}</button>
+    </div>
 </form>

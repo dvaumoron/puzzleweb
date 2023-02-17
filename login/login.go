@@ -72,27 +72,28 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceExtConfig[serv
 		submitHandler: common.CreateRedirect(func(c *gin.Context) string {
 			login := c.PostForm(common.LoginName)
 			password := c.PostForm(common.PasswordName)
-			register := c.PostForm("Register") == "true" // TODO confirm password
+			register := c.PostForm("Register") == "true"
 
 			success := true
 			var userId uint64
 			var err error
 			if register {
+				if c.PostForm("ConfirmPassword") != password {
+					return c.PostForm(prevUrlWithErrorName) + "WrongConfirmPassword"
+				}
 				success, userId, err = loginService.Register(login, password)
 			} else {
 				success, userId, err = loginService.Verify(login, password)
 			}
-
-			localesManager := puzzleweb.GetLocalesManager(c)
 
 			errorMsg := ""
 			if err != nil {
 				errorMsg = err.Error()
 			} else if !success {
 				if register {
-					errorMsg = localesManager.GetMessages(c)["ExistingLogin"]
+					errorMsg = "ExistingLogin"
 				} else {
-					errorMsg = localesManager.GetMessages(c)["WrongLogin"]
+					errorMsg = "WrongLogin"
 				}
 			}
 
@@ -104,7 +105,7 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceExtConfig[serv
 			s.Store(common.LoginName, login)
 			s.Store(common.UserIdName, fmt.Sprint(userId))
 
-			localesManager.SetLangCookie(c, settingsManager.Get(userId, c)[locale.LangName])
+			puzzleweb.GetLocalesManager(c).SetLangCookie(c, settingsManager.Get(userId, c)[locale.LangName])
 
 			return c.PostForm(common.RedirectName)
 		}),

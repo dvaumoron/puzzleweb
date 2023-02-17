@@ -21,10 +21,12 @@
         <input type="text" id="loginRegisterField" name="Register"/>
         <input type="text" name="Redirect" value="{{.Redirect}}"/>
         <input type="text" name="PrevUrlWithError" value="{{.PrevUrlWithError}}"/>
+         {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+        <span id="errorWrongConfimPasswordMessage">{{.Messages.WrongConfirmPassword}}</span>
     </div>
     <div><button type="submit">{{.Messages.LoginLinkLabel}}</button></div>
     <div>
         <button type="button" id="loginRegisterButton">{{.Messages.RegisterLinkLabel}}</button>
-        <button type="button" id="loginRegisterButton2">{{.Messages.RegisterLinkLabel}}</button>
+        <button type="button" id="loginRegisterButton2" class="hidden">{{.Messages.RegisterLinkLabel}}</button>
     </div>
 </form>

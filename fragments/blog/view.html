@@ -1,5 +1,8 @@
 
-<h2>{{.Post.Title}} </h2>
+<h2>
+    {{.Post.Title}}
+    [<a href="{{BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
+</h2>
 
 <div>
     {{.Post.Content}}
@@ -25,11 +28,41 @@
     {{end}}
 </div>
 
+{{$postId := .Post.PostId}}
 {{if .AllowedToCreate}}
-    <form>
-    
+    <form action="{{.BaseUrl}}comment/save/{{$postId}}" method="POST">
+        <div><textarea name="comment" rows="20" cols="80">{{.Messages.LeaveCommentLabel}}</textarea></div>
+        <div><button type="submit">{{.Messages.SaveLinkLabel}}</button></div>
     </form>
 {{end}}
 
+{{with .CommentMsg}}
+    <div class="error">{{.}}</div>
+{{end}}
 
-{{/* TODO */}}
+<ul>
+    {{$baseUrl := .BaseUrl}}
+    {{if .AllowedToDelete}}
+        {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
+        {{range .Comments}}
+            <li>
+                <ul>
+                    <li>{{.Creator.Login}}</li>
+                    <li>{{.Date}}</li>
+                    <li>{{.Text}}</li>
+                    <li><a href="{{$baseUrl}}comment/delete/{{$postId}}/{{.Id}}">{{$deleteLinkLabel}}</a></li>
+                </ul>
+            </li>
+        {{end}}
+    {{else}}
+        {{range .Comments}}
+            <li>
+                <ul>
+                    <li>{{.Creator.Login}}</li>
+                    <li>{{.Date}}</li>
+                    <li>{{.Text}}</li>
+                </ul>
+            </li>
+        {{end}}
+    {{end}}
+</ul>

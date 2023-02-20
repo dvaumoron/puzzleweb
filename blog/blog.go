@@ -113,6 +113,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			}
 
 			common.InitPagination(data, "", pageNumber, end, total)
+			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data["Post"] = post
 			data["Comments"] = comments
 			data[common.AllowedToCreateName] = commentService.CreateMessageRight(userId)
@@ -179,7 +180,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			return targetBuilder.String()
 		}),
 		createHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			// nothing to init
+			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 			return createTmpl, ""
 		}),
 		previewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
@@ -191,7 +192,8 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			data["Title"] = title
+			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
+			data["PreviewTitle"] = title
 			data["Markdown"] = markdown
 			data["PreviewHTML"] = html
 			return previewTmpl, ""

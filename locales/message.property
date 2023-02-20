@@ -8,9 +8,10 @@ ErrorUnknownUser=
 WelcomeLabel=
 GroupLabelAdmin=
 GroupLabelPublic=
+TitleLabel=
 NameLabel=
 EditLabel=
-FilterLabel
+FilterLabel=
 RegistredAtLabel=
 ListLinkLabel=
 FilterLinkLabel=
@@ -50,9 +51,18 @@ ErrorBadRoleName=
 PageTitleProfile=
 ErrorWrongConfirmPassword=
 
+# settings
+PageTitleSettings=
+
 # wiki
 BaseVersionOutdated=
 
 # blog
+CreateBlogPostTitle=
 ViewMoreLinkLabel=
+PreviewLinkLabel=
+UpdatePreviewLinkLabel=
+PublishLinkLabel=
+LeaveCommentLabel=
 NoComment=
+UseMarkdownLabel=

@@ -50,17 +50,31 @@ func New(serviceAddr string, logger *zap.Logger, forumId uint64, groupId uint64,
 
 type deleteRequestKind func(pb.ForumClient, context.Context, *pb.IdRequest) (*pb.Response, error)
 
-type sortableContents []*pb.Content
+type sortableContentsDesc []*pb.Content
 
-func (s sortableContents) Len() int {
+func (s sortableContentsDesc) Len() int {
 	return len(s)
 }
 
-func (s sortableContents) Less(i, j int) bool {
+func (s sortableContentsDesc) Less(i, j int) bool {
 	return s[i].CreatedAt > s[j].CreatedAt
 }
 
-func (s sortableContents) Swap(i, j int) {
+func (s sortableContentsDesc) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+type sortableContentsAsc []*pb.Content
+
+func (s sortableContentsAsc) Len() int {
+	return len(s)
+}
+
+func (s sortableContentsAsc) Less(i, j int) bool {
+	return s[i].CreatedAt < s[j].CreatedAt
+}
+
+func (s sortableContentsAsc) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
@@ -235,7 +249,8 @@ func (client forumClient) GetThread(userId uint64, threadId uint64, start uint64
 	}
 
 	thread := convertContent(response, users[threadCreatorId], client.dateFormat)
-	messages := sortConvertContents(list, users, client.dateFormat)
+	sort.Sort(sortableContentsAsc(list))
+	messages := convertContents(list, users, client.dateFormat)
 	return response2.Total, thread, messages, nil
 }
 
@@ -269,7 +284,8 @@ func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 	if err != nil {
 		return 0, nil, err
 	}
-	return response.Total, sortConvertContents(list, users, client.dateFormat), err
+	sort.Sort(sortableContentsDesc(list))
+	return response.Total, convertContents(list, users, client.dateFormat), err
 }
 
 func (client forumClient) GetCommentThread(userId uint64, elemTitle string, start uint64, end uint64) (uint64, []service.ForumContent, error) {
@@ -310,7 +326,8 @@ func (client forumClient) GetCommentThread(userId uint64, elemTitle string, star
 	if err != nil {
 		return 0, nil, err
 	}
-	return response2.Total, sortConvertContents(list, users, client.dateFormat), nil
+	sort.Sort(sortableContentsAsc(list))
+	return response2.Total, convertContents(list, users, client.dateFormat), nil
 }
 
 func (client forumClient) DeleteThread(userId uint64, threadId uint64) error {
@@ -448,9 +465,7 @@ func deleteMessage(forumClient pb.ForumClient, ctx context.Context, request *pb.
 	return forumClient.DeleteMessage(ctx, request)
 }
 
-func sortConvertContents(list []*pb.Content, users map[uint64]profileservice.UserProfile, dateFormat string) []service.ForumContent {
-	sort.Sort(sortableContents(list))
-
+func convertContents(list []*pb.Content, users map[uint64]profileservice.UserProfile, dateFormat string) []service.ForumContent {
 	contents := make([]service.ForumContent, 0, len(list))
 	for _, content := range list {
 		contents = append(contents, convertContent(content, users[content.UserId], dateFormat))

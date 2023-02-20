@@ -1,18 +1,20 @@
 
 <h2>{{.Messages.UserListTitle}}&nbsp;({{.Total}})</h2>
 
-<form action="{{.CurrentUrl}}" method="GET">
-    <div>
-        <label>
-            {{.Messages.FilterLabel}}
-            <input type="text" name="filter"/>
-        </label>
-    </div>
-    <div class="hidden">
-        <input type="text" name="pageNumber" value="1"/>
-    </div>
-    <div><button type="submit">{{.Messages.FilterLinkLabel}}</button></div>
-</form>
+<div class="search">
+    <form action="{{.CurrentUrl}}" method="GET">
+        <div>
+            <label>
+                {{.Messages.FilterLabel}}
+                <input type="text" name="filter"/>
+            </label>
+        </div>
+        <div class="hidden">
+            <input type="text" name="pageNumber" value="1"/>
+        </div>
+        <div><button type="submit">{{.Messages.FilterLinkLabel}}</button></div>
+    </form>
+</div>
 
 <div class="pagination">
     {{if .PreviousPageNumber}}

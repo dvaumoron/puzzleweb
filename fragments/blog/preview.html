@@ -1,14 +1,14 @@
 
 <h2>
     {{.PreviewTitle}}
-    [<a href="{{BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
+    [<a href="{{.BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
 </h2>
 
 <div>
     {{.PreviewHTML}}
 </div>
 
-<form id="postForm" action="{{.BaseUrl}}preview" method="POST">
+<form id="publishPostForm" action="{{.BaseUrl}}preview" method="POST">
     <div>
         <label>
             {{.Messages.TitleLabel}}
@@ -16,6 +16,10 @@
         </label>
     </div>
     <div><textarea id="postMarkdownField" name="markdown" rows="20" cols="80">{{.Markdown}}</textarea></div>
+    <div class="hidden">
+         {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+        <span id="errorModifiedMarkdownMessage">{{.Messages.ModifiedMarkdown}}</span>
+    </div>
     <div><button type="submit">{{.Messages.UpdatePreviewLinkLabel}}</button></div>
     <div><button type="button" id="publishPostButton">{{.Messages.PublishLinkLabel}}</button></div>
 </form>

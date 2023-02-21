@@ -1,1 +1,16 @@
-{{/* TODO */}}
+
+<h2>
+    {{.Messages.CreateThreadTitle}}
+    [<a href="{{.BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
+</h2>
+
+<form action="{{.BaseUrl}}save" method="POST">
+    <div>
+        <label>
+            {{.Messages.TitleLabel}}
+            <input type="text" name="title"/>
+        </label>
+    </div>
+    <div><textarea name="message" rows="20" cols="80"></textarea></div>
+    <div><button type="submit">{{.Messages.CreateLinkLabel}}</button></div>
+</form>

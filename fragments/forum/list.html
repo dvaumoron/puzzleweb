@@ -1,1 +1,77 @@
-{{/* TODO */}}
+
+<h2>{{.Total}} {{.Messages.ThreadsLabel}}</h2>
+
+<div class="search">
+    <form action="{{.CurrentUrl}}" method="GET">
+        <div>
+            <label>
+                {{.Messages.FilterLabel}}
+                <input type="text" name="filter"/>
+            </label>
+        </div>
+        <div class="hidden">
+            <input type="text" name="pageNumber" value="1"/>
+        </div>
+        <div><button type="submit">{{.Messages.FilterLinkLabel}}</button></div>
+    </form>
+</div>
+
+<div class="pagination">
+    {{if .PreviousPageNumber}}
+        <form action="{{.CurrentUrl}}" method="GET">
+            <div class="hidden">
+                <input type="text" name="pageNumber" value="{{.PreviousPageNumber}}"/>
+                {{if .Filter}}
+                    <input type="text" name="filter" value="{{.Filter}}"/>
+                {{end}}
+            </div>
+            <div><button type="submit">{{.Messages.PreviousPageLinkLabel}}</button></div>
+        </form>
+    {{end}}
+
+    {{if .NextPageNumber}}
+        <form action="{{.CurrentUrl}}" method="GET">
+            <div class="hidden">
+                <input type="text" name="pageNumber" value="{{.NextPageNumber}}"/>
+                {{if .Filter}}
+                    <input type="text" name="filter" value="{{.Filter}}"/>
+                {{end}}
+            </div>
+            <div><button type="submit">{{.Messages.NextPageLinkLabel}}</button></div>
+        </form>
+    {{end}}
+</div>
+
+{{if .AllowedToCreate}}
+    <div><a href="{{.CurrentUrl}}create">{{.Messages.NewLinkLabel}}</a></div>
+{{end}}
+
+<ul>
+    {{$baseUrl := .CurrentUrl}}
+    {{$viewLinkLabel := .Messages.ViewLinkLabel}}
+    {{if .AllowedToDelete}}
+        {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
+        {{range .Threads}}
+            <li>
+                <ul>
+                    <li>{{.Text}}</li>
+                    <li>{{.Creator.Login}}</li>
+                    <li>{{.Date}}</li>
+                    <li><a href="{{$baseUrl}}view/{{.Id}}">{{$viewLinkLabel}}</a></li>
+                    <li><a href="{{$baseUrl}}delete/{{.Id}}">{{$deleteLinkLabel}}</a></li>
+                </ul>
+            </li>
+        {{end}}
+    {{else}}
+        {{range .Threads}}
+            <li>
+                <ul>
+                    <li>{{.Text}}</li>
+                    <li>{{.Creator.Login}}</li>
+                    <li>{{.Date}}</li>
+                    <li><a href="{{$baseUrl}}view/{{.Id}}">{{$viewLinkLabel}}</a></li>
+                </ul>
+            </li>
+        {{end}}
+    {{end}}
+</ul>

@@ -1,7 +1,7 @@
 
 <h2>
     {{.Post.Title}}
-    [<a href="{{BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
+    [<a href="{{.BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
 </h2>
 
 <div>
@@ -32,7 +32,7 @@
 {{if .AllowedToCreate}}
     <form action="{{.BaseUrl}}comment/save/{{$postId}}" method="POST">
         <div><textarea name="comment" rows="20" cols="80">{{.Messages.LeaveCommentLabel}}</textarea></div>
-        <div><button type="submit">{{.Messages.SaveLinkLabel}}</button></div>
+        <div><button type="submit">{{.Messages.CreateLinkLabel}}</button></div>
     </form>
 {{end}}
 

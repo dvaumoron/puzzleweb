@@ -104,7 +104,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			return listTmpl, ""
 		}),
 		createThreadHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			// nothing to init
+			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 			return createTmpl, ""
 		}),
 		saveThreadHandler: common.CreateRedirect(func(c *gin.Context) string {
@@ -149,6 +149,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			}
 
 			common.InitPagination(data, filter, pageNumber, end, total)
+			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data["Thread"] = thread
 			data["Messages"] = messages
 			data[common.AllowedToCreateName] = forumService.CreateMessageRight(userId)

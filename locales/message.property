@@ -19,6 +19,7 @@ PreviousPageLinkLabel=
 NextPageLinkLabel=
 ViewLinkLabel=
 NewLinkLabel=
+CreateLinkLabel=
 EditLinkLabel=
 SaveLinkLabel=
 CancelLinkLabel=
@@ -67,3 +68,8 @@ LeaveCommentLabel=
 NoComment=
 UseMarkdownLabel=
 ModifiedMarkdown=
+
+# forum
+ThreadsLabel=
+CreateThreadTitle=
+ResponseMessageLabel=

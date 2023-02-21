@@ -1,1 +1,83 @@
 {{/* TODO */}}
+
+<h2>
+    {{.Thread.Text}}
+    [<a href="{{.BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
+</h2>
+
+
+<div class="search">
+    <form action="{{.CurrentUrl}}" method="GET">
+        <div>
+            <label>
+                {{.Messages.FilterLabel}}
+                <input type="text" name="filter"/>
+            </label>
+        </div>
+        <div class="hidden">
+            <input type="text" name="pageNumber" value="1"/>
+        </div>
+        <div><button type="submit">{{.Messages.FilterLinkLabel}}</button></div>
+    </form>
+</div>
+
+<div class="pagination">
+    {{if .PreviousPageNumber}}
+        <form action="{{.CurrentUrl}}" method="GET">
+            <div class="hidden">
+                <input type="text" name="pageNumber" value="{{.PreviousPageNumber}}"/>
+                {{if .Filter}}
+                    <input type="text" name="filter" value="{{.Filter}}"/>
+                {{end}}
+            </div>
+            <div><button type="submit">{{.Messages.PreviousPageLinkLabel}}</button></div>
+        </form>
+    {{end}}
+
+    {{if .NextPageNumber}}
+        <form action="{{.CurrentUrl}}" method="GET">
+            <div class="hidden">
+                <input type="text" name="pageNumber" value="{{.NextPageNumber}}"/>
+                {{if .Filter}}
+                    <input type="text" name="filter" value="{{.Filter}}"/>
+                {{end}}
+            </div>
+            <div><button type="submit">{{.Messages.NextPageLinkLabel}}</button></div>
+        </form>
+    {{end}}
+</div>
+
+{{$threadId := .Thread.Id}}
+{{if .AllowedToCreate}}
+    <form action="{{.BaseUrl}}message/save/{{$threadId}}" method="POST">
+        <div><textarea name="message" rows="20" cols="80">{{.Messages.ResponseMessageLabel}}</textarea></div>
+        <div><button type="submit">{{.Messages.CreateLinkLabel}}</button></div>
+    </form>
+{{end}}
+
+<ul>
+    {{$baseUrl := .BaseUrl}}
+    {{if .AllowedToDelete}}
+        {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
+        {{range .Messages}}
+            <li>
+                <ul>
+                    <li>{{.Creator.Login}}</li>
+                    <li>{{.Date}}</li>
+                    <li>{{.Text}}</li>
+                    <li><a href="{{$baseUrl}}message/delete/{{$threadId}}/{{.Id}}">{{$deleteLinkLabel}}</a></li>
+                </ul>
+            </li>
+        {{end}}
+    {{else}}
+        {{range .Messages}}
+            <li>
+                <ul>
+                    <li>{{.Creator.Login}}</li>
+                    <li>{{.Date}}</li>
+                    <li>{{.Text}}</li>
+                </ul>
+            </li>
+        {{end}}
+    {{end}}
+</ul>

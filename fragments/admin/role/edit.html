@@ -1,14 +1,14 @@
 
 <h2>
     {{if eq .RoleName "new"}}
-        {{.Messages.NewRoleLabel}}&nbsp;{{.Group}}&nbsp;
+        {{.Messages.NewRoleLabel}} {{.Group}}
     {{else}}
-        {{.Messages.EditLabel}}&nbsp;{{.Group}}/{{.RoleName}}&nbsp;
+        {{.Messages.EditLabel}} {{.Group}}/{{.RoleName}}
     {{end}}
-    [<a href="{{.BaseUrl}}list">{{.Messages.CancelLinkLabel}}</a>]
+    [<a href="/admin/role/list">{{.Messages.CancelLinkLabel}}</a>]
 </h2>
 
-<form id="editRoleForm" action="{{.BaseUrl}}save" method="POST">
+<form id="editRoleForm" action="/admin/role/save" method="POST">
     <div {{if ne .RoleName "new"}} class="hidden" {{end}}>
         <label>
             {{.Messages.NameLabel}}

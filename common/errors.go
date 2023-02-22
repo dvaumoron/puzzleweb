@@ -28,6 +28,7 @@ const ErrorMsgName = "ErrorMsg"
 const QueryError = "?error="
 
 const WrongLangKey = "WrongLang"
+const WrongConfirmPassword = "WrongConfirmPassword"
 const UnknownUserKey = "ErrorUnknownUser"
 
 // error displayed to user

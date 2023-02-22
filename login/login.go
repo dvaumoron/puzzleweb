@@ -78,8 +78,8 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceExtConfig[serv
 			var userId uint64
 			var err error
 			if register {
-				if c.PostForm("ConfirmPassword") != password {
-					return c.PostForm(prevUrlWithErrorName) + "WrongConfirmPassword"
+				if c.PostForm(common.ConfirmPasswordName) != password {
+					return c.PostForm(prevUrlWithErrorName) + common.WrongConfirmPassword
 				}
 				success, userId, err = loginService.Register(login, password)
 			} else {

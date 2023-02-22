@@ -1,1 +1,81 @@
-{{/* TODO */}}
+
+<h2>
+    {{.Messages.EditLabel}} {{.Login}}
+    [<a href="/profile/view/{{.UserId}}">{{.Messages.CancelLinkLabel}}</a>]
+</h2>
+
+<div><img src="/profilePic/{{.UserId}}" alt="{{.Login}}"/></div>
+
+<h3>{{.Messages.ChangeLoginLabel}}</h3>
+
+<form action="/profile/changeLogin" method="POST">
+    <div>
+        <label>
+            {{.Messages.NewLoginLabel}}
+            <input type="text" name="Login"/>
+        </label>
+    </div>
+    <div>
+        <label>
+            {{.Messages.PasswordLabel}}
+            <input type="password" name="Password"/>
+        </label>
+    </div>
+    <div><input type="submit" value="{{.Messages.SaveLinkLabel}}"></div>
+</form>
+
+<h3>{{.Messages.ChangePasswordLabel}}</h3>
+
+<form action="/profile/changePassword" method="POST">
+    <div>
+        <label>
+            {{.Messages.OldPasswordLabel}}
+            <input type="password" name="oldPassword"/>
+        </label>
+    </div>
+    <div>
+        <label>
+            {{.Messages.NewPasswordLabel}}
+            <input type="password" id="passwordField" name="newPassword"/>
+        </label>
+    </div>
+    <div>
+        <label>
+            {{.Messages.ConfirmPasswordLabel}}
+            <input type="password" id="confirmPasswordField" name="ConfirmPassword"/>
+        </label>
+    </div>
+    <div><input type="submit" value="{{.Messages.SaveLinkLabel}}"></div>
+</form>
+
+<h3>{{.Messages.EditProfileLabel}}</h3>
+
+<form action="/profile/save" method="POST">
+    <div>
+        <label>
+            {{.Messages.UserPicLabel}}
+            <input type="file" name="picture" accept="image/png, image/jpeg"/>
+        </label>
+    </div>
+    
+    <div>
+        <label>
+            {{.Messages.UserDescLabel}}
+            <input type="text" name="UserDesc" value="{{.UserDesc}}"/>
+        </label>
+    </div>
+
+    <ul>
+        {{$messages := .Messages}}
+        {{range $key, $value := .UserInfo}}
+            <li>
+                <label>
+                    {{index $messages $key}}
+                    <input type="text" name="UserInfo[{{$key}}]" value="{{$value}}"/>
+                </label>
+            </li>
+        {{end}}
+    <ul>
+
+    <div><input type="submit" value="{{.Messages.SaveLinkLabel}}"></div>
+</form>

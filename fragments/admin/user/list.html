@@ -1,5 +1,5 @@
 
-<h2>{{.Messages.UserListTitle}}&nbsp;({{.Total}})</h2>
+<h2>{{.Messages.UserListTitle}} ({{.Total}})</h2>
 
 <div class="search">
     <form action="{{.CurrentUrl}}" method="GET">
@@ -43,13 +43,12 @@
 </div>
 
 <ul>
-    {{$baseUrl := .BaseUrl}}
     {{$viewLinkLabel := .Messages.ViewLinkLabel}}
     {{range .Users}}
         <li>
             <ul>
                 <li>{{.Login}}</li>
-                <li><a href="{{$baseUrl}}view/{{.Id}}">{{$viewLinkLabel}}</a></li>
+                <li><a href="/admin/user/view/{{.Id}}">{{$viewLinkLabel}}</a></li>
             </ul>
         <li>
     {{end}}

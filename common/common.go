@@ -34,6 +34,7 @@ const AllowedToUpdateName = "AllowedToUpdate"
 const AllowedToDeleteName = "AllowedToDelete"
 
 const PasswordName = "Password"
+const ConfirmPasswordName = "ConfirmPassword"
 
 const UserIdName = "UserId"
 const LoginName = "Login"         // current connected user

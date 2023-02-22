@@ -1,6 +1,6 @@
 module github.com/dvaumoron/puzzleweb
 
-go 1.19
+go 1.20
 
 require (
 	github.com/dvaumoron/puzzleblogservice v1.1.0

@@ -1,12 +1,12 @@
 
 <h2>
-    {{.WikiTitle}}&nbsp;
+    {{.WikiTitle}}
     {{if .WikiVersion}}
         ({{.WikiVersion}})
     {{else}}
         [<a href="{{.BaseUrl}}edit/{{.WikiTitle}}">{{.Messages.EditLinkLabel}}</a>]
     {{end}}
-    &nbsp;[<a href="{{.BaseUrl}}list/{{.WikiTitle}}">{{.Messages.ListLinkLabel}}</a>]
+    [<a href="{{.BaseUrl}}list/{{.WikiTitle}}">{{.Messages.ListLinkLabel}}</a>]
 </h2>
 
 <div>

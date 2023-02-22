@@ -33,7 +33,7 @@ import (
 
 const userInfoName = "UserInfo"
 
-var errWrongConfirm = errors.New("ErrorWrongConfirmPassword")
+var errWrongConfirm = errors.New(common.WrongConfirmPassword)
 
 type profileWidget struct {
 	viewHandler           gin.HandlerFunc
@@ -70,7 +70,8 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 			}
 
 			currentUserId := puzzleweb.GetSessionUserId(c)
-			if viewedUserId != currentUserId {
+			updateRight := viewedUserId == currentUserId
+			if !updateRight {
 				if err := profileService.ViewRight(currentUserId); err != nil {
 					return "", common.DefaultErrorRedirect(err.Error())
 				}
@@ -92,6 +93,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 
 			userProfile := profiles[viewedUserId]
 			data[common.UserIdName] = viewedUserId
+			data[common.AllowedToUpdateName] = updateRight
 			data[common.UserLoginName] = userProfile.Login
 			data[common.RegistredAtName] = userProfile.RegistredAt
 			data[common.UserDescName] = userProfile.Desc
@@ -153,7 +155,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 				err = profileService.UpdateProfile(userId, desc, info)
 			}
 
-			targetBuilder := profileUrlBuilder(c, userId)
+			targetBuilder := profileUrlBuilder(userId)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
 			}
@@ -172,7 +174,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 
 			err := loginService.ChangeLogin(userId, oldLogin, newLogin, password)
 
-			targetBuilder := profileUrlBuilder(c, userId)
+			targetBuilder := profileUrlBuilder(userId)
 			if err != nil {
 				session.Store(common.LoginName, newLogin)
 
@@ -189,14 +191,14 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 			login := puzzleweb.GetSession(c).Load(common.LoginName)
 			oldPassword := c.PostForm("oldPassword")
 			newPassword := c.PostForm("newPassword")
-			confirmPassword := c.PostForm("confirmPassword")
+			confirmPassword := c.PostForm(common.ConfirmPasswordName)
 
 			err := errWrongConfirm
 			if newPassword == confirmPassword {
 				err = loginService.ChangePassword(userId, login, oldPassword, newPassword)
 			}
 
-			targetBuilder := profileUrlBuilder(c, userId)
+			targetBuilder := profileUrlBuilder(userId)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
 			}
@@ -207,10 +209,9 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 	site.AddPage(p)
 }
 
-func profileUrlBuilder(c *gin.Context, userId uint64) *strings.Builder {
+func profileUrlBuilder(userId uint64) *strings.Builder {
 	targetBuilder := new(strings.Builder)
-	targetBuilder.WriteString(common.GetBaseUrl(1, c))
-	targetBuilder.WriteString("view/")
+	targetBuilder.WriteString("/profile/view/")
 	targetBuilder.WriteString(fmt.Sprint(userId))
 	return targetBuilder
 }

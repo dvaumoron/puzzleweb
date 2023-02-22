@@ -1,1 +1,42 @@
-{{/* TODO */}}
+
+<h2>
+    {{.UserLogin}}  ({{.Messages.RegistredAtLabel}} {{.RegistredAt}})
+    {{if .AllowedToUpdate}}
+        [<a href="/profile/edit">{{.Messages.EditLinkLabel}}</a>]
+    {{end}}
+</h2>
+
+<div><img src="/profilePic/{{.UserId}}" alt="{{.UserLogin}}"/></div>
+
+<div>{{.UserDesc}}</div>
+
+<ul>
+    {{range $key, $value := .UserInfo}}
+        <li>
+            <ul>
+                <li>{{$key}}</li>
+                <li>{{$value}}</li>
+            </ul>
+        </li>
+    {{end}}
+<ul>
+
+<div>
+    {{range .UserRight}}
+        <div>
+            <p>{{.DisplayName}}</p>
+            <ul>
+                {{range .Roles}}
+                    <li>
+                        <span>
+                            {{.Name}}
+                            ({{range .Actions}}
+                                {{.}}
+                            {{end}})
+                        </span>
+                    <li>
+                {{end}}
+            </ul>
+        </div>
+    {{end}}
+</div>

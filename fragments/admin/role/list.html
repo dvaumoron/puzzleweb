@@ -2,7 +2,6 @@
 <h2>{{.Messages.RoleListTitle}}</h2>
 
 <div>
-    {{$baseUrl := .BaseUrl}}
     {{$editLinkLabel := .Messages.EditLinkLabel}}
     {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
     {{$newLinkLabel := .Messages.NewLinkLabel}}
@@ -20,10 +19,10 @@
                                     {{.}}
                                 {{end}}
                             </li>
-                            <li><a href="{{$baseUrl}}edit/{{.Name}}/{{$groupName}}">{{$editLinkLabel}}</a></li>
+                            <li><a href="/admin/role/edit/{{.Name}}/{{$groupName}}">{{$editLinkLabel}}</a></li>
                             <li>
                                 <!-- delete role link (use an empty action form) -->
-                                <form action="{{.BaseUrl}}save" method="POST">
+                                <form action="/admin/role/save" method="POST">
                                     <div class="hidden">
                                         <input type="text" name="RoleName" value="{{.Name}}"/>
                                         <input type="text" name="Group" value="{{$groupName}}"/>
@@ -34,7 +33,7 @@
                         </ul>
                     <li>
                 {{end}}
-                <li><a href="{{$baseUrl}}edit/new/{{$groupName}}">{{$newLinkLabel}}</a><li>
+                <li><a href="/admin/role/edit/new/{{$groupName}}">{{$newLinkLabel}}</a><li>
             </ul>
         </div>
     {{end}}

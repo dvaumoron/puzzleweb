@@ -50,7 +50,14 @@ ErrorBadRoleName=
 
 # profile
 PageTitleProfile=
-ErrorWrongConfirmPassword=
+ChangeLoginLabel
+NewLoginLabel=
+ChangePasswordLabel=
+OldPasswordLabel=
+NewPasswordLabel=
+EditProfileLabel=
+UserPicLabel=
+UserDescLabel=
 
 # settings
 PageTitleSettings=

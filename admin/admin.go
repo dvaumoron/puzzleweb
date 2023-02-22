@@ -28,6 +28,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/exp/slices"
 )
 
 const roleNameName = "RoleName"
@@ -152,7 +153,6 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 
 			common.InitPagination(data, filter, pageNumber, end, total)
 			data["Users"] = users
-			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 			puzzleweb.InitNoELementMsg(data, len(users), c)
 			return listUserTmpl, ""
 		}),
@@ -176,7 +176,6 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 			updateRight := adminService.AuthQuery(adminId, service.AdminGroupId, service.ActionUpdate) == nil
 
 			user := users[userId]
-			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data[common.UserIdName] = userId
 			data[common.UserLoginName] = user.Login
 			data[common.RegistredAtName] = user.RegistredAt
@@ -206,7 +205,6 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data[common.UserIdName] = userId
 			data[common.UserLoginName] = userIdToLogin[userId].Login
 			data[groupsName] = displayEditGroups(userRoles, allRoles, puzzleweb.GetMessages(c))
@@ -227,7 +225,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 				err = adminService.UpdateUser(puzzleweb.GetSessionUserId(c), userId, roles)
 			}
 
-			targetBuilder := userListUrlBuilder(c)
+			targetBuilder := userListUrlBuilder()
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
 			}
@@ -248,7 +246,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 				}
 			}
 
-			targetBuilder := userListUrlBuilder(c)
+			targetBuilder := userListUrlBuilder()
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
 			}
@@ -260,7 +258,6 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 			data[groupsName] = DisplayGroups(allRoles, puzzleweb.GetMessages(c))
 			return listRoleTmpl, ""
 		}),
@@ -268,7 +265,6 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 			roleName := c.PostForm(roleNameName)
 			group := c.PostForm(groupName)
 
-			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 			data[roleNameName] = roleName
 			data[groupName] = group
 
@@ -299,8 +295,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 			}
 
 			var targetBuilder strings.Builder
-			targetBuilder.WriteString(common.GetBaseUrl(1, c))
-			targetBuilder.WriteString("list")
+			targetBuilder.WriteString("/admin/role/list")
 			if err != nil {
 				common.WriteError(&targetBuilder, err.Error())
 			}
@@ -380,7 +375,14 @@ func displayEditGroups(userRoles []service.Role, allRoles []service.Role, messag
 }
 
 func addableRolesAppender(group *GroupDisplay, role service.Role, messages map[string]string) {
-	group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role, messages))
+	// check if the user already have this role
+	contains := slices.ContainsFunc(group.Roles, func(roleDisplay RoleDisplay) bool {
+		return roleDisplay.Name == role.Name
+	})
+	// no duplicate
+	if !contains {
+		group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role, messages))
+	}
 }
 
 func setActionChecked(data gin.H, actionSet common.Set[string], toTest string, name string) {
@@ -389,10 +391,8 @@ func setActionChecked(data gin.H, actionSet common.Set[string], toTest string, n
 	}
 }
 
-func userListUrlBuilder(c *gin.Context) *strings.Builder {
+func userListUrlBuilder() *strings.Builder {
 	targetBuilder := new(strings.Builder)
-	// no need to erase and rewrite "user/"
-	targetBuilder.WriteString(common.GetBaseUrl(2, c))
-	targetBuilder.WriteString("list")
+	targetBuilder.WriteString("/admin/user/list")
 	return targetBuilder
 }

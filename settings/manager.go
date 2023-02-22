@@ -18,7 +18,10 @@
 package settings
 
 import (
+	"errors"
+
 	"github.com/dvaumoron/puzzleweb"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/session/service"
@@ -28,19 +31,35 @@ import (
 
 const settingsName = "Settings"
 
+var errWrongLang = errors.New(common.WrongLangKey)
+
 type InitSettingsFunc func(*gin.Context) map[string]string
+type CheckSettingsFunc func(map[string]string, *gin.Context) error
 
 type SettingsManager struct {
 	config.ServiceConfig[service.SessionService]
-	InitSettings InitSettingsFunc
+	InitSettings  InitSettingsFunc
+	CheckSettings CheckSettingsFunc
 }
 
 func NewManager(settingsConfig config.ServiceConfig[service.SessionService]) *SettingsManager {
-	return &SettingsManager{ServiceConfig: settingsConfig, InitSettings: initSettings}
+	return &SettingsManager{
+		ServiceConfig: settingsConfig, InitSettings: initSettings, CheckSettings: checkSettings,
+	}
 }
 
 func initSettings(c *gin.Context) map[string]string {
 	return map[string]string{locale.LangName: puzzleweb.GetLocalesManager(c).GetLang(c)}
+}
+
+func checkSettings(settings map[string]string, c *gin.Context) error {
+	askedLang := settings[locale.LangName]
+	lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
+	settings[locale.LangName] = lang
+	if lang != askedLang {
+		return errWrongLang
+	}
+	return nil
 }
 
 func (m *SettingsManager) Get(userId uint64, c *gin.Context) map[string]string {

@@ -59,10 +59,11 @@ func AddSettingsPage(site *puzzleweb.Site, settingsConfig config.ServiceExtConfi
 				return common.DefaultErrorRedirect(common.UnknownUserKey)
 			}
 
+			settings := c.PostFormMap("settings")
+
 			var targetBuilder strings.Builder
-			targetBuilder.WriteString(common.GetBaseUrl(1, c))
-			targetBuilder.WriteString("edit")
-			if err := settingsManager.Update(userId, c.PostFormMap("settings")); err != nil {
+			targetBuilder.WriteString("/settings/edit")
+			if err := settingsManager.Update(userId, settings); err != nil {
 				common.WriteError(&targetBuilder, err.Error())
 			}
 			return targetBuilder.String()

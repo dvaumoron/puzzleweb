@@ -13,7 +13,7 @@
             {{if .LoginUrl}}
                 <p>
                     {{if .Login}}
-                        {{.Messages.WelcomeLabel}}&nbsp;{{.Login}}&nbsp;
+                        {{.Messages.WelcomeLabel}} {{.Login}}
                         <a href="{{.LoginUrl}}">{{.Messages.LoginLinkLabel}}</a>
                     {{else}}
                         <a href="{{.LoginUrl}}">{{.Messages.LogoutLinkLabel}}</a>
@@ -25,7 +25,7 @@
             {{end}}
             <p>
                 {{range .Ariane}}
-                    /&nbsp;<a href="{{.Url}}">{{.Name}}</a>&nbsp;
+                    / <a href="{{.Url}}">{{.Name}}</a>
                 {{end}}
             </p>
             <ul>
@@ -35,7 +35,67 @@
             </ul>
         </header>
         <main>
-            {{/* TODO */}}
+            <h2>
+                {{.Post.Title}}
+                [<a href="{{.BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
+            </h2>
+            <div>
+                {{.Post.Content}}
+            </div>
+            <div class="pagination">
+                {{if .PreviousPageNumber}}
+                    <form action="{{.CurrentUrl}}" method="GET">
+                        <div class="hidden">
+                            <input type="text" name="pageNumber" value="{{.PreviousPageNumber}}"/>
+                        </div>
+                        <div><button type="submit">{{.Messages.PreviousPageLinkLabel}}</button></div>
+                    </form>
+                {{end}}
+                {{if .NextPageNumber}}
+                    <form action="{{.CurrentUrl}}" method="GET">
+                        <div class="hidden">
+                            <input type="text" name="pageNumber" value="{{.NextPageNumber}}"/>
+                        </div>
+                        <div><button type="submit">{{.Messages.NextPageLinkLabel}}</button></div>
+                    </form>
+                {{end}}
+            </div>
+            {{$postId := .Post.PostId}}
+            {{if .AllowedToCreate}}
+                <form action="{{.BaseUrl}}comment/save/{{$postId}}" method="POST">
+                    <div><textarea name="comment" rows="20" cols="80">{{.Messages.LeaveCommentLabel}}</textarea></div>
+                    <div><button type="submit">{{.Messages.CreateLinkLabel}}</button></div>
+                </form>
+            {{end}}
+            {{with .CommentMsg}}
+                <div class="error">{{.}}</div>
+            {{end}}
+            <ul>
+                {{$baseUrl := .BaseUrl}}
+                {{if .AllowedToDelete}}
+                    {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
+                    {{range .Comments}}
+                        <li>
+                            <ul>
+                                <li>{{.Creator.Login}}</li>
+                                <li>{{.Date}}</li>
+                                <li>{{.Text}}</li>
+                                <li><a href="{{$baseUrl}}comment/delete/{{$postId}}/{{.Id}}">{{$deleteLinkLabel}}</a></li>
+                            </ul>
+                        </li>
+                    {{end}}
+                {{else}}
+                    {{range .Comments}}
+                        <li>
+                            <ul>
+                                <li>{{.Creator.Login}}</li>
+                                <li>{{.Date}}</li>
+                                <li>{{.Text}}</li>
+                            </ul>
+                        </li>
+                    {{end}}
+                {{end}}
+            </ul>
         </main>
         <footer>
         </footer>

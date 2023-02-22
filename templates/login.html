@@ -13,7 +13,7 @@
             {{if .LoginUrl}}
                 <p>
                     {{if .Login}}
-                        {{.Messages.WelcomeLabel}}&nbsp;{{.Login}}&nbsp;
+                        {{.Messages.WelcomeLabel}} {{.Login}}
                         <a href="{{.LoginUrl}}">{{.Messages.LoginLinkLabel}}</a>
                     {{else}}
                         <a href="{{.LoginUrl}}">{{.Messages.LogoutLinkLabel}}</a>
@@ -25,7 +25,7 @@
             {{end}}
             <p>
                 {{range .Ariane}}
-                    /&nbsp;<a href="{{.Url}}">{{.Name}}</a>&nbsp;
+                    / <a href="{{.Url}}">{{.Name}}</a>
                 {{end}}
             </p>
             <ul>
@@ -35,7 +35,7 @@
             </ul>
         </header>
         <main>
-            <form id="loginForm" action="{{.CurrentUrl}}submit" method="POST">
+            <form id="loginForm" action="/login/submit" method="POST">
                 <div>
                     <label>
                         {{.Messages.LoginLabel}}
@@ -45,16 +45,27 @@
                 <div>
                     <label>
                         {{.Messages.PasswordLabel}}
-                        <input type="password" name="Password"/>
+                        <input type="password" id="passwordField" name="Password"/>
+                    </label>
+                </div>
+                <div id="confirmPasswordBlock" class="hidden">
+                    <label>
+                        {{.Messages.ConfirmPasswordLabel}}
+                        <input type="password" id="confirmPasswordField" name="ConfirmPassword"/>
                     </label>
                 </div>
                 <div class="hidden">
                     <input type="text" id="loginRegisterField" name="Register"/>
                     <input type="text" name="Redirect" value="{{.Redirect}}"/>
                     <input type="text" name="PrevUrlWithError" value="{{.PrevUrlWithError}}"/>
+                    {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+                    <span id="errorWrongConfimPasswordMessage">{{.Messages.WrongConfirmPassword}}</span>
                 </div>
                 <div><button type="submit">{{.Messages.LoginLinkLabel}}</button></div>
-                <div><button type="button" id="loginRegisterButton">{{.Messages.RegisterLinkLabel}}</button></div>
+                <div>
+                    <button type="button" id="loginRegisterButton">{{.Messages.RegisterLinkLabel}}</button>
+                    <button type="button" id="loginRegisterButton2" class="hidden">{{.Messages.RegisterLinkLabel}}</button>
+                </div>
             </form>
         </main>
         <footer>

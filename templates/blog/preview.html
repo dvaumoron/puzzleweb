@@ -36,15 +36,27 @@
         </header>
         <main>
             <h2>
-                {{.WikiTitle}}
-                {{if .WikiVersion}}
-                    ({{.WikiVersion}})
-                {{else}}
-                    [<a href="{{.BaseUrl}}edit/{{.WikiTitle}}">{{.Messages.EditLinkLabel}}</a>]
-                {{end}}
-                [<a href="{{.BaseUrl}}list/{{.WikiTitle}}">{{.Messages.ListLinkLabel}}</a>]
+                {{.PreviewTitle}}
+                [<a href="{{.BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
             </h2>
-            <div>{{.WikiContent}}</div>
+            <div>
+                {{.PreviewHTML}}
+            </div>
+            <form id="publishPostForm" action="{{.BaseUrl}}preview" method="POST">
+                <div>
+                    <label>
+                        {{.Messages.TitleLabel}}
+                        <input type="text" id="postTitleField" name="title"/>
+                    </label>
+                </div>
+                <div><textarea id="postMarkdownField" name="markdown" rows="20" cols="80">{{.Markdown}}</textarea></div>
+                <div class="hidden">
+                    {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+                    <span id="errorModifiedMarkdownMessage">{{.Messages.ModifiedMarkdown}}</span>
+                </div>
+                <div><button type="submit">{{.Messages.UpdatePreviewLinkLabel}}</button></div>
+                <div><button type="button" id="publishPostButton">{{.Messages.PublishLinkLabel}}</button></div>
+            </form>
         </main>
         <footer>
         </footer>

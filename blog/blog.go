@@ -69,6 +69,31 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 	viewTmpl := "blog/view.html"
 	createTmpl := "blog/create.html"
 	previewTmpl := "blog/preview.html"
+	switch args := blogConfig.Args; len(args) {
+	default:
+		logger.Info("MakeBlogPage should be called with 0 to 4 optional arguments.")
+		fallthrough
+	case 4:
+		if args[3] != "" {
+			previewTmpl = args[3]
+		}
+		fallthrough
+	case 3:
+		if args[2] != "" {
+			createTmpl = args[2]
+		}
+		fallthrough
+	case 2:
+		if args[1] != "" {
+			viewTmpl = args[1]
+		}
+		fallthrough
+	case 1:
+		if args[0] != "" {
+			listTmpl = args[0]
+		}
+	case 0:
+	}
 
 	p := puzzleweb.MakePage(blogName)
 	p.Widget = blogWidget{

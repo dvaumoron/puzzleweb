@@ -30,7 +30,7 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-// As HTMLProduction from gin, but without unused Delims.
+// As HTMLProduction from gin, but without the unused Delims.
 type puzzleHTMLRender struct {
 	templates *template.Template
 }
@@ -44,8 +44,9 @@ func (r puzzleHTMLRender) Instance(name string, data any) render.Render {
 }
 
 func LoadTemplates(templatesPath string) render.HTMLRender {
-	if templatesPath == "" {
-		fmt.Println("empty templatesPath")
+	templatesPath, err := filepath.Abs(templatesPath)
+	if err != nil {
+		fmt.Println("wrong templatesPath :", err)
 		os.Exit(1)
 	}
 	if last := len(templatesPath) - 1; templatesPath[last] != '/' {
@@ -54,7 +55,7 @@ func LoadTemplates(templatesPath string) render.HTMLRender {
 
 	tmpl := template.New("")
 	inSize := len(templatesPath)
-	err := filepath.WalkDir(templatesPath, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(templatesPath, func(path string, d fs.DirEntry, err error) error {
 		if err == nil && !d.IsDir() {
 			name := path[inSize:]
 			if name[len(name)-5:] == ".html" {

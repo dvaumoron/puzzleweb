@@ -11,7 +11,7 @@
             <li>
                 <ul>
                     <li>{{.Number}}</li>
-                    <li>{{.Creator.Login}}</li>
+                    <li>{{template "profileLink" .Creator}}</li>
                     <li><a href="{{$baseUrl}}view/{{$wikiTitle}}?version={{.Number}}">{{$viewLinkLabel}}</a></li>
                     <li><a href="{{$baseUrl}}delete/{{$wikiTitle}}?version={{.Number}}">{{$deleteLinkLabel}}</a></li>
                 </ul>
@@ -22,7 +22,7 @@
             <li>
                 <ul>
                     <li>{{.Number}}</li>
-                    <li>{{.Creator.Login}}</li>
+                    <li>{{template "profileLink" .Creator}}</li>
                     <li><a href="{{$baseUrl}}view/{{$wikiTitle}}?version={{.Number}}">{{$viewLinkLabel}}</a></li>
                 </ul>
             </li>

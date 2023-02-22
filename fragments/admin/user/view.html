@@ -1,9 +1,9 @@
 
 <h2>
-    {{.UserLogin}} ({{.Messages.RegistredAtLabel}} {{.RegistredAt}})
+    {{.ViewedUser.Login}} ({{.Messages.RegistredAtLabel}} {{.ViewedUser.RegistredAt}})
     {{if .AllowedToUpdate}}
-        [<a href="/admin/user/edit/{{.UserId}}">{{.Messages.EditLinkLabel}}</a>]
-        [<a href="/admin/user/delete/{{.UserId}}">{{.Messages.DeleteLinkLabel}}</a>]
+        [<a href="/admin/user/edit/{{.ViewedUser.Id}}">{{.Messages.EditLinkLabel}}</a>]
+        [<a href="/admin/user/delete/{{.ViewedUser.Id}}">{{.Messages.DeleteLinkLabel}}</a>]
     {{end}}
 </h2>
 

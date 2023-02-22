@@ -55,7 +55,7 @@
             <li>
                 <ul>
                     <li>{{.Text}}</li>
-                    <li>{{.Creator.Login}}</li>
+                    <li>{{template "profileLink" .Creator}}</li>
                     <li>{{.Date}}</li>
                     <li><a href="{{$baseUrl}}view/{{.Id}}">{{$viewLinkLabel}}</a></li>
                     <li><a href="{{$baseUrl}}delete/{{.Id}}">{{$deleteLinkLabel}}</a></li>
@@ -67,7 +67,7 @@
             <li>
                 <ul>
                     <li>{{.Text}}</li>
-                    <li>{{.Creator.Login}}</li>
+                    <li>{{template "profileLink" .Creator}}</li>
                     <li>{{.Date}}</li>
                     <li><a href="{{$baseUrl}}view/{{.Id}}">{{$viewLinkLabel}}</a></li>
                 </ul>

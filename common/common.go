@@ -37,10 +37,8 @@ const PasswordName = "Password"
 const ConfirmPasswordName = "ConfirmPassword"
 
 const UserIdName = "UserId"
-const LoginName = "Login"         // current connected user
-const UserLoginName = "UserLogin" // viewed user
-const RegistredAtName = "RegistredAt"
-const UserDescName = "UserDesc"
+const LoginName = "Login" // current connected user
+const ViewedUserName = "ViewedUser"
 
 var htmlVoidElement = MakeSet([]string{"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"})
 

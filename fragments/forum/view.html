@@ -61,7 +61,7 @@
         {{range .Messages}}
             <li>
                 <ul>
-                    <li>{{.Creator.Login}}</li>
+                    <li>{{template "profilePictureLink" .Creator}}</li>
                     <li>{{.Date}}</li>
                     <li>{{.Text}}</li>
                     <li><a href="{{$baseUrl}}message/delete/{{$threadId}}/{{.Id}}">{{$deleteLinkLabel}}</a></li>
@@ -72,7 +72,7 @@
         {{range .Messages}}
             <li>
                 <ul>
-                    <li>{{.Creator.Login}}</li>
+                    <li>{{template "profilePictureLink" .Creator}}</li>
                     <li>{{.Date}}</li>
                     <li>{{.Text}}</li>
                 </ul>

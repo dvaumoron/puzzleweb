@@ -1,10 +1,10 @@
 
 <h2>
-    {{.Messages.EditLabel}} {{.UserLogin}}
-    [<a href="/admin/user/view/{{.UserId}}">{{.Messages.CancelLinkLabel}}</a>]
+    {{.Messages.EditLabel}} {{.ViewedUser.Login}}
+    [<a href="/admin/user/view/{{.ViewedUser.Id}}">{{.Messages.CancelLinkLabel}}</a>]
 </h2>
 
-<form action="/admin/user/save/{{.UserId}}" method="POST">
+<form action="/admin/user/save/{{.ViewedUser.Id}}" method="POST">
     {{range .Groups}}
         <div>
             <p>{{.DisplayName}}</p>

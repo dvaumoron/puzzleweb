@@ -1,17 +1,17 @@
 
 <h2>
-    {{.UserLogin}} ({{.Messages.RegistredAtLabel}} {{.RegistredAt}})
+    {{.ViewedUser.Login}} ({{.Messages.RegistredAtLabel}} {{.ViewedUser.RegistredAt}})
     {{if .AllowedToUpdate}}
         [<a href="/profile/edit">{{.Messages.EditLinkLabel}}</a>]
     {{end}}
 </h2>
 
-<div><img src="/profilePic/{{.UserId}}" alt="{{.UserLogin}}"/></div>
+<div>{{template "" .ViewedUser}}</div>
 
-<div>{{.UserDesc}}</div>
+<div>{{.ViewedUser.Desc}}</div>
 
 <ul>
-    {{range $key, $value := .UserInfo}}
+    {{range $key, $value := .ViewedUser.Info}}
         <li>
             <ul>
                 <li>{{$key}}</li>

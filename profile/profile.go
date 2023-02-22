@@ -31,8 +31,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const userInfoName = "UserInfo"
-
 var errWrongConfirm = errors.New(common.WrongConfirmPassword)
 
 type profileWidget struct {
@@ -92,12 +90,8 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 			}
 
 			userProfile := profiles[viewedUserId]
-			data[common.UserIdName] = viewedUserId
 			data[common.AllowedToUpdateName] = updateRight
-			data[common.UserLoginName] = userProfile.Login
-			data[common.RegistredAtName] = userProfile.RegistredAt
-			data[common.UserDescName] = userProfile.Desc
-			data[userInfoName] = userProfile.Info
+			data[common.ViewedUserName] = userProfile
 			return viewTmpl, ""
 		}),
 		editHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
@@ -112,9 +106,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 			}
 
 			userProfile := profiles[userId]
-			data[common.UserIdName] = userId
-			data[common.UserDescName] = userProfile.Desc
-			data[userInfoName] = userProfile.Info
+			data[common.ViewedUserName] = userProfile
 			return editTmpl, ""
 		}),
 		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
@@ -123,8 +115,8 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 				return common.DefaultErrorRedirect(common.UnknownUserKey)
 			}
 
-			desc := c.PostForm(common.UserDescName)
-			info := c.PostFormMap(userInfoName)
+			desc := c.PostForm("userDesc")
+			info := c.PostFormMap("userInfo")
 
 			picture, err := c.FormFile("picture")
 			if err != nil {

@@ -176,9 +176,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 			updateRight := adminService.AuthQuery(adminId, service.AdminGroupId, service.ActionUpdate) == nil
 
 			user := users[userId]
-			data[common.UserIdName] = userId
-			data[common.UserLoginName] = user.Login
-			data[common.RegistredAtName] = user.RegistredAt
+			data[common.ViewedUserName] = user
 			data[common.AllowedToUpdateName] = updateRight
 			data[groupsName] = DisplayGroups(roles, puzzleweb.GetMessages(c))
 			return viewUserTmpl, ""
@@ -205,8 +203,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			data[common.UserIdName] = userId
-			data[common.UserLoginName] = userIdToLogin[userId].Login
+			data[common.ViewedUserName] = userIdToLogin[userId]
 			data[groupsName] = displayEditGroups(userRoles, allRoles, puzzleweb.GetMessages(c))
 			return editUserTmpl, ""
 		}),

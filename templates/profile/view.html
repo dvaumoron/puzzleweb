@@ -1,3 +1,14 @@
+{{define "profileLink"}}
+    <a href="/profile/view/{{.Id}}">{{.Login}}</a>
+{{end}}
+{{define "profilePicture"}}
+    <img src="/profilePic/{{.Id}}" alt="{{.Login}}"/>
+{{end}}
+{{define "profilePictureLink"}}
+    <a href="/profile/view/{{.Id}}">
+        {{template "profilePicture" .}}
+    </a>
+{{end}}
 <!doctype html>
 <html>
     <head>
@@ -36,15 +47,15 @@
         </header>
         <main>
             <h2>
-                {{.UserLogin}} ({{.Messages.RegistredAtLabel}} {{.RegistredAt}})
+                {{.ViewedUser.Login}} ({{.Messages.RegistredAtLabel}} {{.ViewedUser.RegistredAt}})
                 {{if .AllowedToUpdate}}
                     [<a href="/profile/edit">{{.Messages.EditLinkLabel}}</a>]
                 {{end}}
             </h2>
-            <div><img src="/profilePic/{{.UserId}}" alt="{{.UserLogin}}"/></div>
-            <div>{{.UserDesc}}</div>
+            <div>{{template "profilePicture" .ViewedUser}}</div>
+            <div>{{.ViewedUser.Desc}}</div>
             <ul>
-                {{range $key, $value := .UserInfo}}
+                {{range $key, $value := .ViewedUser.Info}}
                     <li>
                         <ul>
                             <li>{{$key}}</li>

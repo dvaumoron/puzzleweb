@@ -1,3 +1,14 @@
+{{define "profileLink"}}
+    <a href="/profile/view/{{.Id}}">{{.Login}}</a>
+{{end}}
+{{define "profilePicture"}}
+    <img src="/profilePic/{{.Id}}" alt="{{.Login}}"/>
+{{end}}
+{{define "profilePictureLink"}}
+    <a href="/profile/view/{{.Id}}">
+        {{template "profilePicture" .}}
+    </a>
+{{end}}
 <!doctype html>
 <html>
     <head>
@@ -36,10 +47,10 @@
         </header>
         <main>
             <h2>
-                {{.Messages.EditLabel}} {{.Login}}
-                [<a href="/profile/view/{{.UserId}}">{{.Messages.CancelLinkLabel}}</a>]
+                {{.Messages.EditLabel}} {{.ViewedUser.Login}}
+                [<a href="/profile/view/{{.ViewedUser.Id}}">{{.Messages.CancelLinkLabel}}</a>]
             </h2>
-            <div><img src="/profilePic/{{.UserId}}" alt="{{.Login}}"/></div>
+            <div>{{template "profilePicture" .ViewedUser}}</div>
             <h3>{{.Messages.ChangeLoginLabel}}</h3>
             <form action="/profile/changeLogin" method="POST">
                 <div>
@@ -93,16 +104,16 @@
                 <div>
                     <label>
                         {{.Messages.UserDescLabel}}
-                        <input type="text" name="UserDesc" value="{{.UserDesc}}"/>
+                        <input type="text" name="userDesc" value="{{.ViewedUser.Desc}}"/>
                     </label>
                 </div>
                 <ul>
-                    {{$messages := .Messages}}
-                    {{range $key, $value := .UserInfo}}
+                    {{$messages := Messages}}
+                    {{range $key, $value := .ViewedUser.Info}}
                         <li>
                             <label>
                                 {{index $messages $key}}
-                                <input type="text" name="UserInfo[{{$key}}]" value="{{$value}}"/>
+                                <input type="text" name="userInfo[{{$key}}]" value="{{$value}}"/>
                             </label>
                         </li>
                     {{end}}

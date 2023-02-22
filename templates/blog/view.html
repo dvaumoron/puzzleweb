@@ -1,3 +1,14 @@
+{{define "profileLink"}}
+    <a href="/profile/view/{{.Id}}">{{.Login}}</a>
+{{end}}
+{{define "profilePicture"}}
+    <img src="/profilePic/{{.Id}}" alt="{{.Login}}"/>
+{{end}}
+{{define "profilePictureLink"}}
+    <a href="/profile/view/{{.Id}}">
+        {{template "profilePicture" .}}
+    </a>
+{{end}}
 <!doctype html>
 <html>
     <head>
@@ -40,6 +51,14 @@
                 [<a href="{{.BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
             </h2>
             <div>
+                <div>
+                    {{.Messages.PostAuthorLabel}} {{define "profileLink" .Post.Creator}}
+                </div>
+                <div>
+                    {{.Messages.PostDateLabel}} {{.Post.Date}}
+                </div>
+            </div>
+            <div>
                 {{.Post.Content}}
             </div>
             <div class="pagination">
@@ -77,7 +96,7 @@
                     {{range .Comments}}
                         <li>
                             <ul>
-                                <li>{{.Creator.Login}}</li>
+                                <li>{{template "profilePictureLink" .Creator}}</li>
                                 <li>{{.Date}}</li>
                                 <li>{{.Text}}</li>
                                 <li><a href="{{$baseUrl}}comment/delete/{{$postId}}/{{.Id}}">{{$deleteLinkLabel}}</a></li>
@@ -88,7 +107,7 @@
                     {{range .Comments}}
                         <li>
                             <ul>
-                                <li>{{.Creator.Login}}</li>
+                                <li>{{template "profilePictureLink" .Creator}}</li>
                                 <li>{{.Date}}</li>
                                 <li>{{.Text}}</li>
                             </ul>

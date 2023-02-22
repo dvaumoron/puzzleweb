@@ -1,3 +1,14 @@
+{{define "profileLink"}}
+    <a href="/profile/view/{{.Id}}">{{.Login}}</a>
+{{end}}
+{{define "profilePicture"}}
+    <img src="/profilePic/{{.Id}}" alt="{{.Login}}"/>
+{{end}}
+{{define "profilePictureLink"}}
+    <a href="/profile/view/{{.Id}}">
+        {{template "profilePicture" .}}
+    </a>
+{{end}}
 <!doctype html>
 <html>
     <head>
@@ -36,10 +47,10 @@
         </header>
         <main>
             <h2>
-                {{.Messages.EditLabel}} {{.UserLogin}}
-                [<a href="/admin/user/view/{{.UserId}}">{{.Messages.CancelLinkLabel}}</a>]
+                {{.Messages.EditLabel}} {{.ViewedUser.Login}}
+                [<a href="/admin/user/view/{{.ViewedUser.Id}}">{{.Messages.CancelLinkLabel}}</a>]
             </h2>
-            <form action="/admin/user/save/{{.UserId}}" method="POST">
+            <form action="/admin/user/save/{{.ViewedUser.Id}}" method="POST">
                 {{range .Groups}}
                     <div>
                         <p>{{.DisplayName}}</p>

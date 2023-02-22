@@ -195,6 +195,8 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 
 			err := errWrongConfirm
 			if newPassword == confirmPassword {
+				// todo check password strength
+
 				err = loginService.ChangePassword(userId, login, oldPassword, newPassword)
 			}
 

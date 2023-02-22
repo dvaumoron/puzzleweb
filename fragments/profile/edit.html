@@ -21,12 +21,12 @@
             <input type="password" name="Password"/>
         </label>
     </div>
-    <div><input type="submit" value="{{.Messages.SaveLinkLabel}}"></div>
+    <div><button type="submit">{{.Messages.SaveLinkLabel}}</button></div>
 </form>
 
 <h3>{{.Messages.ChangePasswordLabel}}</h3>
 
-<form action="/profile/changePassword" method="POST">
+<form id="changePasswordForm" action="/profile/changePassword" method="POST">
     <div>
         <label>
             {{.Messages.OldPasswordLabel}}
@@ -45,7 +45,11 @@
             <input type="password" id="confirmPasswordField" name="ConfirmPassword"/>
         </label>
     </div>
-    <div><input type="submit" value="{{.Messages.SaveLinkLabel}}"></div>
+    <div class="hidden">
+        {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+        <span id="errorWrongConfimPasswordMessage">{{.Messages.WrongConfirmPassword}}</span>
+    </div>
+    <div><button type="button" id="changePasswordButton">{{.Messages.SaveLinkLabel}}</button></div>
 </form>
 
 <h3>{{.Messages.EditProfileLabel}}</h3>
@@ -77,5 +81,5 @@
         {{end}}
     <ul>
 
-    <div><input type="submit" value="{{.Messages.SaveLinkLabel}}"></div>
+    <div><button type="submit">{{.Messages.SaveLinkLabel}}</button></div>
 </form>

@@ -144,7 +144,7 @@ func AddAdminPage(site *puzzleweb.Site, adminConfig config.AdminConfig) {
 				return "", common.DefaultErrorRedirect(common.ErrNotAuthorized.Error())
 			}
 
-			pageNumber, start, end, filter := common.GetPagination(c, defaultPageSize)
+			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
 
 			total, users, err := userService.ListUsers(start, end, filter)
 			if err != nil {

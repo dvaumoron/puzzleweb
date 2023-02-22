@@ -97,7 +97,7 @@ func GetRequestedUserId(logger *zap.Logger, c *gin.Context) uint64 {
 	return userId
 }
 
-func GetPagination(c *gin.Context, defaultPageSize uint64) (uint64, uint64, uint64, string) {
+func GetPagination(defaultPageSize uint64, c *gin.Context) (uint64, uint64, uint64, string) {
 	pageNumber, _ := strconv.ParseUint(c.Query("pageNumber"), 10, 64)
 	if pageNumber == 0 {
 		pageNumber = 1

@@ -94,7 +94,7 @@ func (m sessionManager) Manage(c *gin.Context) {
 
 	session, err := m.Service.Get(sessionId)
 	if err != nil {
-		logSessionError(c, "Failed to retrieve session", sessionId)
+		logSessionError("Failed to retrieve session", sessionId, c)
 		return
 	}
 
@@ -103,12 +103,12 @@ func (m sessionManager) Manage(c *gin.Context) {
 
 	if s := GetSession(c); s.change {
 		if m.Service.Update(sessionId, s.session) != nil {
-			logSessionError(c, "Failed to save session", sessionId)
+			logSessionError("Failed to save session", sessionId, c)
 		}
 	}
 }
 
-func logSessionError(c *gin.Context, msg string, sessionId uint64) {
+func logSessionError(msg string, sessionId uint64, c *gin.Context) {
 	getSite(c).logger.Error(msg, zap.Uint64("sessionId", sessionId))
 	c.AbortWithStatus(http.StatusInternalServerError)
 }

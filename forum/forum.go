@@ -88,7 +88,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 		listThreadHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			userId := puzzleweb.GetSessionUserId(c)
 
-			pageNumber, start, end, filter := common.GetPagination(c, defaultPageSize)
+			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
 
 			total, threads, err := forumService.GetThreads(userId, start, end, filter)
 			if err != nil {
@@ -139,7 +139,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
-			pageNumber, start, end, filter := common.GetPagination(c, defaultPageSize)
+			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
 
 			userId := puzzleweb.GetSessionUserId(c)
 			total, thread, messages, err := forumService.GetThread(userId, threadId, start, end, filter)

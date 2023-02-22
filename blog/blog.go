@@ -100,7 +100,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 		listHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			userId := puzzleweb.GetSessionUserId(c)
 
-			pageNumber, start, end, filter := common.GetPagination(c, defaultPageSize)
+			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
 
 			total, posts, err := blogService.GetPosts(userId, start, end, filter)
 			if err != nil {
@@ -119,7 +119,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 		viewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			userId := puzzleweb.GetSessionUserId(c)
 
-			pageNumber, start, end, _ := common.GetPagination(c, defaultPageSize)
+			pageNumber, start, end, _ := common.GetPagination(defaultPageSize, c)
 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {

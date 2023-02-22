@@ -142,7 +142,7 @@ func (site *Site) profilePicHandler(c *gin.Context) {
 }
 
 var changeLangHandler = common.CreateRedirect(func(c *gin.Context) string {
-	getSite(c).localesManager.SetLangCookie(c, c.Query(locale.LangName))
+	getSite(c).localesManager.SetLangCookie(c.Query(locale.LangName), c)
 	return c.Query(common.RedirectName)
 })
 

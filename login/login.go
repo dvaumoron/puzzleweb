@@ -107,7 +107,7 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceExtConfig[serv
 			s.Store(common.LoginName, login)
 			s.Store(common.UserIdName, fmt.Sprint(userId))
 
-			puzzleweb.GetLocalesManager(c).SetLangCookie(c, settingsManager.Get(userId, c)[locale.LangName])
+			puzzleweb.GetLocalesManager(c).SetLangCookie(settingsManager.Get(userId, c)[locale.LangName], c)
 
 			return c.PostForm(common.RedirectName)
 		}),

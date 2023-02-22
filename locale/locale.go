@@ -116,7 +116,7 @@ func (m *LocalesManager) GetLang(c *gin.Context) string {
 	lang, err := c.Cookie(LangName)
 	if err != nil {
 		tag, _ := language.MatchStrings(m.matcher, c.GetHeader("Accept-Language"))
-		return m.setLangCookie(c, tag.String())
+		return m.setLangCookie(tag.String(), c)
 	}
 	return m.CheckLang(lang)
 }
@@ -131,13 +131,13 @@ func (m *LocalesManager) CheckLang(lang string) string {
 	return m.DefaultLang
 }
 
-func (m *LocalesManager) setLangCookie(c *gin.Context, lang string) string {
+func (m *LocalesManager) setLangCookie(lang string, c *gin.Context) string {
 	c.SetCookie(LangName, lang, m.sessionTimeOut, "/", m.domain, false, false)
 	return lang
 }
 
-func (m *LocalesManager) SetLangCookie(c *gin.Context, lang string) {
-	m.setLangCookie(c, m.CheckLang(lang))
+func (m *LocalesManager) SetLangCookie(lang string, c *gin.Context) {
+	m.setLangCookie(m.CheckLang(lang), c)
 }
 
 func (m *LocalesManager) GetMessages(c *gin.Context) map[string]string {

@@ -98,6 +98,10 @@ func (m sessionManager) Manage(c *gin.Context) {
 		return
 	}
 
+	if session == nil {
+		session = map[string]string{}
+	}
+
 	c.Set(sessionName, &Session{session: session}) // change is false (default bool)
 	c.Next()
 

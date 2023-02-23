@@ -74,6 +74,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 
 	if htmlRender := site.HTMLRender; htmlRender == nil {
 		siteConfig.Logger.Fatal("no HTMLRender initialized")
+	} else {
 		engine.HTMLRender = htmlRender
 	}
 

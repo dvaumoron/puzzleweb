@@ -108,7 +108,7 @@
                     </label>
                 </div>
                 <ul>
-                    {{$messages := Messages}}
+                    {{$messages := .Messages}}
                     {{range $key, $value := .ViewedUser.Info}}
                         <li>
                             <label>

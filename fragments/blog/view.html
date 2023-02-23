@@ -6,7 +6,7 @@
 
 <div>
     <div>
-        {{.Messages.PostAuthorLabel}} {{define "profileLink" .Post.Creator}}
+        {{.Messages.PostAuthorLabel}} {{template "profileLink" .Post.Creator}}
     </div>
     <div>
         {{.Messages.PostDateLabel}} {{.Post.Date}}

@@ -50,7 +50,7 @@ ErrorBadRoleName=
 
 # profile
 PageTitleProfile=
-ChangeLoginLabel
+ChangeLoginLabel=
 NewLoginLabel=
 ChangePasswordLabel=
 OldPasswordLabel=

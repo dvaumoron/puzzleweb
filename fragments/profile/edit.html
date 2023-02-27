@@ -26,7 +26,7 @@
 
 <h3>{{.Messages.ChangePasswordLabel}}</h3>
 
-<form id="changePasswordForm" action="/profile/changePassword" method="POST">
+<form id="changePasswordForm" action="/profile/changePassword" method="POST" enctype="multipart/form-data">
     <div>
         <label>
             {{.Messages.OldPasswordLabel}}

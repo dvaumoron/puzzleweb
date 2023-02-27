@@ -27,6 +27,7 @@ DeleteLinkLabel=
 
 # login
 PageTitleLogin=
+EmptyLogin=
 WrongLogin=
 ExistingLogin=
 WrongConfirmPassword=

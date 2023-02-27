@@ -31,6 +31,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var errEmptyLogin = errors.New(common.EmptyLogin)
 var errWrongConfirm = errors.New(common.WrongConfirmPassword)
 
 type profileWidget struct {
@@ -164,7 +165,12 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 			newLogin := c.PostForm(common.LoginName)
 			password := c.PostForm(common.PasswordName)
 
-			err := loginService.ChangeLogin(userId, oldLogin, newLogin, password)
+			var err error
+			if newLogin == "" {
+				err = errEmptyLogin
+			} else {
+				err = loginService.ChangeLogin(userId, oldLogin, newLogin, password)
+			}
 
 			targetBuilder := profileUrlBuilder(userId)
 			if err != nil {

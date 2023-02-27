@@ -75,7 +75,7 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceExtConfig[serv
 			register := c.PostForm("Register") == "true"
 
 			if login == "" {
-				return c.PostForm(prevUrlWithErrorName) + common.EmptyLogin
+				return c.PostForm(prevUrlWithErrorName) + common.EmptyLoginKey
 			}
 
 			success := true
@@ -83,7 +83,7 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceExtConfig[serv
 			var err error
 			if register {
 				if c.PostForm(common.ConfirmPasswordName) != password {
-					return c.PostForm(prevUrlWithErrorName) + common.WrongConfirmPassword
+					return c.PostForm(prevUrlWithErrorName) + common.WrongConfirmPasswordKey
 				}
 				// todo check password strength
 

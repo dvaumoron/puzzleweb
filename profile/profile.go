@@ -31,8 +31,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var errEmptyLogin = errors.New(common.EmptyLogin)
-var errWrongConfirm = errors.New(common.WrongConfirmPassword)
+var errEmptyLogin = errors.New(common.EmptyLoginKey)
+var errWrongConfirm = errors.New(common.WrongConfirmPasswordKey)
 
 type profileWidget struct {
 	viewHandler           gin.HandlerFunc

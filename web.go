@@ -139,7 +139,7 @@ func (site *Site) profilePicHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	c.Data(http.StatusFound, http.DetectContentType(data), data)
+	c.Data(http.StatusOK, http.DetectContentType(data), data)
 }
 
 var changeLangHandler = common.CreateRedirect(func(c *gin.Context) string {

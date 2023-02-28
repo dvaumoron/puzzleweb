@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  */
-package log
+package config
 
 import (
 	"encoding/json"
@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewLogger(logConfig []byte) *zap.Logger {
+func newLogger(logConfig []byte) *zap.Logger {
 	if len(logConfig) == 0 {
 		return defaultLogConfig()
 	}

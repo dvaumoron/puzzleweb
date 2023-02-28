@@ -43,6 +43,7 @@ func (m sessionManager) getSessionId(c *gin.Context) (uint64, error) {
 		m.Logger.Info("Failed to retrieve session cookie", zap.Error(err))
 		return m.generateSessionCookie(c)
 	}
+	// TODO better uint64 encoding
 	sessionId, err := strconv.ParseUint(cookie, 10, 64)
 	if err != nil {
 		m.Logger.Info("Failed to parse session cookie", zap.Error(err))
@@ -129,9 +130,13 @@ func GetSession(c *gin.Context) *Session {
 }
 
 func GetSessionUserId(c *gin.Context) uint64 {
-	userId, err := strconv.ParseUint(GetSession(c).Load(common.UserIdName), 10, 64)
+	return extractUserIdFromSession(getSite(c).logger, GetSession(c))
+}
+
+func extractUserIdFromSession(logger *zap.Logger, session *Session) uint64 {
+	userId, err := strconv.ParseUint(session.Load(common.UserIdName), 10, 64)
 	if err != nil {
-		getSite(c).logger.Info("Failed to parse userId from session", zap.Error(err))
+		logger.Info("Failed to parse userId from session", zap.Error(err))
 	}
 	return userId
 }

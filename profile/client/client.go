@@ -125,10 +125,21 @@ func (client profileClient) GetProfiles(userIds []uint64) (map[uint64]service.Us
 		return nil, err
 	}
 
-	profiles := map[uint64]service.UserProfile{}
+	tempProfiles := map[uint64]service.UserProfile{}
 	for _, profile := range response.List {
 		userId := profile.UserId
-		profiles[userId] = service.UserProfile{User: users[userId], Desc: profile.Desc, Info: profile.Info}
+		tempProfiles[userId] = service.UserProfile{User: users[userId], Desc: profile.Desc, Info: profile.Info}
+	}
+
+	profiles := map[uint64]service.UserProfile{}
+	for userId, user := range users {
+		profile, ok := tempProfiles[userId]
+		if ok {
+			profiles[userId] = profile
+		} else {
+			// user who doesn't have profile data yet
+			profiles[userId] = service.UserProfile{User: user}
+		}
 	}
 	return profiles, err
 }

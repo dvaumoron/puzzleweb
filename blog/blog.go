@@ -98,7 +98,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 	p := puzzleweb.MakePage(blogName)
 	p.Widget = blogWidget{
 		listHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			userId := puzzleweb.GetSessionUserId(c)
+			userId, _ := data[common.IdName].(uint64)
 
 			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
 
@@ -117,7 +117,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			return listTmpl, ""
 		}),
 		viewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			userId := puzzleweb.GetSessionUserId(c)
+			userId, _ := data[common.IdName].(uint64)
 
 			pageNumber, start, end, _ := common.GetPagination(defaultPageSize, c)
 

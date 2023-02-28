@@ -19,25 +19,19 @@ package builder
 
 import (
 	"github.com/dvaumoron/puzzleweb"
-	"github.com/dvaumoron/puzzleweb/admin"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/login"
 	"github.com/dvaumoron/puzzleweb/profile"
-	"github.com/dvaumoron/puzzleweb/settings"
 )
 
 func BuildDefaultSite() (*puzzleweb.Site, *config.GlobalConfig) {
 	globalConfig := config.LoadDefault()
 	localesManager := locale.NewManager(globalConfig.ExtractLocalesConfig())
-	settingsManager := settings.NewManager(globalConfig.ExtractSettingsConfig())
+	settingsManager := puzzleweb.NewSettingsManager(globalConfig.ExtractSettingsConfig())
 
-	site := puzzleweb.NewSite(globalConfig.ExtractAuthExtConfig(), localesManager)
+	site := puzzleweb.NewSite(globalConfig, localesManager, settingsManager)
 
-	login.AddLoginPage(site, globalConfig.ExtractLoginConfig(), settingsManager)
-	admin.AddAdminPage(site, globalConfig.ExtractAdminConfig())
 	profile.AddProfilePage(site, globalConfig.ExtractProfileConfig())
-	settings.AddSettingsPage(site, config.CreateServiceExtConfig(globalConfig, settingsManager))
 
 	return site, globalConfig
 }

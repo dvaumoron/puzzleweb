@@ -108,7 +108,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 				return "", targetBuilder.String()
 			}
 
-			userId := puzzleweb.GetSessionUserId(c)
+			userId, _ := data[common.IdName].(uint64)
 			version := c.Query(versionName)
 			content, err := wikiService.LoadContent(userId, lang, title, version)
 			if err != nil {
@@ -147,7 +147,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 				return "", targetBuilder.String()
 			}
 
-			userId := puzzleweb.GetSessionUserId(c)
+			userId, _ := data[common.IdName].(uint64)
 			content, err := wikiService.LoadContent(userId, lang, title, "")
 			if err == nil {
 				return "", common.DefaultErrorRedirect(err.Error())
@@ -199,7 +199,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 				return "", targetBuilder.String()
 			}
 
-			userId := puzzleweb.GetSessionUserId(c)
+			userId, _ := data[common.IdName].(uint64)
 			versions, err := wikiService.GetVersions(userId, lang, title)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())

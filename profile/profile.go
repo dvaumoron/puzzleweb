@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb"
-	"github.com/dvaumoron/puzzleweb/admin"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
@@ -68,7 +67,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
-			currentUserId := puzzleweb.GetSessionUserId(c)
+			currentUserId, _ := data[common.IdName].(uint64)
 			updateRight := viewedUserId == currentUserId
 			if !updateRight {
 				if err := profileService.ViewRight(currentUserId); err != nil {
@@ -87,7 +86,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 			if err == nil {
-				data["UserRight"] = admin.DisplayGroups(roles, puzzleweb.GetMessages(c))
+				data["UserRight"] = puzzleweb.DisplayGroups(roles, puzzleweb.GetMessages(c))
 			}
 
 			userProfile := profiles[viewedUserId]
@@ -96,7 +95,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 			return viewTmpl, ""
 		}),
 		editHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			userId := puzzleweb.GetSessionUserId(c)
+			userId, _ := data[common.IdName].(uint64)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
 			}
@@ -193,7 +192,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 
 			err := errWrongConfirm
 			if newPassword == confirmPassword {
-				// todo check password strength
+				// TODO check password strength
 
 				err = loginService.ChangePassword(userId, login, oldPassword, newPassword)
 			}

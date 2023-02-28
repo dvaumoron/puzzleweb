@@ -15,18 +15,16 @@
  * limitations under the License.
  *
  */
-package login
+package puzzleweb
 
 import (
 	"fmt"
 	"net/url"
 
-	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/login/service"
-	"github.com/dvaumoron/puzzleweb/settings"
 	"github.com/gin-gonic/gin"
 )
 
@@ -45,14 +43,14 @@ func (w loginWidget) LoadInto(router gin.IRouter) {
 	router.GET("/logout", w.logoutHandler)
 }
 
-func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceExtConfig[service.LoginService], settingsManager *settings.SettingsManager) {
+func newLoginPage(loginConfig config.ServiceExtConfig[service.LoginService], settingsManager *SettingsManager) Page {
 	loginService := loginConfig.Service
 
 	tmpl := "login" + loginConfig.Ext
 
-	p := puzzleweb.MakeHiddenPage("login")
+	p := MakeHiddenPage("login")
 	p.Widget = loginWidget{
-		displayHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		displayHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			data[common.RedirectName] = c.Query(common.RedirectName)
 
 			currentUrl := c.Request.URL
@@ -85,7 +83,7 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceExtConfig[serv
 				if c.PostForm(common.ConfirmPasswordName) != password {
 					return c.PostForm(prevUrlWithErrorName) + common.WrongConfirmPasswordKey
 				}
-				// todo check password strength
+				// TODO check password strength
 
 				success, userId, err = loginService.Register(login, password)
 			} else {
@@ -107,31 +105,20 @@ func AddLoginPage(site *puzzleweb.Site, loginConfig config.ServiceExtConfig[serv
 				return c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
 			}
 
-			s := puzzleweb.GetSession(c)
+			s := GetSession(c)
 			s.Store(common.LoginName, login)
 			s.Store(common.UserIdName, fmt.Sprint(userId))
 
-			puzzleweb.GetLocalesManager(c).SetLangCookie(settingsManager.Get(userId, c)[locale.LangName], c)
+			GetLocalesManager(c).SetLangCookie(settingsManager.Get(userId, c)[locale.LangName], c)
 
 			return c.PostForm(common.RedirectName)
 		}),
 		logoutHandler: common.CreateRedirect(func(c *gin.Context) string {
-			s := puzzleweb.GetSession(c)
+			s := GetSession(c)
 			s.Delete(common.LoginName)
 			s.Delete(common.UserIdName)
 			return c.Query(common.RedirectName)
 		}),
 	}
-
-	site.AddDefaultData(func(data gin.H, c *gin.Context) {
-		escapedUrl := url.QueryEscape(c.Request.URL.Path)
-		if login := puzzleweb.GetSession(c).Load(common.LoginName); login == "" {
-			data[loginUrlName] = "/login?redirect=" + escapedUrl
-		} else {
-			data[common.LoginName] = login
-			data[loginUrlName] = "/login/logout?redirect=" + escapedUrl
-		}
-	})
-
-	site.AddPage(p)
+	return p
 }

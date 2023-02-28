@@ -22,7 +22,6 @@ import (
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -62,15 +61,17 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func localizedTmpl(authConfig config.ServiceConfig[adminservice.AuthService], groupId uint64, tmpl string) common.TemplateRedirecter {
+func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
-		err := authConfig.Service.AuthQuery(GetSessionUserId(c), groupId, adminservice.ActionAccess)
+		site := getSite(c)
+		userId, _ := data[common.IdName].(uint64)
+		err := site.authService.AuthQuery(userId, groupId, adminservice.ActionAccess)
 		if err != nil {
 			return "", common.DefaultErrorRedirect(err.Error())
 		}
 		localesManager := GetLocalesManager(c)
 		if lang := localesManager.GetLang(c); lang != localesManager.DefaultLang {
-			authConfig.Logger.Info("Using alternative static page", zap.String(locale.LangName, lang))
+			site.logger.Info("Using alternative static page", zap.String(locale.LangName, lang))
 			var builder strings.Builder
 			builder.WriteString(lang)
 			builder.WriteString("/")
@@ -81,19 +82,19 @@ func localizedTmpl(authConfig config.ServiceConfig[adminservice.AuthService], gr
 	}
 }
 
-func newStaticWidget(authConfig config.ServiceConfig[adminservice.AuthService], groupId uint64, tmpl string) *staticWidget {
-	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(authConfig, groupId, tmpl))}
+func newStaticWidget(groupId uint64, tmpl string) *staticWidget {
+	return &staticWidget{displayHandler: CreateTemplate(localizedTmpl(groupId, tmpl))}
 }
 
-func MakeStaticPage(name string, groupId uint64, tmpl string, authConfig config.ServiceConfig[adminservice.AuthService]) Page {
+func MakeStaticPage(name string, groupId uint64, tmpl string) Page {
 	p := MakePage(name)
-	p.Widget = newStaticWidget(authConfig, groupId, tmpl)
+	p.Widget = newStaticWidget(groupId, tmpl)
 	return p
 }
 
-func MakeHiddenStaticPage(name string, groupId uint64, tmpl string, authConfig config.ServiceConfig[adminservice.AuthService]) Page {
+func MakeHiddenStaticPage(name string, groupId uint64, tmpl string) Page {
 	p := MakeHiddenPage(name)
-	p.Widget = newStaticWidget(authConfig, groupId, tmpl)
+	p.Widget = newStaticWidget(groupId, tmpl)
 	return p
 }
 

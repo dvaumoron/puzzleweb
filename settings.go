@@ -15,46 +15,44 @@
  * limitations under the License.
  *
  */
-package settings
+package puzzleweb
 
 import (
 	"errors"
+	"strings"
 
-	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/session/service"
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"github.com/gin-gonic/gin"
 )
 
 const settingsName = "Settings"
 
 var errWrongLang = errors.New(common.WrongLangKey)
 
-type InitSettingsFunc func(*gin.Context) map[string]string
-type CheckSettingsFunc func(map[string]string, *gin.Context) error
-
 type SettingsManager struct {
 	config.ServiceConfig[service.SessionService]
-	InitSettings  InitSettingsFunc
-	CheckSettings CheckSettingsFunc
+	InitSettings  func(*gin.Context) map[string]string
+	CheckSettings func(map[string]string, *gin.Context) error
 }
 
-func NewManager(settingsConfig config.ServiceConfig[service.SessionService]) *SettingsManager {
+func NewSettingsManager(settingsConfig config.ServiceConfig[service.SessionService]) *SettingsManager {
 	return &SettingsManager{
 		ServiceConfig: settingsConfig, InitSettings: initSettings, CheckSettings: checkSettings,
 	}
 }
 
 func initSettings(c *gin.Context) map[string]string {
-	return map[string]string{locale.LangName: puzzleweb.GetLocalesManager(c).GetLang(c)}
+	return map[string]string{locale.LangName: GetLocalesManager(c).GetLang(c)}
 }
 
 func checkSettings(settings map[string]string, c *gin.Context) error {
 	askedLang := settings[locale.LangName]
-	lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
+	lang := GetLocalesManager(c).CheckLang(askedLang)
 	settings[locale.LangName] = lang
 	if lang != askedLang {
 		return errWrongLang
@@ -86,4 +84,49 @@ func (m *SettingsManager) Get(userId uint64, c *gin.Context) map[string]string {
 
 func (m *SettingsManager) Update(userId uint64, settings map[string]string) error {
 	return m.Service.Update(userId, settings)
+}
+
+type settingsWidget struct {
+	editHandler gin.HandlerFunc
+	saveHandler gin.HandlerFunc
+}
+
+func (w settingsWidget) LoadInto(router gin.IRouter) {
+	router.GET("/edit", w.editHandler)
+	router.POST("/save", w.saveHandler)
+}
+
+func newSettingsPage(settingsConfig config.ServiceExtConfig[*SettingsManager]) Page {
+	settingsManager := settingsConfig.Service
+
+	editTmpl := "settings/edit" + settingsConfig.Ext
+
+	p := MakeHiddenPage("settings")
+	p.Widget = settingsWidget{
+		editHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+			userId, _ := data[common.IdName].(uint64)
+			if userId == 0 {
+				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
+			}
+
+			data["Settings"] = settingsManager.Get(userId, c)
+			return editTmpl, ""
+		}),
+		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
+			userId := GetSessionUserId(c)
+			if userId == 0 {
+				return common.DefaultErrorRedirect(common.UnknownUserKey)
+			}
+
+			settings := c.PostFormMap("settings")
+
+			var targetBuilder strings.Builder
+			targetBuilder.WriteString("/settings/edit")
+			if err := settingsManager.Update(userId, settings); err != nil {
+				common.WriteError(&targetBuilder, err.Error())
+			}
+			return targetBuilder.String()
+		}),
+	}
+	return p
 }

@@ -18,8 +18,10 @@
 package puzzleweb
 
 import (
+	"net/url"
 	"strings"
 
+	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
@@ -51,8 +53,7 @@ func extractAriane(messages map[string]string, splittedPath []string) []PageDesc
 
 func getSite(c *gin.Context) *Site {
 	siteUntyped, _ := c.Get(siteName)
-	site := siteUntyped.(*Site)
-	return site
+	return siteUntyped.(*Site)
 }
 
 func GetLocalesManager(c *gin.Context) *locale.LocalesManager {
@@ -83,6 +84,19 @@ func initData(c *gin.Context) gin.H {
 		data["LangSelector"] = true
 		data["AllLang"] = localesManager.AllLang
 	}
+	session := GetSession(c)
+	escapedUrl := url.QueryEscape(c.Request.URL.Path)
+	if login := session.Load(common.LoginName); login == "" {
+		data[loginUrlName] = "/login?redirect=" + escapedUrl
+	} else {
+		data[common.LoginName] = login
+		data[common.IdName] = extractUserIdFromSession(site.logger, session)
+		data[loginUrlName] = "/login/logout?redirect=" + escapedUrl
+	}
+	adminId, _ := data[common.IdName].(uint64)
+	data[viewAdminName] = site.authService.AuthQuery(
+		adminId, adminservice.AdminGroupId, adminservice.ActionAccess,
+	) == nil
 	for _, adder := range site.adders {
 		adder(data, c)
 	}

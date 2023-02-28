@@ -25,7 +25,7 @@
             {{if .LoginUrl}}
                 <p>
                     {{if .Login}}
-                        {{.Messages.WelcomeLabel}} {{.Login}}
+                        {{.Messages.WelcomeLabel}} {{template "profileLink" .}}
                         <a href="{{.LoginUrl}}">{{.Messages.LogoutLinkLabel}}</a>
                     {{else}}
                         <a href="{{.LoginUrl}}">{{.Messages.LoginLinkLabel}}</a>

@@ -36,22 +36,26 @@ const siteName = "Site"
 type Site struct {
 	logger             *zap.Logger
 	localesManager     *locale.LocalesManager
+	authService        adminservice.AuthService
+	pictureService     profileservice.PictureService
 	root               Page
-	Page404Url         string
 	adders             []common.DataAdder
+	Page404Url         string
 	FaviconPath        string
 	HTMLRender         render.HTMLRender
 	MaxMultipartMemory int64
-	pictureService     profileservice.PictureService
 }
 
-func NewSite(authConfig config.ServiceExtConfig[adminservice.AuthService], localesManager *locale.LocalesManager) *Site {
-	ext := authConfig.Ext
-	rootTmpl := "index" + ext
+func NewSite(globalConfig *config.GlobalConfig, localesManager *locale.LocalesManager, settingsManager *SettingsManager) *Site {
+	root := MakeStaticPage("root", adminservice.PublicGroupId, "index"+globalConfig.TemplatesExt)
+	root.AddSubPage(newLoginPage(globalConfig.ExtractLoginConfig(), settingsManager))
+	root.AddSubPage(newAdminPage(globalConfig.ExtractAdminConfig()))
+	root.AddSubPage(newSettingsPage(config.CreateServiceExtConfig(globalConfig, settingsManager)))
 
+	authConfig := globalConfig.ExtractAuthExtConfig()
 	return &Site{
-		logger: authConfig.Logger, localesManager: localesManager,
-		root: MakeStaticPage("root", adminservice.PublicGroupId, rootTmpl, authConfig.ExtractServiceConfig()),
+		logger: authConfig.Logger, localesManager: localesManager, authService: authConfig.Service,
+		pictureService: globalConfig.ProfileService, root: root,
 	}
 }
 
@@ -91,10 +95,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 		c.Set(siteName, site)
 	})
 
-	if pictureService := siteConfig.PictureService; pictureService != nil {
-		site.pictureService = pictureService
-		engine.GET("/profilePic/:UserId", site.profilePicHandler)
-	}
+	engine.GET("/profilePic/:UserId", site.profilePicHandler)
 
 	if site.localesManager.MultipleLang {
 		engine.GET("/changeLang", changeLangHandler)

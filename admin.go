@@ -157,7 +157,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 		}),
 		viewUserHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId, _ := data[common.IdName].(uint64)
-			userId := common.GetRequestedUserId(logger, c)
+			userId := GetRequestedUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
@@ -182,7 +182,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 		}),
 		editUserHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			adminId, _ := data[common.IdName].(uint64)
-			userId := common.GetRequestedUserId(logger, c)
+			userId := GetRequestedUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
@@ -207,7 +207,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			return editUserTmpl, ""
 		}),
 		saveUserHandler: common.CreateRedirect(func(c *gin.Context) string {
-			userId := common.GetRequestedUserId(logger, c)
+			userId := GetRequestedUserId(logger, c)
 			err := common.ErrTechnical
 			if userId != 0 {
 				rolesStr := c.PostFormArray("roles")
@@ -228,7 +228,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			return targetBuilder.String()
 		}),
 		deleteUserHandler: common.CreateRedirect(func(c *gin.Context) string {
-			userId := common.GetRequestedUserId(logger, c)
+			userId := GetRequestedUserId(logger, c)
 			err := common.ErrTechnical
 			if userId != 0 {
 				// an empty slice delete the user right

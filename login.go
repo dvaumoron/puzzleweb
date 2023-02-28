@@ -28,6 +28,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const emptyLoginKey = "EmptyLogin"
+const wrongConfirmPasswordKey = "WrongConfirmPassword"
+
+const userIdName = "UserId"
+const loginName = "Login" // current connected user login
+const passwordName = "Password"
+const confirmPasswordName = "ConfirmPassword"
 const loginUrlName = "LoginUrl"
 const prevUrlWithErrorName = "PrevUrlWithError"
 
@@ -68,20 +75,20 @@ func newLoginPage(loginConfig config.ServiceExtConfig[service.LoginService], set
 			return tmpl, ""
 		}),
 		submitHandler: common.CreateRedirect(func(c *gin.Context) string {
-			login := c.PostForm(common.LoginName)
-			password := c.PostForm(common.PasswordName)
+			login := c.PostForm(loginName)
+			password := c.PostForm(passwordName)
 			register := c.PostForm("Register") == "true"
 
 			if login == "" {
-				return c.PostForm(prevUrlWithErrorName) + common.EmptyLoginKey
+				return c.PostForm(prevUrlWithErrorName) + emptyLoginKey
 			}
 
 			success := true
 			var userId uint64
 			var err error
 			if register {
-				if c.PostForm(common.ConfirmPasswordName) != password {
-					return c.PostForm(prevUrlWithErrorName) + common.WrongConfirmPasswordKey
+				if c.PostForm(confirmPasswordName) != password {
+					return c.PostForm(prevUrlWithErrorName) + wrongConfirmPasswordKey
 				}
 				// TODO check password strength
 
@@ -106,8 +113,8 @@ func newLoginPage(loginConfig config.ServiceExtConfig[service.LoginService], set
 			}
 
 			s := GetSession(c)
-			s.Store(common.LoginName, login)
-			s.Store(common.UserIdName, fmt.Sprint(userId))
+			s.Store(loginName, login)
+			s.Store(userIdName, fmt.Sprint(userId))
 
 			GetLocalesManager(c).SetLangCookie(settingsManager.Get(userId, c)[locale.LangName], c)
 
@@ -115,8 +122,8 @@ func newLoginPage(loginConfig config.ServiceExtConfig[service.LoginService], set
 		}),
 		logoutHandler: common.CreateRedirect(func(c *gin.Context) string {
 			s := GetSession(c)
-			s.Delete(common.LoginName)
-			s.Delete(common.UserIdName)
+			s.Delete(loginName)
+			s.Delete(userIdName)
 			return c.Query(common.RedirectName)
 		}),
 	}

@@ -24,7 +24,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"go.uber.org/zap"
@@ -32,12 +31,12 @@ import (
 )
 
 const siteName = "Site"
+const unknownUserKey = "ErrorUnknownUser"
 
 type Site struct {
 	logger             *zap.Logger
 	localesManager     *locale.LocalesManager
 	authService        adminservice.AuthService
-	pictureService     profileservice.PictureService
 	root               Page
 	adders             []common.DataAdder
 	Page404Url         string
@@ -54,8 +53,7 @@ func NewSite(globalConfig *config.GlobalConfig, localesManager *locale.LocalesMa
 
 	authConfig := globalConfig.ExtractAuthExtConfig()
 	return &Site{
-		logger: authConfig.Logger, localesManager: localesManager, authService: authConfig.Service,
-		pictureService: globalConfig.ProfileService, root: root,
+		logger: authConfig.Logger, localesManager: localesManager, authService: authConfig.Service, root: root,
 	}
 }
 
@@ -95,8 +93,6 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 		c.Set(siteName, site)
 	})
 
-	engine.GET("/profilePic/:UserId", site.profilePicHandler)
-
 	if site.localesManager.MultipleLang {
 		engine.GET("/changeLang", changeLangHandler)
 	}
@@ -128,21 +124,6 @@ func Run(sites ...SiteAndConfig) error {
 	return g.Wait()
 }
 
-func (site *Site) profilePicHandler(c *gin.Context) {
-	userId := common.GetRequestedUserId(site.logger, c)
-	if userId == 0 {
-		c.AbortWithStatus(http.StatusNotFound)
-		return
-	}
-
-	data, err := site.pictureService.GetPicture(userId)
-	if err != nil {
-		c.AbortWithStatus(http.StatusNotFound)
-		return
-	}
-	c.Data(http.StatusOK, http.DetectContentType(data), data)
-}
-
 var changeLangHandler = common.CreateRedirect(func(c *gin.Context) string {
 	getSite(c).localesManager.SetLangCookie(c.Query(locale.LangName), c)
 	return c.Query(common.RedirectName)
@@ -153,4 +134,16 @@ func checkPort(port string) string {
 		port = ":" + port
 	}
 	return port
+}
+
+func BuildDefaultSite() (*Site, *config.GlobalConfig) {
+	globalConfig := config.LoadDefault()
+	localesManager := locale.NewManager(globalConfig.ExtractLocalesConfig())
+	settingsManager := NewSettingsManager(globalConfig.ExtractSettingsConfig())
+
+	site := NewSite(globalConfig, localesManager, settingsManager)
+
+	site.AddPage(NewProfilePage(globalConfig.ExtractProfileConfig()))
+
+	return site, globalConfig
 }

@@ -15,23 +15,25 @@
  * limitations under the License.
  *
  */
-package profile
+package puzzleweb
 
 import (
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-var errEmptyLogin = errors.New(common.EmptyLoginKey)
-var errWrongConfirm = errors.New(common.WrongConfirmPasswordKey)
+var errEmptyLogin = errors.New(emptyLoginKey)
+var errWrongConfirm = errors.New(wrongConfirmPasswordKey)
 
 type profileWidget struct {
 	viewHandler           gin.HandlerFunc
@@ -39,6 +41,7 @@ type profileWidget struct {
 	saveHandler           gin.HandlerFunc
 	changeLoginHandler    gin.HandlerFunc
 	changePasswordHandler gin.HandlerFunc
+	pictureHandler        gin.HandlerFunc
 }
 
 func (w profileWidget) LoadInto(router gin.IRouter) {
@@ -47,9 +50,10 @@ func (w profileWidget) LoadInto(router gin.IRouter) {
 	router.POST("/save", w.saveHandler)
 	router.POST("/changeLogin", w.changeLoginHandler)
 	router.POST("/changePassword", w.changePasswordHandler)
+	router.GET("/picture/:UserId", w.pictureHandler)
 }
 
-func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
+func NewProfilePage(profileConfig config.ProfileConfig) Page {
 	logger := profileConfig.Logger
 	profileService := profileConfig.Service
 	adminService := profileConfig.AdminService
@@ -59,10 +63,10 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 	viewTmpl := "profile/view" + ext
 	editTmpl := "profile/edit" + ext
 
-	p := puzzleweb.MakeHiddenPage("profile")
+	p := MakeHiddenPage("profile")
 	p.Widget = profileWidget{
-		viewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			viewedUserId := common.GetRequestedUserId(logger, c)
+		viewHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+			viewedUserId := GetRequestedUserId(logger, c)
 			if viewedUserId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
@@ -86,7 +90,7 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 			if err == nil {
-				data["UserRight"] = puzzleweb.DisplayGroups(roles, puzzleweb.GetMessages(c))
+				data["UserRight"] = DisplayGroups(roles, GetMessages(c))
 			}
 
 			userProfile := profiles[viewedUserId]
@@ -94,10 +98,10 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 			data[common.ViewedUserName] = userProfile
 			return viewTmpl, ""
 		}),
-		editHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		editHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			userId, _ := data[common.IdName].(uint64)
 			if userId == 0 {
-				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
+				return "", common.DefaultErrorRedirect(unknownUserKey)
 			}
 
 			profiles, err := profileService.GetProfiles([]uint64{userId})
@@ -110,9 +114,9 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 			return editTmpl, ""
 		}),
 		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
-			userId := puzzleweb.GetSessionUserId(c)
+			userId := GetSessionUserId(c)
 			if userId == 0 {
-				return common.DefaultErrorRedirect(common.UnknownUserKey)
+				return common.DefaultErrorRedirect(unknownUserKey)
 			}
 
 			desc := c.PostForm("userDesc")
@@ -154,15 +158,15 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 			return targetBuilder.String()
 		}),
 		changeLoginHandler: common.CreateRedirect(func(c *gin.Context) string {
-			userId := puzzleweb.GetSessionUserId(c)
+			userId := GetSessionUserId(c)
 			if userId == 0 {
-				return common.DefaultErrorRedirect(common.UnknownUserKey)
+				return common.DefaultErrorRedirect(unknownUserKey)
 			}
 
-			session := puzzleweb.GetSession(c)
-			oldLogin := session.Load(common.LoginName)
-			newLogin := c.PostForm(common.LoginName)
-			password := c.PostForm(common.PasswordName)
+			session := GetSession(c)
+			oldLogin := session.Load(loginName)
+			newLogin := c.PostForm(loginName)
+			password := c.PostForm(passwordName)
 
 			var err error
 			if newLogin == "" {
@@ -173,22 +177,23 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 
 			targetBuilder := profileUrlBuilder(userId)
 			if err != nil {
-				session.Store(common.LoginName, newLogin)
+				session.Store(loginName, newLogin)
 
 				common.WriteError(targetBuilder, err.Error())
 			}
 			return targetBuilder.String()
 		}),
 		changePasswordHandler: common.CreateRedirect(func(c *gin.Context) string {
-			userId := puzzleweb.GetSessionUserId(c)
+			session := GetSession(c)
+			userId := extractUserIdFromSession(logger, session)
 			if userId == 0 {
-				return common.DefaultErrorRedirect(common.UnknownUserKey)
+				return common.DefaultErrorRedirect(unknownUserKey)
 			}
 
-			login := puzzleweb.GetSession(c).Load(common.LoginName)
+			login := session.Load(loginName)
 			oldPassword := c.PostForm("oldPassword")
 			newPassword := c.PostForm("newPassword")
-			confirmPassword := c.PostForm(common.ConfirmPasswordName)
+			confirmPassword := c.PostForm(confirmPasswordName)
 
 			err := errWrongConfirm
 			if newPassword == confirmPassword {
@@ -202,10 +207,32 @@ func AddProfilePage(site *puzzleweb.Site, profileConfig config.ProfileConfig) {
 				common.WriteError(targetBuilder, err.Error())
 			}
 			return targetBuilder.String()
-		}),
+		}), pictureHandler: func(c *gin.Context) {
+			userId := GetRequestedUserId(logger, c)
+			if userId == 0 {
+				c.AbortWithStatus(http.StatusNotFound)
+				return
+			}
+
+			data, err := profileService.GetPicture(userId)
+			if err != nil {
+				// TODO default user picture
+				c.AbortWithStatus(http.StatusNotFound)
+				return
+			}
+			c.Data(http.StatusOK, http.DetectContentType(data), data)
+		},
 	}
 
-	site.AddPage(p)
+	return p
+}
+
+func GetRequestedUserId(logger *zap.Logger, c *gin.Context) uint64 {
+	userId, err := strconv.ParseUint(c.Param(userIdName), 10, 64)
+	if err != nil {
+		logger.Warn("Failed to parse userId from request", zap.Error(err))
+	}
+	return userId
 }
 
 func profileUrlBuilder(userId uint64) *strings.Builder {

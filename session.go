@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -134,7 +133,7 @@ func GetSessionUserId(c *gin.Context) uint64 {
 }
 
 func extractUserIdFromSession(logger *zap.Logger, session *Session) uint64 {
-	userId, err := strconv.ParseUint(session.Load(common.UserIdName), 10, 64)
+	userId, err := strconv.ParseUint(session.Load(userIdName), 10, 64)
 	if err != nil {
 		logger.Info("Failed to parse userId from session", zap.Error(err))
 	}

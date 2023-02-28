@@ -106,7 +106,7 @@ func newSettingsPage(settingsConfig config.ServiceExtConfig[*SettingsManager]) P
 		editHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			userId, _ := data[common.IdName].(uint64)
 			if userId == 0 {
-				return "", common.DefaultErrorRedirect(common.UnknownUserKey)
+				return "", common.DefaultErrorRedirect(unknownUserKey)
 			}
 
 			data["Settings"] = settingsManager.Get(userId, c)
@@ -115,7 +115,7 @@ func newSettingsPage(settingsConfig config.ServiceExtConfig[*SettingsManager]) P
 		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
 			userId := GetSessionUserId(c)
 			if userId == 0 {
-				return common.DefaultErrorRedirect(common.UnknownUserKey)
+				return common.DefaultErrorRedirect(unknownUserKey)
 			}
 
 			settings := c.PostFormMap("settings")

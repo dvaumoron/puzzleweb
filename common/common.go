@@ -23,7 +23,6 @@ import (
 	"unicode"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 )
 
@@ -33,12 +32,7 @@ const AllowedToCreateName = "AllowedToCreate"
 const AllowedToUpdateName = "AllowedToUpdate"
 const AllowedToDeleteName = "AllowedToDelete"
 
-const PasswordName = "Password"
-const ConfirmPasswordName = "ConfirmPassword"
-
-const IdName = "Id"
-const UserIdName = "UserId"
-const LoginName = "Login" // current connected user
+const IdName = "Id" // current connected user id
 const ViewedUserName = "ViewedUser"
 
 var htmlVoidElement = MakeSet([]string{"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"})
@@ -86,14 +80,6 @@ func CreateRedirectString(target string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Redirect(http.StatusFound, target)
 	}
-}
-
-func GetRequestedUserId(logger *zap.Logger, c *gin.Context) uint64 {
-	userId, err := strconv.ParseUint(c.Param(UserIdName), 10, 64)
-	if err != nil {
-		logger.Warn("Failed to parse userId from request", zap.Error(err))
-	}
-	return userId
 }
 
 func GetPagination(defaultPageSize uint64, c *gin.Context) (uint64, uint64, uint64, string) {

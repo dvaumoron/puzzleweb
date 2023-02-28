@@ -60,7 +60,6 @@ type SessionConfig struct {
 
 type SiteConfig struct {
 	ServiceConfig[sessionservice.SessionService]
-	PictureService profileservice.PictureService
 	Domain         string
 	Port           string
 	SessionTimeOut int

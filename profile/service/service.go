@@ -29,13 +29,9 @@ type ProfileService interface {
 	GetProfiles([]uint64) (map[uint64]UserProfile, error)
 }
 
-type PictureService interface {
-	GetPicture(userId uint64) ([]byte, error)
-}
-
 type AdvancedProfileService interface {
 	ProfileService
-	PictureService
+	GetPicture(userId uint64) ([]byte, error)
 	UpdateProfile(userId uint64, desc string, info map[string]string) error
 	UpdatePicture(userId uint64, data []byte) error
 	Delete(userId uint64) error

@@ -205,7 +205,7 @@ func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {
 		ServiceConfig: ServiceConfig[sessionservice.SessionService]{
 			Logger: c.Logger, Service: c.SessionService,
 		},
-		PictureService: c.ProfileService, Domain: c.Domain, Port: c.Port,
+		Domain: c.Domain, Port: c.Port,
 		SessionTimeOut: c.SessionTimeOut, StaticPath: c.StaticPath,
 	}
 }

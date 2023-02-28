@@ -27,6 +27,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const errorMsgName = "ErrorMsg"
+
 type PageDesc struct {
 	Name string
 	Url  string
@@ -64,6 +66,12 @@ func GetMessages(c *gin.Context) map[string]string {
 	return getSite(c).localesManager.GetMessages(c)
 }
 
+func InitNoELementMsg(data gin.H, size int, c *gin.Context) {
+	if size == 0 {
+		data[errorMsgName] = GetMessages(c)["NoElement"]
+	}
+}
+
 func initData(c *gin.Context) gin.H {
 	site := getSite(c)
 	localesManager := site.localesManager
@@ -77,8 +85,8 @@ func initData(c *gin.Context) gin.H {
 		"SubPages":   page.extractSubPageNames(messages, currentUrl, c),
 		"Messages":   messages,
 	}
-	if errorMsg := c.Query("error"); errorMsg != "" {
-		data[common.ErrorMsgName] = messages[errorMsg]
+	if errorKey := c.Query("error"); errorKey != "" {
+		data[errorMsgName] = messages[errorKey]
 	}
 	if localesManager.MultipleLang {
 		data["LangSelector"] = true
@@ -86,25 +94,20 @@ func initData(c *gin.Context) gin.H {
 	}
 	session := GetSession(c)
 	escapedUrl := url.QueryEscape(c.Request.URL.Path)
-	if login := session.Load(common.LoginName); login == "" {
+	var currentUserId uint64
+	if login := session.Load(loginName); login == "" {
 		data[loginUrlName] = "/login?redirect=" + escapedUrl
 	} else {
-		data[common.LoginName] = login
-		data[common.IdName] = extractUserIdFromSession(site.logger, session)
+		currentUserId = extractUserIdFromSession(site.logger, session)
+		data[loginName] = login
+		data[common.IdName] = currentUserId
 		data[loginUrlName] = "/login/logout?redirect=" + escapedUrl
 	}
-	adminId, _ := data[common.IdName].(uint64)
 	data[viewAdminName] = site.authService.AuthQuery(
-		adminId, adminservice.AdminGroupId, adminservice.ActionAccess,
+		currentUserId, adminservice.AdminGroupId, adminservice.ActionAccess,
 	) == nil
 	for _, adder := range site.adders {
 		adder(data, c)
 	}
 	return data
-}
-
-func InitNoELementMsg(data gin.H, size int, c *gin.Context) {
-	if size == 0 {
-		data[common.ErrorMsgName] = GetMessages(c)["NoElement"]
-	}
 }

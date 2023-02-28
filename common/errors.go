@@ -24,13 +24,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const ErrorMsgName = "ErrorMsg"
 const QueryError = "?error="
 
 const WrongLangKey = "WrongLang"
-const EmptyLoginKey = "EmptyLogin"
-const WrongConfirmPasswordKey = "WrongConfirmPassword"
-const UnknownUserKey = "ErrorUnknownUser"
 
 // error displayed to user
 var ErrNotAuthorized = errors.New("ErrorNotAuthorized")

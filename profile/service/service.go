@@ -31,7 +31,7 @@ type ProfileService interface {
 
 type AdvancedProfileService interface {
 	ProfileService
-	GetPicture(userId uint64) ([]byte, error)
+	GetPicture(userId uint64) []byte
 	UpdateProfile(userId uint64, desc string, info map[string]string) error
 	UpdatePicture(userId uint64, data []byte) error
 	Delete(userId uint64) error

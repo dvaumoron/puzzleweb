@@ -29,15 +29,16 @@ import (
 
 type profileClient struct {
 	grpcclient.Client
-	groupId     uint64
-	userService loginservice.UserService
-	authService adminservice.AuthService
+	groupId        uint64
+	userService    loginservice.UserService
+	authService    adminservice.AuthService
+	defaultPicture []byte
 }
 
-func New(serviceAddr string, logger *zap.Logger, groupId uint64, userService loginservice.UserService, authService adminservice.AuthService) service.AdvancedProfileService {
+func New(serviceAddr string, logger *zap.Logger, groupId uint64, userService loginservice.UserService, authService adminservice.AuthService, defaultPicture []byte) service.AdvancedProfileService {
 	return profileClient{
 		Client: grpcclient.Make(serviceAddr, logger), groupId: groupId,
-		userService: userService, authService: authService,
+		userService: userService, authService: authService, defaultPicture: defaultPicture,
 	}
 }
 
@@ -83,10 +84,11 @@ func (client profileClient) UpdatePicture(userId uint64, data []byte) error {
 	return nil
 }
 
-func (client profileClient) GetPicture(userId uint64) ([]byte, error) {
+func (client profileClient) GetPicture(userId uint64) []byte {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		common.LogOriginalError(client.Logger, err)
+		return client.defaultPicture
 	}
 	defer conn.Close()
 
@@ -95,9 +97,10 @@ func (client profileClient) GetPicture(userId uint64) ([]byte, error) {
 
 	response, err := pb.NewProfileClient(conn).GetPicture(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		common.LogOriginalError(client.Logger, err)
+		return client.defaultPicture
 	}
-	return response.Data, nil
+	return response.Data
 }
 
 func (client profileClient) GetProfiles(userIds []uint64) (map[uint64]service.UserProfile, error) {

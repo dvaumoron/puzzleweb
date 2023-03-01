@@ -128,18 +128,26 @@ func LoadDefault() *GlobalConfig {
 	loginService := loginclient.New(requiredFromEnv("LOGIN_SERVICE_ADDR"), logger, dateFormat, saltService)
 	rightClient := adminclient.Make(requiredFromEnv("RIGHT_SERVICE_ADDR"), logger)
 
+	staticPath := retrievePath("STATIC_PATH", "static")
+	defaultPicturePath := retrieveWithDefault("PROFILE_DEFAULT_PICTURE_PATH", staticPath+"/images/unknownuser.png")
+	defaultPicture, err := os.ReadFile(defaultPicturePath)
+	if err != nil {
+		fmt.Println("can not read :", defaultPicturePath)
+		os.Exit(1)
+	}
+
 	// if not setted in configuration, profile are public
 	profileGroupId := retrieveUintWithDefault("PROFILE_GROUP_ID", adminservice.PublicGroupId)
 	profileService := profileclient.New(
 		requiredFromEnv("PROFILE_SERVICE_ADDR"), logger, profileGroupId,
-		loginService, rightClient,
+		loginService, rightClient, defaultPicture,
 	)
 
 	return &GlobalConfig{
 		Domain: domain, Port: port, AllLang: allLang, SessionTimeOut: sessionTimeOut,
 		DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
 
-		StaticPath:    retrievePath("STATIC_PATH", "static"),
+		StaticPath:    staticPath,
 		LocalesPath:   retrievePath("LOCALES_PATH", "locales"),
 		TemplatesPath: retrievePath("TEMPLATES_PATH", "templates"),
 		TemplatesExt:  retrieveWithDefault("TEMPLATES_EXT", ".html"),

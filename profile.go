@@ -223,12 +223,7 @@ func NewProfilePage(profileConfig config.ProfileConfig) Page {
 				return
 			}
 
-			data, err := profileService.GetPicture(userId)
-			if err != nil {
-				// TODO default user picture
-				c.AbortWithStatus(http.StatusNotFound)
-				return
-			}
+			data := profileService.GetPicture(userId)
 			c.Data(http.StatusOK, http.DetectContentType(data), data)
 		},
 	}

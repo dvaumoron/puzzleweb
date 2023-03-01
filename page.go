@@ -76,7 +76,7 @@ func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 			builder.WriteString(lang)
 			builder.WriteString("/")
 			builder.WriteString(tmpl)
-			tmpl = builder.String()
+			return builder.String(), ""
 		}
 		return tmpl, ""
 	}

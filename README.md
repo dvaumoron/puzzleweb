@@ -1,6 +1,6 @@
 # PuzzleWeb
 
-<img src="https://github.com/dvaumoron/puzzleweb/raw/main/static/logo/puzzlelogo.jpg" width="100">
+<img src="https://github.com/dvaumoron/puzzleweb/raw/main/static/images/puzzlelogo.jpg" width="100">
 
 A library based on [Gin](https://gin-gonic.com/) to easily create server with static content, blog, wiki and forum.
 

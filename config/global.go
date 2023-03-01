@@ -196,6 +196,16 @@ func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
 	}
 }
 
+func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {
+	return SiteConfig{
+		ServiceConfig: ServiceConfig[sessionservice.SessionService]{
+			Logger: c.Logger, Service: c.SessionService,
+		},
+		Domain: c.Domain, Port: c.Port,
+		SessionTimeOut: c.SessionTimeOut, StaticPath: c.StaticPath,
+	}
+}
+
 func (c *GlobalConfig) ExtractLoginConfig() ServiceExtConfig[loginservice.LoginService] {
 	return CreateServiceExtConfig[loginservice.LoginService](c, c.LoginService)
 }

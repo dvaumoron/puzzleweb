@@ -51,9 +51,8 @@ func NewSite(globalConfig *config.GlobalConfig, localesManager *locale.LocalesMa
 	root.AddSubPage(newAdminPage(globalConfig.ExtractAdminConfig()))
 	root.AddSubPage(newSettingsPage(config.CreateServiceExtConfig(globalConfig, settingsManager)))
 
-	authConfig := globalConfig.ExtractAuthExtConfig()
 	return &Site{
-		logger: authConfig.Logger, localesManager: localesManager, authService: authConfig.Service, root: root,
+		logger: globalConfig.Logger, localesManager: localesManager, authService: globalConfig.RightClient, root: root,
 	}
 }
 

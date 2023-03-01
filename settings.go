@@ -119,10 +119,14 @@ func newSettingsPage(settingsConfig config.ServiceExtConfig[*SettingsManager]) P
 			}
 
 			settings := c.PostFormMap("settings")
+			err := settingsManager.CheckSettings(settings, c)
+			if err == nil {
+				err = settingsManager.Update(userId, settings)
+			}
 
 			var targetBuilder strings.Builder
 			targetBuilder.WriteString("/settings/edit")
-			if err := settingsManager.Update(userId, settings); err != nil {
+			if err != nil {
 				common.WriteError(&targetBuilder, err.Error())
 			}
 			return targetBuilder.String()

@@ -189,24 +189,10 @@ func (c *GlobalConfig) ExtractAuthConfig() ServiceConfig[adminservice.AuthServic
 	return ServiceConfig[adminservice.AuthService]{Logger: c.Logger, Service: c.RightClient}
 }
 
-func (c *GlobalConfig) ExtractAuthExtConfig() ServiceExtConfig[adminservice.AuthService] {
-	return CreateServiceExtConfig[adminservice.AuthService](c, c.RightClient)
-}
-
 func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
 	return LocalesConfig{
 		Logger: c.Logger, Domain: c.Domain, SessionTimeOut: c.SessionTimeOut,
 		Path: c.LocalesPath, AllLang: c.AllLang,
-	}
-}
-
-func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {
-	return SiteConfig{
-		ServiceConfig: ServiceConfig[sessionservice.SessionService]{
-			Logger: c.Logger, Service: c.SessionService,
-		},
-		Domain: c.Domain, Port: c.Port,
-		SessionTimeOut: c.SessionTimeOut, StaticPath: c.StaticPath,
 	}
 }
 

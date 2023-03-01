@@ -125,7 +125,7 @@ func newSettingsPage(settingsConfig config.ServiceExtConfig[*SettingsManager]) P
 			}
 
 			var targetBuilder strings.Builder
-			targetBuilder.WriteString("/settings/edit")
+			targetBuilder.WriteString("/settings")
 			if err != nil {
 				common.WriteError(&targetBuilder, err.Error())
 			}

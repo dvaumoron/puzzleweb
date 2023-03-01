@@ -92,7 +92,7 @@ type settingsWidget struct {
 }
 
 func (w settingsWidget) LoadInto(router gin.IRouter) {
-	router.GET("/edit", w.editHandler)
+	router.GET("/", w.editHandler)
 	router.POST("/save", w.saveHandler)
 }
 

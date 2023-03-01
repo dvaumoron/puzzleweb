@@ -44,7 +44,16 @@ type profileWidget struct {
 	pictureHandler        gin.HandlerFunc
 }
 
+var defaultHandler = common.CreateRedirect(func(c *gin.Context) string {
+	userId := GetSessionUserId(c)
+	if userId == 0 {
+		return common.DefaultErrorRedirect(unknownUserKey)
+	}
+	return profileUrlBuilder(userId).String()
+})
+
 func (w profileWidget) LoadInto(router gin.IRouter) {
+	router.GET("/", defaultHandler)
 	router.GET("/view/:UserId", w.viewHandler)
 	router.GET("/edit", w.editHandler)
 	router.POST("/save", w.saveHandler)

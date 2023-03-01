@@ -93,9 +93,8 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 	p := puzzleweb.MakePage(wikiName)
 	p.Widget = wikiWidget{
 		defaultHandler: common.CreateRedirect(func(c *gin.Context) string {
-			return wikiUrlBuilder(
-				common.GetCurrentUrl(c), puzzleweb.GetLocalesManager(c).GetLang(c), viewMode, defaultPage,
-			).String()
+			lang := puzzleweb.GetLocalesManager(c).GetLang(c)
+			return wikiUrlBuilder(common.GetCurrentUrl(c), lang, viewMode, defaultPage).String()
 		}),
 		viewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			askedLang := c.Param(locale.LangName)

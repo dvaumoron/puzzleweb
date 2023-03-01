@@ -13,7 +13,7 @@
 <html>
     <head>
         <meta charset="utf-8"/>
-        <title>Title - {{.PageTitle}}</title>
+        <title>SiteTitle - {{.PageTitle}}</title>
         <link rel="stylesheet" type="text/css" href="/static/main.css"/>
         <script type="text/javascript" src="/static/js/wasm_exec.js"></script>
         <script type="text/javascript" src="/static/js/main.js"></script>
@@ -36,6 +36,7 @@
                 <div class="error">{{.}}</div>
             {{end}}
             <p>
+                <a href="/">SiteTitle</a>
                 {{range .Ariane}}
                     / <a href="{{.Url}}">{{.Name}}</a>
                 {{end}}

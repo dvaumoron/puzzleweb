@@ -259,8 +259,8 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			return listRoleTmpl, ""
 		}),
 		editRoleHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
-			roleName := c.PostForm(roleNameName)
-			group := c.PostForm(groupName)
+			roleName := c.Param(roleNameName)
+			group := c.Param(groupName)
 
 			data[roleNameName] = roleName
 			data[groupName] = group

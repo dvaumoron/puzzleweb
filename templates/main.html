@@ -2,7 +2,7 @@
     <a href="/profile/view/{{.Id}}">{{.Login}}</a>
 {{end}}
 {{define "profilePicture"}}
-    <img src="/profile/picture/{{.Id}}" alt="{{.Login}}"/>
+    <img src="/profile/picture/{{.Id}}" alt="{{.Login}}" width=100/>
 {{end}}
 {{define "profilePictureLink"}}
     <a href="/profile/view/{{.Id}}">
@@ -23,25 +23,29 @@
         <header>
             <h1>{{.PageTitle}}</h1>
             {{if .LoginUrl}}
-                <p>
+                <ul class="user-tools">
                     {{if .Login}}
-                        {{.Messages.WelcomeLabel}} {{template "profileLink" .}}
-                        <a href="{{.LoginUrl}}">{{.Messages.LogoutLinkLabel}}</a>
+                        <li>{{.Messages.WelcomeLabel}} {{template "profileLink" .}}</li>
+                        <li><a href="/settings">{{.Messages.PageTitleSettings}}</a></li>
+                        {{if .ViewAdmin}}
+                            <li><a href="/admin">{{.Messages.PageTitleAdmin}}</a></li>
+                        {{end}}
+                        <li><a href="{{.LoginUrl}}">{{.Messages.LogoutLinkLabel}}</a></li>
                     {{else}}
-                        <a href="{{.LoginUrl}}">{{.Messages.LoginLinkLabel}}</a>
+                        <li><a href="{{.LoginUrl}}">{{.Messages.LoginLinkLabel}}</a></li>
                     {{end}}
-                </p>
+                </ul>
             {{end}}
             {{with .ErrorMsg}}
                 <div class="error">{{.}}</div>
             {{end}}
-            <p>
-                <a href="/">SiteTitle</a>
+            <p class="ariane">
+                <a href="/">PuzzleTest</a>
                 {{range .Ariane}}
                     / <a href="{{.Url}}">{{.Name}}</a>
                 {{end}}
             </p>
-            <ul>
+            <ul class="sub-pages">
                 {{range .SubPages}}
                     <li><a href="{{.Url}}">{{.Name}}</a></li>
                 {{end}}

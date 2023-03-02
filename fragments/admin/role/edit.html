@@ -23,25 +23,25 @@
     <div>
         <label>
             {{.Messages.AccessLabel}}
-            <input type="checkbox" name="actions" value="access" checked="{{.Access}}"/>
+            <input type="checkbox" name="actions" value="access" {{with .Access}} checked="{{.}}" {{end}}/>
         </label>
     </div>
     <div>
         <label>
             {{.Messages.CreateLabel}}
-            <input type="checkbox" name="actions" value="create" checked="{{.Create}}"/>
+            <input type="checkbox" name="actions" value="create" {{with .Create}} checked="{{.}}" {{end}}/>
         </label>
     </div>
     <div>
         <label>
             {{.Messages.UpdateLabel}}
-            <input type="checkbox" name="actions" value="update" checked="{{.Update}}"/>
+            <input type="checkbox" name="actions" value="update" {{with .Update}} checked="{{.}}" {{end}}/>
         </label>
     </div>
     <div>
         <label>
             {{.Messages.DeleteLabel}}
-            <input type="checkbox" name="actions" value="delete" checked="{{.Delete}}"/>
+            <input type="checkbox" name="actions" value="delete" {{with .Delete}} checked="{{.}}" {{end}}/>
         </label>
     </div>
     <div><button type="button" id="saveRoleButton">{{.Messages.SaveLinkLabel}}</button></div>

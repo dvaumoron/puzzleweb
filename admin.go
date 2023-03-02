@@ -269,10 +269,9 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 
 			data[roleNameName] = roleName
 			data[groupName] = group
+			data["GroupDisplayName"] = getGroupDisplayName(group, GetMessages(c))
 
 			if roleName != "new" {
-				data["GroupDisplayName"] = getGroupDisplayName(group, GetMessages(c))
-
 				adminId, _ := data[common.IdName].(uint64)
 				actions, err := adminService.GetActions(adminId, roleName, group)
 				if err != nil {

@@ -1,9 +1,9 @@
 
 <h2>
     {{if eq .RoleName "new"}}
-        {{.Messages.NewRoleLabel}} {{.Group}}
+        {{.Messages.NewRoleLabel}} {{.GroupDisplayName}}
     {{else}}
-        {{.Messages.EditLabel}} {{.Group}}/{{.RoleName}}
+        {{.Messages.EditLabel}} {{.GroupDisplayName}}/{{.RoleName}}
     {{end}}
     [<a href="/admin/role/list">{{.Messages.CancelLinkLabel}}</a>]
 </h2>

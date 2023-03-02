@@ -53,7 +53,7 @@ type GroupDisplay struct {
 }
 
 func NewGroupDisplay(id uint64, name string, messages map[string]string) *GroupDisplay {
-	return &GroupDisplay{Id: id, Name: name, DisplayName: messages["GroupLabel"+locale.CamelCase(name)]}
+	return &GroupDisplay{Id: id, Name: name, DisplayName: getGroupDisplayName(name, messages)}
 }
 
 type RoleDisplay struct {
@@ -271,6 +271,8 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			data[groupName] = group
 
 			if roleName != "new" {
+				data["GroupDisplayName"] = getGroupDisplayName(group, GetMessages(c))
+
 				adminId, _ := data[common.IdName].(uint64)
 				actions, err := adminService.GetActions(adminId, roleName, group)
 				if err != nil {
@@ -306,6 +308,10 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 		}),
 	}
 	return p
+}
+
+func getGroupDisplayName(name string, messages map[string]string) string {
+	return messages["GroupLabel"+locale.CamelCase(name)]
 }
 
 func DisplayGroups(roles []service.Role, messages map[string]string) []*GroupDisplay {

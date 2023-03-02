@@ -52,6 +52,10 @@ type GroupDisplay struct {
 	AddableRoles []RoleDisplay
 }
 
+func NewGroupDisplay(id uint64, name string, messages map[string]string) *GroupDisplay {
+	return &GroupDisplay{Id: id, Name: name, DisplayName: messages["GroupLabel"+locale.CamelCase(name)]}
+}
+
 type RoleDisplay struct {
 	Name    string
 	Actions []string
@@ -255,7 +259,8 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			data[groupsName] = DisplayGroups(allRoles, GetMessages(c))
+			allGroups := adminService.GetAllGroups()
+			data[groupsName] = displayAllGroups(allGroups, allRoles, GetMessages(c))
 			return listRoleTmpl, ""
 		}),
 		editRoleHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
@@ -314,10 +319,7 @@ func populateGroup(nameToGroup map[string]*GroupDisplay, roles []service.Role, m
 		groupName := role.GroupName
 		group := nameToGroup[groupName]
 		if group == nil {
-			group = &GroupDisplay{
-				Id: role.GroupId, Name: groupName,
-				DisplayName: messages["GroupLabel"+locale.CamelCase(groupName)],
-			}
+			group = NewGroupDisplay(role.GroupId, groupName, messages)
 			nameToGroup[groupName] = group
 		}
 		appender(group, role, messages)
@@ -374,6 +376,15 @@ func addableRolesAppender(group *GroupDisplay, role service.Role, messages map[s
 	if !contains {
 		group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role, messages))
 	}
+}
+
+func displayAllGroups(groups []service.Group, roles []service.Role, messages map[string]string) []*GroupDisplay {
+	nameToGroup := map[string]*GroupDisplay{}
+	for _, group := range groups {
+		nameToGroup[group.Name] = NewGroupDisplay(group.Id, group.Name, messages)
+	}
+	populateGroup(nameToGroup, roles, messages, rolesAppender)
+	return sortGroups(nameToGroup)
 }
 
 func setActionChecked(data gin.H, actionSet common.Set[string], toTest string, name string) {

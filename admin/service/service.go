@@ -29,6 +29,11 @@ const (
 	ActionDelete = "delete"
 )
 
+type Group struct {
+	Id   uint64
+	Name string
+}
+
 type Role struct {
 	Name      string
 	GroupId   uint64
@@ -42,6 +47,7 @@ type AuthService interface {
 
 type AdminService interface {
 	AuthService
+	GetAllGroups() []Group
 	GetAllRoles(adminId uint64) ([]Role, error)
 	GetActions(adminId uint64, roleName string, groupName string) ([]string, error)
 	UpdateUser(adminId uint64, userId uint64, roles []Role) error

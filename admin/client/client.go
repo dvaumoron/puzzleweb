@@ -67,6 +67,14 @@ func (client RightClient) GetGroupName(groupId uint64) string {
 	return client.groupIdToName[groupId]
 }
 
+func (client RightClient) GetAllGroups() []service.Group {
+	groups := make([]service.Group, 0, len(client.groupIdToName))
+	for id, name := range client.groupIdToName {
+		groups = append(groups, service.Group{Id: id, Name: name})
+	}
+	return groups
+}
+
 func (client RightClient) AuthQuery(userId uint64, groupId uint64, action string) error {
 	conn, err := client.Dial()
 	if err != nil {

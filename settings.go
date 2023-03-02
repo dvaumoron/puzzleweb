@@ -52,7 +52,7 @@ func initSettings(c *gin.Context) map[string]string {
 
 func checkSettings(settings map[string]string, c *gin.Context) error {
 	askedLang := settings[locale.LangName]
-	lang := GetLocalesManager(c).CheckLang(askedLang)
+	lang := GetLocalesManager(c).SetLangCookie(askedLang, c)
 	settings[locale.LangName] = lang
 	if lang != askedLang {
 		return errWrongLang

@@ -136,8 +136,8 @@ func (m *LocalesManager) setLangCookie(lang string, c *gin.Context) string {
 	return lang
 }
 
-func (m *LocalesManager) SetLangCookie(lang string, c *gin.Context) {
-	m.setLangCookie(m.CheckLang(lang), c)
+func (m *LocalesManager) SetLangCookie(lang string, c *gin.Context) string {
+	return m.setLangCookie(m.CheckLang(lang), c)
 }
 
 func (m *LocalesManager) GetMessages(c *gin.Context) map[string]string {

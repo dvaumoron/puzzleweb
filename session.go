@@ -48,15 +48,21 @@ func (m sessionManager) getSessionId(c *gin.Context) (uint64, error) {
 		m.Logger.Info("Failed to parse session cookie", zap.Error(err))
 		return m.generateSessionCookie(c)
 	}
+	// refreshing cookie
+	m.setSessionCookie(sessionId, c)
 	return sessionId, nil
 }
 
 func (m sessionManager) generateSessionCookie(c *gin.Context) (uint64, error) {
 	sessionId, err := m.Service.Generate()
 	if err == nil {
-		c.SetCookie(cookieName, fmt.Sprint(sessionId), m.TimeOut, "/", m.Domain, true, true)
+		m.setSessionCookie(sessionId, c)
 	}
 	return sessionId, err
+}
+
+func (m sessionManager) setSessionCookie(sessionId uint64, c *gin.Context) {
+	c.SetCookie(cookieName, fmt.Sprint(sessionId), m.TimeOut, "/", m.Domain, true, true)
 }
 
 type Session struct {

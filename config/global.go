@@ -99,6 +99,7 @@ func LoadDefault() *GlobalConfig {
 
 	sessionTimeOutStr := os.Getenv("SESSION_TIME_OUT")
 	if sessionTimeOutStr == "" {
+		fmt.Println("SESSION_TIME_OUT not found, using default :", defaultSessionTimeOut)
 		sessionTimeOut = defaultSessionTimeOut
 	} else {
 		sessionTimeOut, _ = strconv.Atoi(sessionTimeOutStr)

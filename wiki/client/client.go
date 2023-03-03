@@ -232,7 +232,7 @@ func (client wikiClient) sortConvertVersions(list []*pb.Version) ([]service.Vers
 		return nil, nil
 	}
 
-	valueSet := make([]*pb.Version, maxVersion(list).Number)
+	valueSet := make([]*pb.Version, maxVersion(list).Number+1)
 	// no duplicate check, there is one in GetProfiles
 	userIds := make([]uint64, 0, size)
 	for _, value := range list {

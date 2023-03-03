@@ -118,7 +118,8 @@ func (m *LocalesManager) GetLang(c *gin.Context) string {
 		tag, _ := language.MatchStrings(m.matcher, c.GetHeader("Accept-Language"))
 		return m.setLangCookie(tag.String(), c)
 	}
-	return m.CheckLang(lang)
+	// check & refresh cookie
+	return m.SetLangCookie(lang, c)
 }
 
 func (m *LocalesManager) CheckLang(lang string) string {

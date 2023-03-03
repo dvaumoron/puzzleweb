@@ -148,7 +148,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 
 			userId, _ := data[common.IdName].(uint64)
 			content, err := wikiService.LoadContent(userId, lang, title, "")
-			if err == nil {
+			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 

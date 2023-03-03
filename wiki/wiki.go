@@ -140,7 +140,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			title := c.Param(titleName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
 
-			if lang == askedLang {
+			if lang != askedLang {
 				targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
 				common.WriteError(targetBuilder, common.WrongLangKey)
 				return "", targetBuilder.String()

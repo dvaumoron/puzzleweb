@@ -104,7 +104,7 @@ func LoadDefault() *GlobalConfig {
 	} else {
 		sessionTimeOut, _ = strconv.Atoi(sessionTimeOutStr)
 		if sessionTimeOut == 0 {
-			fmt.Println("Failed to parse SESSION_TIME_OUT, using default")
+			fmt.Println("Failed to parse SESSION_TIME_OUT, using default :", defaultSessionTimeOut)
 			sessionTimeOut = defaultSessionTimeOut
 		}
 	}

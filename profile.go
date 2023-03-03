@@ -185,9 +185,9 @@ func NewProfilePage(profileConfig config.ProfileConfig) Page {
 			}
 
 			targetBuilder := profileUrlBuilder(userId)
-			if err != nil {
+			if err == nil {
 				session.Store(loginName, newLogin)
-
+			} else {
 				common.WriteError(targetBuilder, err.Error())
 			}
 			return targetBuilder.String()

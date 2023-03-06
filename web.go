@@ -50,6 +50,7 @@ func NewSite(globalConfig *config.GlobalConfig, localesManager *locale.LocalesMa
 	root.AddSubPage(newLoginPage(globalConfig.ExtractLoginConfig(), settingsManager))
 	root.AddSubPage(newAdminPage(globalConfig.ExtractAdminConfig()))
 	root.AddSubPage(newSettingsPage(config.CreateServiceExtConfig(globalConfig, settingsManager)))
+	root.AddSubPage(newProfilePage(globalConfig.ExtractProfileConfig()))
 
 	return &Site{
 		logger: globalConfig.Logger, localesManager: localesManager, authService: globalConfig.RightClient, root: root,
@@ -141,8 +142,6 @@ func BuildDefaultSite() (*Site, *config.GlobalConfig) {
 	settingsManager := NewSettingsManager(globalConfig.ExtractSettingsConfig())
 
 	site := NewSite(globalConfig, localesManager, settingsManager)
-
-	site.AddPage(NewProfilePage(globalConfig.ExtractProfileConfig()))
 
 	return site, globalConfig
 }

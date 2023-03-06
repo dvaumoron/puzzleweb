@@ -34,7 +34,7 @@ const threadIdName = "threadId"
 
 const parsingThreadIdErrorMsg = "Failed to parse threadId"
 
-const emptyMessage = "EmptyThreadMessage"
+const emptyMessage = "EmptyForumMessage"
 
 var errEmptyMessage = errors.New(emptyMessage)
 

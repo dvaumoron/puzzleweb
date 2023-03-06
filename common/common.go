@@ -132,8 +132,9 @@ func FilterExtractHtml(html string, extractSize uint64) string {
 					tagStack.Push(tagName)
 				}
 				buffer = append(buffer, '<')
-				buffer = slices.Grow(buffer, len(temp))
-				copy(buffer, temp)
+				tempLen := len(temp)
+				buffer = slices.Grow(buffer, tempLen)
+				copy(buffer[:len(buffer)+tempLen], temp)
 				if notEnded {
 					buffer = append(buffer, ' ')
 					copyTagAttribute(buffer, chars)

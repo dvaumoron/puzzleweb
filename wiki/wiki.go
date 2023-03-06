@@ -157,7 +157,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			if content == nil {
 				data[wikiVersionName] = "0"
 			} else {
-				data[wikiVersionName] = content.Version
+				data[wikiVersionName] = fmt.Sprint(content.Version)
 				data[wikiContentName] = content.Markdown
 			}
 			return editTmpl, ""

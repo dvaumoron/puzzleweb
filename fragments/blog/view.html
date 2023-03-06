@@ -39,9 +39,15 @@
 
 {{$postId := .Post.PostId}}
 {{if .AllowedToCreate}}
-    <form action="{{.BaseUrl}}comment/save/{{$postId}}" method="POST">
-        <div><textarea name="comment" rows="20" cols="80">{{.Messages.LeaveCommentLabel}}</textarea></div>
-        <div><button type="submit">{{.Messages.CreateLinkLabel}}</button></div>
+    <form id="commentForm" action="{{.BaseUrl}}comment/save/{{$postId}}" method="POST">
+        <div><textarea id="commentField" name="comment" rows="20" cols="80">{{.Messages.LeaveCommentLabel}}</textarea></div>
+        <div class="hidden">
+            {{/* to allow JavaScript or WebAssembly to detect unmodified localized comment*/}}
+            <span id="unmodifiedComment">{{.Messages.LeaveCommentLabel}}</span>
+            {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+            <span id="errorEmptyCommentMessage">{{.Messages.EmptyComment}}</span>
+        </div>
+        <div><button type="button" id="commentButton">{{.Messages.CreateLinkLabel}}</button></div>
     </form>
 {{end}}
 

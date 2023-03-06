@@ -3,7 +3,7 @@
     <div>
         <label>
             {{.Messages.LoginLabel}}
-            <input type="text" name="Login"/>
+            <input type="text" id="loginField" name="Login"/>
         </label>
     </div>
     <div>
@@ -23,9 +23,11 @@
         <input type="text" name="Redirect" value="{{.Redirect}}"/>
         <input type="text" name="PrevUrlWithError" value="{{.PrevUrlWithError}}"/>
         {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+        <span id="errorEmptyLoginMessage">{{.Messages.EmptyLogin}}</span>
+        <span id="errorEmptyPasswordMessage">{{.Messages.EmptyPassword}}</span>
         <span id="errorWrongConfimPasswordMessage">{{.Messages.WrongConfirmPassword}}</span>
     </div>
-    <div><button type="submit">{{.Messages.LoginLinkLabel}}</button></div>
+    <div><button type="button" id="loginSubmitButton">{{.Messages.LoginLinkLabel}}</button></div>
     <div>
         <button type="button" id="loginRegisterButton">{{.Messages.RegisterLinkLabel}}</button>
         <button type="button" id="loginRegisterButton2" class="hidden">{{.Messages.RegisterLinkLabel}}</button>

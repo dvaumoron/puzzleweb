@@ -18,6 +18,7 @@
 package blog
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"strconv"
@@ -31,12 +32,14 @@ import (
 	"go.uber.org/zap"
 )
 
+const emptyTitle = "EmptyPostTitle"
+const emptyContent = "EmptyPostContent"
+
 const postIdName = "postId"
 
 const parsingPostIdErrorMsg = "Failed to parse postId"
 
-const emptyTitle = "EmptyPostTitle"
-const emptyContent = "EmptyPostContent"
+var errEmptyComment = errors.New("EmptyComment")
 
 type blogWidget struct {
 	listHandler          gin.HandlerFunc
@@ -161,14 +164,18 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			}
 			comment := c.PostForm("comment")
 
-			post, err := blogService.GetPost(userId, postId)
-			if err != nil {
-				return common.DefaultErrorRedirect(err.Error())
-			}
+			err = errEmptyComment
+			if comment != "" {
+				var post service.BlogPost
+				post, err = blogService.GetPost(userId, postId)
+				if err != nil {
+					return common.DefaultErrorRedirect(err.Error())
+				}
 
-			err = commentService.CreateComment(userId, post.Title, comment)
-			if err != nil {
-				return common.DefaultErrorRedirect(err.Error())
+				err = commentService.CreateComment(userId, post.Title, comment)
+				if err != nil {
+					return common.DefaultErrorRedirect(err.Error())
+				}
 			}
 
 			targetBuilder := postUrlBuilder(common.GetBaseUrl(3, c), postId)

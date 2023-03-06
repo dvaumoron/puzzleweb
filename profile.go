@@ -33,6 +33,7 @@ import (
 )
 
 var errEmptyLogin = errors.New(emptyLoginKey)
+var errEmptyPassword = errors.New(emptyPasswordKey)
 var errWrongConfirm = errors.New(wrongConfirmPasswordKey)
 
 type profileWidget struct {
@@ -177,10 +178,8 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			newLogin := c.PostForm(loginName)
 			password := c.PostForm(passwordName)
 
-			var err error
-			if newLogin == "" {
-				err = errEmptyLogin
-			} else {
+			err := errEmptyLogin
+			if newLogin != "" {
 				err = loginService.ChangeLogin(userId, oldLogin, newLogin, password)
 			}
 
@@ -204,11 +203,14 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			newPassword := c.PostForm("newPassword")
 			confirmPassword := c.PostForm(confirmPasswordName)
 
-			err := errWrongConfirm
-			if newPassword == confirmPassword {
-				// TODO check password strength
+			err := errEmptyPassword
+			if newPassword != "" {
+				err = errWrongConfirm
+				if newPassword == confirmPassword {
+					// TODO check password strength
 
-				err = loginService.ChangePassword(userId, login, oldPassword, newPassword)
+					err = loginService.ChangePassword(userId, login, oldPassword, newPassword)
+				}
 			}
 
 			targetBuilder := profileUrlBuilder(userId)

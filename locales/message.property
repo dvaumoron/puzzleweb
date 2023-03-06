@@ -30,6 +30,7 @@ PageTitleLogin=
 EmptyLogin=
 WrongLogin=
 ExistingLogin=
+EmptyPassword=
 WrongConfirmPassword=
 LoginLabel=
 PasswordLabel=
@@ -80,6 +81,7 @@ UseMarkdownLabel=
 ModifiedMarkdown=
 EmptyPostTitle=
 EmptyPostContent=
+EmptyComment=
 
 # forum
 ThreadsLabel=

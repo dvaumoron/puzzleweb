@@ -30,11 +30,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const emptyMessage = "EmptyForumMessage"
+
 const threadIdName = "threadId"
 
 const parsingThreadIdErrorMsg = "Failed to parse threadId"
-
-const emptyMessage = "EmptyForumMessage"
 
 var errEmptyMessage = errors.New(emptyMessage)
 

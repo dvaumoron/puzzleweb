@@ -18,6 +18,8 @@
     <div><textarea id="postMarkdownField" name="markdown" rows="20" cols="80">{{.Markdown}}</textarea></div>
     <div class="hidden">
          {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+        <span id="errorEmptyPostTitleMessage">{{.Messages.EmptyPostTitle}}</span>
+        <span id="errorEmptyPostContentMessage">{{.Messages.EmptyPostContent}}</span>
         <span id="errorModifiedMarkdownMessage">{{.Messages.ModifiedMarkdown}}</span>
     </div>
     <div><button type="submit">{{.Messages.UpdatePreviewLinkLabel}}</button></div>

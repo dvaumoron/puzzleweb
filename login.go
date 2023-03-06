@@ -29,6 +29,7 @@ import (
 )
 
 const emptyLoginKey = "EmptyLogin"
+const emptyPasswordKey = "EmptyPassword"
 const wrongConfirmPasswordKey = "WrongConfirmPassword"
 
 const userIdName = "UserId"
@@ -81,6 +82,9 @@ func newLoginPage(loginConfig config.ServiceExtConfig[service.LoginService], set
 
 			if login == "" {
 				return c.PostForm(prevUrlWithErrorName) + emptyLoginKey
+			}
+			if password == "" {
+				return c.PostForm(prevUrlWithErrorName) + emptyPasswordKey
 			}
 
 			success := true

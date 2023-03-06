@@ -35,6 +35,9 @@ const postIdName = "postId"
 
 const parsingPostIdErrorMsg = "Failed to parse postId"
 
+const emptyTitle = "EmptyPostTitle"
+const emptyContent = "EmptyPostContent"
+
 type blogWidget struct {
 	listHandler          gin.HandlerFunc
 	viewHandler          gin.HandlerFunc
@@ -212,6 +215,13 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			title := c.PostForm("title")
 			markdown := c.PostForm("markdown")
 
+			if title == "" {
+				return "", common.DefaultErrorRedirect(emptyTitle)
+			}
+			if markdown == "" {
+				return "", common.DefaultErrorRedirect(emptyContent)
+			}
+
 			html, err := markdownService.Apply(markdown)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
@@ -227,6 +237,13 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			title := c.PostForm("title")
 			userId := puzzleweb.GetSessionUserId(c)
 			markdown := c.PostForm("markdown")
+
+			if title == "" {
+				return common.DefaultErrorRedirect(emptyTitle)
+			}
+			if markdown == "" {
+				return common.DefaultErrorRedirect(emptyContent)
+			}
 
 			html, err := markdownService.Apply(markdown)
 			if err != nil {

@@ -12,7 +12,7 @@
     <div>
         <label>
             {{.Messages.TitleLabel}}
-            <input type="text" id="postTitleField" name="title"/>
+            <input type="text" id="postTitleField" name="title" value="{{.PreviewTitle}}"/>
         </label>
     </div>
     <div><textarea id="postMarkdownField" name="markdown" rows="20" cols="80">{{.Markdown}}</textarea></div>

@@ -127,6 +127,7 @@ func FilterExtractHtml(html string, extractSize uint64) string {
 				tagStack.Pop()
 			} else {
 				temp := make([]rune, 0, 20)
+				temp = append(temp, char2)
 				temp, notEnded := copyTagName(temp, chars)
 				if tagName := string(temp); !htmlVoidElement.Contains(tagName) {
 					tagStack.Push(tagName)

@@ -83,3 +83,5 @@ ModifiedMarkdown=
 ThreadsLabel=
 CreateThreadTitle=
 ResponseMessageLabel=
+EmptyThreadTitle=
+EmptyThreadMessage=

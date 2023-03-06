@@ -18,6 +18,7 @@
 package forum
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -32,6 +33,10 @@ import (
 const threadIdName = "threadId"
 
 const parsingThreadIdErrorMsg = "Failed to parse threadId"
+
+const emptyMessage = "EmptyThreadMessage"
+
+var errEmptyMessage = errors.New(emptyMessage)
 
 type forumWidget struct {
 	listThreadHandler    gin.HandlerFunc
@@ -110,6 +115,13 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			title := c.PostForm("title")
 			message := c.PostForm("message")
 
+			if title == "" {
+				return common.DefaultErrorRedirect("EmptyThreadTitle")
+			}
+			if message == "" {
+				return common.DefaultErrorRedirect(emptyMessage)
+			}
+
 			threadId, err := forumService.CreateThread(puzzleweb.GetSessionUserId(c), title, message)
 			if err != nil {
 				return common.DefaultErrorRedirect(err.Error())
@@ -164,7 +176,10 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			}
 			message := c.PostForm("message")
 
-			err = forumService.CreateMessage(puzzleweb.GetSessionUserId(c), threadId, message)
+			err = errEmptyMessage
+			if message != "" {
+				err = forumService.CreateMessage(puzzleweb.GetSessionUserId(c), threadId, message)
+			}
 
 			targetBuilder := threadUrlBuilder(common.GetBaseUrl(3, c), threadId)
 			if err != nil {

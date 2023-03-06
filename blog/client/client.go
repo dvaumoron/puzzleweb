@@ -139,16 +139,18 @@ func (client blogClient) GetPosts(userId uint64, start uint64, end uint64, filte
 	if err != nil {
 		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
+
+	total := response.Total
 	list := response.List
 	if len(list) == 0 {
-		return response.Total, nil, nil
+		return total, nil, nil
 	}
 
 	posts, err := client.sortConvertPosts(list)
 	if err != nil {
 		return 0, nil, err
 	}
-	return response.Total, posts, nil
+	return total, posts, nil
 }
 
 func (client blogClient) DeletePost(userId uint64, postId uint64) error {

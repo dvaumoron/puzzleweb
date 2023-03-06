@@ -275,9 +275,11 @@ func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 	if err != nil {
 		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
+
+	total := response.Total
 	list := response.List
 	if len(list) == 0 {
-		return response.Total, nil, nil
+		return total, nil, nil
 	}
 
 	users, err := client.profileService.GetProfiles(extractUserIds(list))
@@ -285,7 +287,7 @@ func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 		return 0, nil, err
 	}
 	sort.Sort(sortableContentsDesc(list))
-	return response.Total, convertContents(list, users, client.dateFormat), err
+	return total, convertContents(list, users, client.dateFormat), err
 }
 
 func (client forumClient) GetCommentThread(userId uint64, elemTitle string, start uint64, end uint64) (uint64, []service.ForumContent, error) {
@@ -321,13 +323,18 @@ func (client forumClient) GetCommentThread(userId uint64, elemTitle string, star
 		return 0, nil, common.LogOriginalError(client.Logger, err)
 	}
 
+	total := response2.Total
 	list := response2.List
+	if len(list) == 0 {
+		return total, nil, nil
+	}
+
 	users, err := client.profileService.GetProfiles(extractUserIds(list))
 	if err != nil {
 		return 0, nil, err
 	}
 	sort.Sort(sortableContentsAsc(list))
-	return response2.Total, convertContents(list, users, client.dateFormat), nil
+	return total, convertContents(list, users, client.dateFormat), nil
 }
 
 func (client forumClient) DeleteThread(userId uint64, threadId uint64) error {

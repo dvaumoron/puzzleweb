@@ -140,7 +140,7 @@ func FilterExtractHtml(html string, extractSize uint64) string {
 				copy(buffer[bufferLen:], temp)
 				if notEnded {
 					buffer = append(buffer, ' ')
-					copyTagAttribute(buffer, chars)
+					buffer = copyTagAttribute(buffer, chars)
 				}
 				buffer = append(buffer, '>')
 			}

@@ -58,7 +58,7 @@
     {{$baseUrl := .BaseUrl}}
     {{if .AllowedToDelete}}
         {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
-        {{range .Messages}}
+        {{range .ForumMessages}}
             <li>
                 <ul>
                     <li>{{template "profilePictureLink" .Creator}}</li>
@@ -69,7 +69,7 @@
             </li>
         {{end}}
     {{else}}
-        {{range .Messages}}
+        {{range .ForumMessages}}
             <li>
                 <ul>
                     <li>{{template "profilePictureLink" .Creator}}</li>

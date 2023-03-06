@@ -150,7 +150,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			common.InitPagination(data, filter, pageNumber, end, total)
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data["Thread"] = thread
-			data["Messages"] = messages
+			data["ForumMessages"] = messages
 			data[common.AllowedToCreateName] = forumService.CreateMessageRight(userId)
 			data[common.AllowedToDeleteName] = forumService.DeleteRight(userId)
 			puzzleweb.InitNoELementMsg(data, len(messages), c)

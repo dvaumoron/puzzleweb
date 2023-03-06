@@ -1,7 +1,9 @@
 
 <h2>
     {{.Messages.EditLabel}} {{.WikiTitle}}
-    [<a href="{{.BaseUrl}}view/{{.WikiTitle}}">{{.Messages.CancelLinkLabel}}</a>]
+    {{if ne .WikiVersion "0"}}
+        [<a href="{{.BaseUrl}}view/{{.WikiTitle}}">{{.Messages.CancelLinkLabel}}</a>]
+    {{end}}
 </h2>
 
 <form action="{{.BaseUrl}}save/{{.WikiTitle}}" method="POST">

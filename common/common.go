@@ -134,7 +134,9 @@ func FilterExtractHtml(html string, extractSize uint64) string {
 				buffer = append(buffer, '<')
 				tempLen := len(temp)
 				buffer = slices.Grow(buffer, tempLen)
-				copy(buffer[:len(buffer)+tempLen], temp)
+				bufferLen := len(buffer)
+				buffer = buffer[:bufferLen+tempLen]
+				copy(buffer[bufferLen:], temp)
 				if notEnded {
 					buffer = append(buffer, ' ')
 					copyTagAttribute(buffer, chars)

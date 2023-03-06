@@ -121,7 +121,7 @@ func (client forumClient) CreateCommentThread(userId uint64, elemTitle string) e
 	defer cancel()
 
 	response, err := pb.NewForumClient(conn).CreateThread(ctx, &pb.CreateRequest{
-		ContainerId: client.forumId, UserId: userId, Text: elemTitle,
+		ContainerId: client.forumId, UserId: userId, Title: elemTitle,
 	})
 	if err != nil {
 		return common.LogOriginalError(client.Logger, err)

@@ -4,13 +4,18 @@
     [<a href="{{.BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
 </h2>
 
-<form action="{{.BaseUrl}}save" method="POST">
+<form id="createThreadForm" action="{{.BaseUrl}}save" method="POST">
     <div>
         <label>
             {{.Messages.TitleLabel}}
-            <input type="text" name="title"/>
+            <input type="text" id="threadTitleField" name="title"/>
         </label>
     </div>
-    <div><textarea name="message" rows="20" cols="80"></textarea></div>
-    <div><button type="submit">{{.Messages.CreateLinkLabel}}</button></div>
+    <div><textarea id="forumMessageField" name="message" rows="20" cols="80"></textarea></div>
+    <div class="hidden">
+        {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
+        <span id="errorEmptyThreadTitleMessage">{{.Messages.EmptyThreadTitle}}</span>
+        <span id="errorEmptyForumMessageMessage">{{.Messages.EmptyForumMessage}}</span>
+    </div>
+    <div><button type="button" id="createThreadButton">{{.Messages.CreateLinkLabel}}</button></div>
 </form>

@@ -1,55 +1,14 @@
 
 <h2>{{.Messages.UserListTitle}} ({{.Total}})</h2>
 
-<div class="search">
-    <form action="{{.CurrentUrl}}" method="GET">
-        <div>
-            <label>
-                {{.Messages.FilterLabel}}
-                <input type="text" name="filter"/>
-            </label>
-        </div>
-        <div class="hidden">
-            <input type="text" name="pageNumber" value="1"/>
-        </div>
-        <div><button type="submit">{{.Messages.FilterLinkLabel}}</button></div>
-    </form>
-</div>
+{{template "search" .}}
 
-<div class="pagination">
-    {{if .PreviousPageNumber}}
-        <form action="{{.CurrentUrl}}" method="GET">
-            <div class="hidden">
-                <input type="text" name="pageNumber" value="{{.PreviousPageNumber}}"/>
-                {{if .Filter}}
-                    <input type="text" name="filter" value="{{.Filter}}"/>
-                {{end}}
-            </div>
-            <div><button type="submit">{{.Messages.PreviousPageLinkLabel}}</button></div>
-        </form>
-    {{end}}
+{{template "paginate" .}}
 
-    {{if .NextPageNumber}}
-        <form action="{{.CurrentUrl}}" method="GET">
-            <div class="hidden">
-                <input type="text" name="pageNumber" value="{{.NextPageNumber}}"/>
-                {{if .Filter}}
-                    <input type="text" name="filter" value="{{.Filter}}"/>
-                {{end}}
-            </div>
-            <div><button type="submit">{{.Messages.NextPageLinkLabel}}</button></div>
-        </form>
-    {{end}}
-</div>
-
-<ul>
-    {{$viewLinkLabel := .Messages.ViewLinkLabel}}
-    {{range .Users}}
-        <li>
-            <ul>
-                <li>{{template "profileLink" .}}</li>
-                <li><a href="/admin/user/view/{{.Id}}">{{$viewLinkLabel}}</a></li>
-            </ul>
-        </li>
-    {{end}}
-</ul>
+{{$viewLinkLabel := .Messages.ViewLinkLabel}}
+{{range .Users}}
+    <div class="grid">
+        <p>{{template "profileLink" .}}</p>
+        <p><a href="/admin/user/view/{{.Id}}" role="button">{{$viewLinkLabel}}</a></p>
+    </div>
+{{end}}

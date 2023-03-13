@@ -1,5 +1,6 @@
 # general
 WrongLang=
+SelectLangLabel=
 NoElement=
 ErrorNotAuthorized=
 ErrorTechnicalProblem=
@@ -8,15 +9,13 @@ ErrorUnknownUser=
 WelcomeLabel=
 GroupLabelAdmin=
 GroupLabelPublic=
+GroupDescPublic=
 TitleLabel=
 NameLabel=
 EditLabel=
 FilterLabel=
 RegistredAtLabel=
 ListLinkLabel=
-FilterLinkLabel=
-PreviousPageLinkLabel=
-NextPageLinkLabel=
 ViewLinkLabel=
 NewLinkLabel=
 CreateLinkLabel=
@@ -63,6 +62,7 @@ UserDescLabel=
 
 # settings
 PageTitleSettings=
+lang=
 
 # wiki
 BaseVersionOutdated=

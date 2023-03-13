@@ -1,28 +1,25 @@
 
 <h2>
     {{.ViewedUser.Login}} ({{.Messages.RegistredAtLabel}} {{.ViewedUser.RegistredAt}})
+    <a href="/admin/user/list" role="button">{{.Messages.CancelLinkLabel}}</a>
     {{if .AllowedToUpdate}}
-        [<a href="/admin/user/edit/{{.ViewedUser.Id}}">{{.Messages.EditLinkLabel}}</a>]
-        [<a href="/admin/user/delete/{{.ViewedUser.Id}}">{{.Messages.DeleteLinkLabel}}</a>]
+        <a href="/admin/user/edit/{{.ViewedUser.Id}}" role="button">{{.Messages.EditLinkLabel}}</a>
+        <a href="/admin/user/delete/{{.ViewedUser.Id}}" class="contrast" role="button">{{.Messages.DeleteLinkLabel}}</a>
     {{end}}
 </h2>
 
-<div>
-    {{range .Groups}}
-        <div>
-            <p>{{.DisplayName}}</p>
-            <ul>
-                {{range .Roles}}
-                    <li>
-                        <span>
-                            {{.Name}}
-                            ({{range .Actions}}
-                                {{.}}
-                            {{end}})
-                        </span>
-                    </li>
-                {{end}}
-            </ul>
-        </div>
-    {{end}}
-</div>
+{{range .Groups}}
+    <details>
+        <summary>{{.DisplayName}}</summary>
+        <ul>
+            {{range .Roles}}
+                <li>
+                    {{.Name}}
+                    ({{range .Actions}}
+                        {{.}}
+                    {{end}})
+                </li>
+            {{end}}
+        </ul>
+    </details>
+{{end}}

@@ -1,24 +1,20 @@
 
 <form id="loginForm" action="/login/submit" method="POST">
-    <div>
-        <label>
-            {{.Messages.LoginLabel}}
-            <input type="text" id="loginField" name="Login"/>
-        </label>
-    </div>
-    <div>
-        <label>
-            {{.Messages.PasswordLabel}}
-            <input type="password" id="passwordField" name="Password"/>
-        </label>
-    </div>
-    <div id="confirmPasswordBlock" class="hidden">
+    <label>
+        {{.Messages.LoginLabel}}
+        <input type="text" id="loginField" name="Login"/>
+    </label>
+    <label>
+        {{.Messages.PasswordLabel}}
+        <input type="password" id="passwordField" name="Password"/>
+    </label>
+    <div id="confirmPasswordBlock" class="hide">
         <label>
             {{.Messages.ConfirmPasswordLabel}}
             <input type="password" id="confirmPasswordField" name="ConfirmPassword"/>
         </label>
     </div>
-    <div class="hidden">
+    <div class="hide">
         <input type="text" id="loginRegisterField" name="Register"/>
         <input type="text" name="Redirect" value="{{.Redirect}}"/>
         <input type="text" name="PrevUrlWithError" value="{{.PrevUrlWithError}}"/>
@@ -27,9 +23,9 @@
         <span id="errorEmptyPasswordMessage">{{.Messages.EmptyPassword}}</span>
         <span id="errorWrongConfimPasswordMessage">{{.Messages.WrongConfirmPassword}}</span>
     </div>
-    <div><button type="button" id="loginSubmitButton">{{.Messages.LoginLinkLabel}}</button></div>
+    <button type="button" id="loginSubmitButton">{{.Messages.LoginLinkLabel}}</button>
     <div>
         <button type="button" id="loginRegisterButton">{{.Messages.RegisterLinkLabel}}</button>
-        <button type="button" id="loginRegisterButton2" class="hidden">{{.Messages.RegisterLinkLabel}}</button>
+        <button type="button" id="loginRegisterButton2" class="hide">{{.Messages.RegisterLinkLabel}}</button>
     </div>
 </form>

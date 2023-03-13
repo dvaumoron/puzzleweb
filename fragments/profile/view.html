@@ -2,7 +2,7 @@
 <h2>
     {{.ViewedUser.Login}} ({{.Messages.RegistredAtLabel}} {{.ViewedUser.RegistredAt}})
     {{if .AllowedToUpdate}}
-        [<a href="/profile/edit">{{.Messages.EditLinkLabel}}</a>]
+        <a href="/profile/edit" role="button">{{.Messages.EditLinkLabel}}</a>
     {{end}}
 </h2>
 
@@ -21,22 +21,18 @@
     {{end}}
 </ul>
 
-<div>
-    {{range .UserRight}}
-        <div>
-            <p>{{.DisplayName}}</p>
-            <ul>
-                {{range .Roles}}
-                    <li>
-                        <span>
-                            {{.Name}}
-                            ({{range .Actions}}
-                                {{.}}
-                            {{end}})
-                        </span>
-                    </li>
-                {{end}}
-            </ul>
-        </div>
-    {{end}}
-</div>
+{{range .UserRight}}
+    <div>
+        <p>{{.DisplayName}}</p>
+        <ul>
+            {{range .Roles}}
+                <li>
+                    {{.Name}}
+                    ({{range .Actions}}
+                        {{.}}
+                    {{end}})
+                </li>
+            {{end}}
+        </ul>
+    </div>
+{{end}}

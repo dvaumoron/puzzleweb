@@ -1,20 +1,16 @@
 
 <h2>
     {{.Messages.EditLabel}} {{.Login}}
-    [<a href="/">{{.Messages.CancelLinkLabel}}</a>]
+    <a href="/" role="button">{{.Messages.CancelLinkLabel}}</a>
 </h2>
 
 <form action="/settings/save" method="POST">
-    <ul>
-        {{$messages := .Messages}}
-        {{range $key, $value := .Settings}}
-            <li>
-                <label>
-                    {{index $messages $key}}
-                    <input type="text" name="settings[{{$key}}]" value="{{$value}}"/>
-                </label>
-            </li>
-        {{end}}
-    </ul>
-    <div><button type="submit">{{.Messages.SaveLinkLabel}}</button></div>
+    {{$messages := .Messages}}
+    {{range $key, $value := .Settings}}
+        <label>
+            {{index $messages $key}}
+            <input type="text" name="settings[{{$key}}]" value="{{$value}}"/>
+        </label>
+    {{end}}
+    <button type="submit">{{.Messages.SaveLinkLabel}}</button>
 </form>

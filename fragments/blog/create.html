@@ -1,23 +1,19 @@
 
 <h2>
     {{.Messages.CreateBlogPostTitle}}
-    [<a href="{{.BaseUrl}}">{{.Messages.CancelLinkLabel}}</a>]
+    <a href="{{.BaseUrl}}" role="button">{{.Messages.CancelLinkLabel}}</a>
 </h2>
 
 <form id="previewPostForm" action="{{.BaseUrl}}preview" method="POST">
-    <div>
-        <label>
-            {{.Messages.TitleLabel}}
-            <input type="text" id="postTitleField" name="title"/>
-        </label>
-    </div>
-    <div><textarea id="postMarkdownField" name="markdown" rows="20" cols="80">{{.Messages.UseMarkdownLabel}}</textarea></div>
-    <div class="hidden">
-        {{/* to allow JavaScript or WebAssembly to detect unmodified localized message */}}
-        <span id="unmodifiedMessage">{{.Messages.UseMarkdownLabel}}</span>    
+    <label>
+        {{.Messages.TitleLabel}}
+        <input type="text" id="postTitleField" name="title"/>
+    </label>
+    <textarea id="postMarkdownField" name="markdown" rows="20" placeholder="{{.Messages.UseMarkdownLabel}}"></textarea>
+    <div class="hide">
         {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
         <span id="errorEmptyPostTitleMessage">{{.Messages.EmptyPostTitle}}</span>
         <span id="errorEmptyPostContentMessage">{{.Messages.EmptyPostContent}}</span>
     </div>
-    <div><button type="button" id="previewPostButton">{{.Messages.PreviewLinkLabel}}</button></div>
+    <button type="button" id="previewPostButton">{{.Messages.PreviewLinkLabel}}</button>
 </form>

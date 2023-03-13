@@ -5,44 +5,38 @@
     {{else}}
         {{.Messages.EditLabel}} {{.GroupDisplayName}}/{{.RoleName}}
     {{end}}
-    [<a href="/admin/role/list">{{.Messages.CancelLinkLabel}}</a>]
+    <a href="/admin/role/list" role="button">{{.Messages.CancelLinkLabel}}</a>
 </h2>
 
 <form id="editRoleForm" action="/admin/role/save" method="POST">
-    <div {{if ne .RoleName "new"}} class="hidden" {{end}}>
+    <div {{if ne .RoleName "new"}} class="hide" {{end}}>
         <label>
             {{.Messages.NameLabel}}
             <input type="text" id="editRoleNameField" name="RoleName" value="{{.RoleName}}"/>
         </label>
     </div>
-    <div class="hidden">
+    <div class="hide">
         {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
         <span id="errorBadRoleNameMessage">{{.Messages.ErrorBadRoleName}}</span>
         <input type="text" name="Group" value="{{.Group}}"/>
     </div>
-    <div>
+    <fieldset>
         <label>
             {{.Messages.AccessLabel}}
-            <input type="checkbox" name="actions" value="access" {{with .Access}} checked="{{.}}" {{end}}/>
+            <input type="checkbox" name="actions" value="access" {{with .Access}} checked {{end}} role="switch"/>
         </label>
-    </div>
-    <div>
         <label>
             {{.Messages.CreateLabel}}
-            <input type="checkbox" name="actions" value="create" {{with .Create}} checked="{{.}}" {{end}}/>
+            <input type="checkbox" name="actions" value="create" {{with .Create}} checked {{end}} role="switch"/>
         </label>
-    </div>
-    <div>
         <label>
             {{.Messages.UpdateLabel}}
-            <input type="checkbox" name="actions" value="update" {{with .Update}} checked="{{.}}" {{end}}/>
+            <input type="checkbox" name="actions" value="update" {{with .Update}} checked {{end}} role="switch"/>
         </label>
-    </div>
-    <div>
         <label>
             {{.Messages.DeleteLabel}}
-            <input type="checkbox" name="actions" value="delete" {{with .Delete}} checked="{{.}}" {{end}}/>
+            <input type="checkbox" name="actions" value="delete" {{with .Delete}} checked {{end}} role="switch"/>
         </label>
-    </div>
-    <div><button type="button" id="saveRoleButton">{{.Messages.SaveLinkLabel}}</button></div>
+    </fieldset>
+    <button type="button" id="saveRoleButton">{{.Messages.SaveLinkLabel}}</button>
 </form>

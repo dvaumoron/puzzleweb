@@ -1,39 +1,35 @@
 
 <h2>
     {{.Messages.EditLabel}} {{.ViewedUser.Login}}
-    [<a href="/admin/user/view/{{.ViewedUser.Id}}">{{.Messages.CancelLinkLabel}}</a>]
+    <a href="/admin/user/view/{{.ViewedUser.Id}}" role="button">{{.Messages.CancelLinkLabel}}</a>
 </h2>
 
 <form action="/admin/user/save/{{.ViewedUser.Id}}" method="POST">
     {{range .Groups}}
-        <div>
-            <p>{{.DisplayName}}</p>
-            <ul>
+        <details>
+            <summary>{{.DisplayName}}</summary>
+            <fieldset>
                 {{$groupName := .Name}}
                 {{range .Roles}}
-                    <li>
-                        <label>
-                            {{.Name}}
-                            ({{range .Actions}}
-                                {{.}}
-                            {{end}})
-                            <input type="checkbox" name="roles" value="{{.Name}}/{{$groupName}}" checked="true"/>
-                        </label>
-                    </li>
+                    <label>
+                        {{.Name}}
+                        ({{range .Actions}}
+                            {{.}}
+                        {{end}})
+                        <input type="checkbox" name="roles" value="{{.Name}}/{{$groupName}}" checked role="switch"/>
+                    </label>
                 {{end}}
                 {{range .AddableRoles}}
-                    <li>
-                        <label>
-                            {{.Name}}
-                            ({{range .Actions}}
-                                {{.}}
-                            {{end}})
-                            <input type="checkbox" name="roles" value="{{.Name}}/{{$groupName}}"/>
-                        </label>
-                    </li>
+                    <label>
+                        {{.Name}}
+                        ({{range .Actions}}
+                            {{.}}
+                        {{end}})
+                        <input type="checkbox" name="roles" value="{{.Name}}/{{$groupName}}" role="switch"/>
+                    </label>
                 {{end}}
-            </ul>
-        </div>
+            </fieldset>
+        </details>
     {{end}}
-    <div><button type="submit">{{.Messages.SaveLinkLabel}}</button></div>
+    <button type="submit">{{.Messages.SaveLinkLabel}}</button>
 </form>

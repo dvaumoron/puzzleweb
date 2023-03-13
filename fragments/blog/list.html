@@ -1,77 +1,44 @@
 
-<div class="search">
-    <form action="{{.CurrentUrl}}" method="GET">
-        <div>
-            <label>
-                {{.Messages.FilterLabel}}
-                <input type="text" name="filter"/>
-            </label>
-        </div>
-        <div class="hidden">
-            <input type="text" name="pageNumber" value="1"/>
-        </div>
-        <div><button type="submit">{{.Messages.FilterLinkLabel}}</button></div>
-    </form>
-</div>
+{{template "search" .}}
 
-<div class="pagination">
-    {{if .PreviousPageNumber}}
-        <form action="{{.CurrentUrl}}" method="GET">
-            <div class="hidden">
-                <input type="text" name="pageNumber" value="{{.PreviousPageNumber}}"/>
-                {{if .Filter}}
-                    <input type="text" name="filter" value="{{.Filter}}"/>
-                {{end}}
-            </div>
-            <div><button type="submit">{{.Messages.PreviousPageLinkLabel}}</button></div>
-        </form>
-    {{end}}
-
-    {{if .NextPageNumber}}
-        <form action="{{.CurrentUrl}}" method="GET">
-            <div class="hidden">
-                <input type="text" name="pageNumber" value="{{.NextPageNumber}}"/>
-                {{if .Filter}}
-                    <input type="text" name="filter" value="{{.Filter}}"/>
-                {{end}}
-            </div>
-            <div><button type="submit">{{.Messages.NextPageLinkLabel}}</button></div>
-        </form>
-    {{end}}
-</div>
+{{template "paginate" .}}
 
 {{if .AllowedToCreate}}
-    <div><a href="{{.CurrentUrl}}create">{{.Messages.NewLinkLabel}}</a></div>
+    <p><a href="{{.CurrentUrl}}create" class="secondary" role="button">{{.Messages.NewLinkLabel}}</a></p>
 {{end}}
 
-<ul>
-    {{$baseUrl := .CurrentUrl}}
-    {{$viewLinkLabel := .Messages.ViewMoreLinkLabel}}
-    {{if .AllowedToDelete}}
-        {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
-        {{range .Posts}}
-            <li>
-                <ul>
-                    <li>{{.Title}}</li>
-                    <li>{{template "profileLink" .Creator}}</li>
-                    <li>{{.Date}}</li>
-                    <li>{{.Content}}</li>
-                    <li><a href="{{$baseUrl}}view/{{.PostId}}">{{$viewLinkLabel}}</a></li>
-                    <li><a href="{{$baseUrl}}delete/{{.PostId}}">{{$deleteLinkLabel}}</a></li>
-                </ul>
-            </li>
-        {{end}}
-    {{else}}
-        {{range .Posts}}
-            <li>
-                <ul>
-                    <li>{{.Title}}</li>
-                    <li>{{template "profileLink" .Creator}}</li>
-                    <li>{{.Date}}</li>
-                    <li>{{.Content}}</li>
-                    <li><a href="{{$baseUrl}}view/{{.PostId}}">{{$viewLinkLabel}}</a></li>
-                </ul>
-            </li>
-        {{end}}
+{{$baseUrl := .CurrentUrl}}
+{{$viewLinkLabel := .Messages.ViewMoreLinkLabel}}
+{{if .AllowedToDelete}}
+    {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
+    {{range .Posts}}
+        <article>
+            <header>
+                <hgroup>
+                    <h2>{{.Title}}</h2>
+                    <h3>{{template "profileLink" .Creator}} {{.Date}}</h3>
+                </hgroup>
+            </header>
+            <p>{{.Content}}</p>
+            <footer>
+                <a href="{{$baseUrl}}view/{{.PostId}}" class="outline" role="button">{{$viewLinkLabel}}</a>
+                <a href="{{$baseUrl}}delete/{{.PostId}}" class="contrast" role="button">{{$deleteLinkLabel}}</a>
+            </footer>
+        </article>
     {{end}}
-</ul>
+{{else}}
+    {{range .Posts}}
+        <article>
+            <header>
+                <hgroup>
+                    <h2>{{.Title}}</h2>
+                    <h3>{{template "profileLink" .Creator}} {{.Date}}</h3>
+                </hgroup>
+            </header>
+            <p>{{.Content}}</p>
+            <footer>
+                <a href="{{$baseUrl}}view/{{.PostId}}" class="outline" role="button">{{$viewLinkLabel}}</a>
+            </footer>
+        </article>
+    {{end}}
+{{end}}

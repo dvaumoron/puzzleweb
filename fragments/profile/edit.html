@@ -1,88 +1,68 @@
 
 <h2>
     {{.Messages.EditLabel}} {{.ViewedUser.Login}}
-    [<a href="/profile/view/{{.ViewedUser.Id}}">{{.Messages.CancelLinkLabel}}</a>]
+    <a href="/profile/view/{{.ViewedUser.Id}}" role="button">{{.Messages.CancelLinkLabel}}</a>
 </h2>
 
-<div>{{template "profilePicture" .ViewedUser}}</div>
+<p>{{template "profilePicture" .ViewedUser}}</p>
 
-<h3>{{.Messages.ChangeLoginLabel}}</h3>
-
-<div class="hidden">
+<div class="hide">
     {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
     <span id="errorEmptyLoginMessage">{{.Messages.EmptyLogin}}</span>
     <span id="errorEmptyPasswordMessage">{{.Messages.EmptyPassword}}</span>
     <span id="errorWrongConfimPasswordMessage">{{.Messages.WrongConfirmPassword}}</span>
 </div>
 
-<form id="changeLoginForm" action="/profile/changeLogin" method="POST">
-    <div>
+<details>
+    <summary>{{.Messages.ChangeLoginLabel}}</summary>
+    <form id="changeLoginForm" action="/profile/changeLogin" method="POST">
         <label>
             {{.Messages.NewLoginLabel}}
             <input type="text" id="loginField" name="Login"/>
         </label>
-    </div>
-    <div>
         <label>
             {{.Messages.PasswordLabel}}
             <input type="password" id="passwordField" name="Password"/>
         </label>
-    </div>
-    <div><button type="button" id="changeLoginButton">{{.Messages.SaveLinkLabel}}</button></div>
-</form>
+        <button type="button" id="changeLoginButton">{{.Messages.SaveLinkLabel}}</button>
+    </form>
+</details>
 
-<h3>{{.Messages.ChangePasswordLabel}}</h3>
-
-<form id="changePasswordForm" action="/profile/changePassword" method="POST">
-    <div>
+<details>
+    <summary>{{.Messages.ChangePasswordLabel}}</summary>
+    <form id="changePasswordForm" action="/profile/changePassword" method="POST">
         <label>
             {{.Messages.OldPasswordLabel}}
             <input type="password" name="oldPassword"/>
         </label>
-    </div>
-    <div>
         <label>
             {{.Messages.NewPasswordLabel}}
             <input type="password" id="changePasswordField" name="newPassword"/>
         </label>
-    </div>
-    <div>
         <label>
             {{.Messages.ConfirmPasswordLabel}}
             <input type="password" id="confirmChangePasswordField" name="ConfirmPassword"/>
         </label>
-    </div>
-    <div><button type="button" id="changePasswordButton">{{.Messages.SaveLinkLabel}}</button></div>
-</form>
-
-<h3>{{.Messages.EditProfileLabel}}</h3>
+        <button type="button" id="changePasswordButton">{{.Messages.SaveLinkLabel}}</button>
+    </form>
+</details>
 
 <form action="/profile/save" method="POST" enctype="multipart/form-data">
-    <div>
+    <h3>{{.Messages.EditProfileLabel}}</h3>
+    <label>
+        {{.Messages.UserPicLabel}}
+        <input type="file" name="picture" accept="image/png, image/jpeg"/>
+    </label>
+    <label>
+        {{.Messages.UserDescLabel}}
+        <input type="text" name="userDesc" value="{{.ViewedUser.Desc}}"/>
+    </label>
+    {{$messages := .Messages}}
+    {{range $key, $value := .ViewedUser.Info}}
         <label>
-            {{.Messages.UserPicLabel}}
-            <input type="file" name="picture" accept="image/png, image/jpeg"/>
-        </label>
-    </div>
-    
-    <div>
-        <label>
-            {{.Messages.UserDescLabel}}
-            <input type="text" name="userDesc" value="{{.ViewedUser.Desc}}"/>
-        </label>
-    </div>
-
-    <ul>
-        {{$messages := .Messages}}
-        {{range $key, $value := .ViewedUser.Info}}
-            <li>
-                <label>
-                    {{index $messages $key}}
-                    <input type="text" name="userInfo[{{$key}}]" value="{{$value}}"/>
-                </label>
-            </li>
-        {{end}}
-    </ul>
-
-    <div><button type="submit">{{.Messages.SaveLinkLabel}}</button></div>
+            {{index $messages $key}}
+                <input type="text" name="userInfo[{{$key}}]" value="{{$value}}"/>
+            </label>
+    {{end}}
+    <button type="submit">{{.Messages.SaveLinkLabel}}</button>
 </form>

@@ -88,20 +88,20 @@ func initData(c *gin.Context) gin.H {
 	if errorKey := c.Query("error"); errorKey != "" {
 		data[errorMsgName] = messages[errorKey]
 	}
+	escapedUrl := url.QueryEscape(c.Request.URL.Path)
 	if localesManager.MultipleLang {
-		data["LangSelector"] = true
+		data["LangSelectorUrl"] = "/changeLang?Redirect=" + escapedUrl
 		data["AllLang"] = localesManager.AllLang
 	}
 	session := GetSession(c)
-	escapedUrl := url.QueryEscape(c.Request.URL.Path)
 	var currentUserId uint64
 	if login := session.Load(loginName); login == "" {
-		data[loginUrlName] = "/login?redirect=" + escapedUrl
+		data[loginUrlName] = "/login?Redirect=" + escapedUrl
 	} else {
 		currentUserId = extractUserIdFromSession(site.logger, session)
 		data[loginName] = login
 		data[common.IdName] = currentUserId
-		data[loginUrlName] = "/login/logout?redirect=" + escapedUrl
+		data[loginUrlName] = "/login/logout?Redirect=" + escapedUrl
 	}
 	data[viewAdminName] = site.authService.AuthQuery(
 		currentUserId, adminservice.AdminGroupId, adminservice.ActionAccess,

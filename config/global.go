@@ -46,6 +46,8 @@ import (
 
 const defaultSessionTimeOut = 1200
 
+const DefaultFavicon = "/favicon.ico"
+
 type GlobalConfig struct {
 	Domain string
 	Port   string
@@ -57,6 +59,7 @@ type GlobalConfig struct {
 	ExtractSize    uint64
 
 	StaticPath    string
+	FaviconPath   string
 	LocalesPath   string
 	TemplatesPath string
 	TemplatesExt  string
@@ -131,6 +134,15 @@ func LoadDefault() *GlobalConfig {
 	rightClient := adminclient.Make(requiredFromEnv("RIGHT_SERVICE_ADDR"), logger)
 
 	staticPath := retrievePath("STATIC_PATH", "static")
+	augmentedStaticPath := staticPath + "/"
+	faviconPath := os.Getenv("FAVICON_PATH")
+	if faviconPath == "" {
+		faviconPath = staticPath + DefaultFavicon
+	} else if faviconPath[0] != '/' {
+		// user should use absolute path or path relative to STATIC_PATH
+		faviconPath = augmentedStaticPath + faviconPath
+	}
+
 	defaultPicturePath := retrieveWithDefault("PROFILE_DEFAULT_PICTURE_PATH", staticPath+"/images/unknownuser.png")
 	defaultPicture, err := os.ReadFile(defaultPicturePath)
 	if err != nil {
@@ -141,7 +153,6 @@ func LoadDefault() *GlobalConfig {
 	langPicturePaths := map[string]string{}
 	confLangPicturePaths := strings.Split(os.Getenv("LOCALE_PICTURE_PATHS"), ",")
 	langPicturePathsLen := len(langPicturePaths)
-	augmentedStaticPath := staticPath + "/"
 	for index, lang := range allLang {
 		if index >= langPicturePathsLen {
 			break
@@ -171,6 +182,7 @@ func LoadDefault() *GlobalConfig {
 		DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
 
 		StaticPath:    staticPath,
+		FaviconPath:   faviconPath,
 		LocalesPath:   retrievePath("LOCALES_PATH", "locales"),
 		TemplatesPath: retrievePath("TEMPLATES_PATH", "templates"),
 		TemplatesExt:  retrieveWithDefault("TEMPLATES_EXT", ".html"),

@@ -37,11 +37,11 @@ type Site struct {
 	logger             *zap.Logger
 	localesManager     *locale.LocalesManager
 	authService        adminservice.AuthService
+	faviconPath        string
+	langPicturePaths   map[string]string
 	root               Page
 	adders             []common.DataAdder
-	langPicturePaths   map[string]string
 	Page404Url         string
-	FaviconPath        string
 	HTMLRender         render.HTMLRender
 	MaxMultipartMemory int64
 }
@@ -55,7 +55,7 @@ func NewSite(globalConfig *config.GlobalConfig, localesManager *locale.LocalesMa
 
 	return &Site{
 		logger: globalConfig.Logger, localesManager: localesManager, authService: globalConfig.RightClient,
-		root: root, langPicturePaths: globalConfig.LangPicturePaths,
+		faviconPath: globalConfig.FaviconPath, langPicturePaths: globalConfig.LangPicturePaths, root: root,
 	}
 }
 
@@ -83,15 +83,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	}
 
 	engine.Static("/static", staticPath)
-
-	favicon := "/favicon.ico"
-	faviconPath := site.FaviconPath
-	if faviconPath == "" {
-		faviconPath = staticPath + favicon
-	} else if faviconPath[0] != '/' {
-		faviconPath = staticPath + faviconPath
-	}
-	engine.StaticFile(favicon, faviconPath)
+	engine.StaticFile(config.DefaultFavicon, site.faviconPath)
 
 	engine.Use(makeSessionManager(siteConfig.ExtractSessionConfig()).Manage, func(c *gin.Context) {
 		c.Set(siteName, site)

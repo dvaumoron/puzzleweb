@@ -39,6 +39,7 @@ type Site struct {
 	authService        adminservice.AuthService
 	root               Page
 	adders             []common.DataAdder
+	langPictures       map[string][]byte
 	Page404Url         string
 	FaviconPath        string
 	HTMLRender         render.HTMLRender
@@ -53,7 +54,8 @@ func NewSite(globalConfig *config.GlobalConfig, localesManager *locale.LocalesMa
 	root.AddSubPage(newProfilePage(globalConfig.ExtractProfileConfig()))
 
 	return &Site{
-		logger: globalConfig.Logger, localesManager: localesManager, authService: globalConfig.RightClient, root: root,
+		logger: globalConfig.Logger, localesManager: localesManager, authService: globalConfig.RightClient,
+		root: root, langPictures: globalConfig.LangPictures,
 	}
 }
 
@@ -97,6 +99,8 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 		engine.GET("/changeLang", changeLangHandler)
 	}
 
+	engine.GET("/langPicture/:lang", langPictureHandler)
+
 	site.root.Widget.LoadInto(engine)
 	engine.NoRoute(common.CreateRedirectString(site.Page404Url))
 	return engine
@@ -128,6 +132,21 @@ var changeLangHandler = common.CreateRedirect(func(c *gin.Context) string {
 	getSite(c).localesManager.SetLangCookie(c.Query(locale.LangName), c)
 	return c.Query(common.RedirectName)
 })
+
+func langPictureHandler(c *gin.Context) {
+	lang := c.Param(locale.LangName)
+	if lang == "" {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	data := getSite(c).langPictures[lang]
+	if len(data) == 0 {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	c.Data(http.StatusOK, http.DetectContentType(data), data)
+}
 
 func checkPort(port string) string {
 	if port[0] != ':' {

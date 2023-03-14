@@ -78,7 +78,7 @@
                             {{$langSelectorUrl := .LangSelectorUrl}}
                             <ul>
                                 {{range .AllLang}}
-                                    <li><a href="{{$langSelectorUrl}}&lang={{.}}">{{.}}</a></li>
+                                    <li><a href="{{$langSelectorUrl}}&lang={{.}}"><img src="/langPicture/{{.}}" alt="{{.}}"/></a></li>
                                 {{end}}
                             </ul>
                         </details>

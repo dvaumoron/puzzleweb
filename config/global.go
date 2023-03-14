@@ -61,8 +61,8 @@ type GlobalConfig struct {
 	TemplatesPath string
 	TemplatesExt  string
 
-	Logger       *zap.Logger
-	LangPictures map[string][]byte
+	Logger           *zap.Logger
+	LangPicturePaths map[string]string
 
 	SessionService  sessionservice.SessionService
 	SaltService     loginservice.SaltService
@@ -138,8 +138,8 @@ func LoadDefault() *GlobalConfig {
 		os.Exit(1)
 	}
 
-	langPictures := map[string][]byte{}
-	langPicturePaths := strings.Split(os.Getenv("LOCALE_PICTURE_PATHS"), ",")
+	langPicturePaths := map[string]string{}
+	confLangPicturePaths := strings.Split(os.Getenv("LOCALE_PICTURE_PATHS"), ",")
 	langPicturePathsLen := len(langPicturePaths)
 	augmentedStaticPath := staticPath + "/"
 	for index, lang := range allLang {
@@ -147,21 +147,16 @@ func LoadDefault() *GlobalConfig {
 			break
 		}
 
-		langPicturePath := strings.TrimSpace(langPicturePaths[index])
+		langPicturePath := strings.TrimSpace(confLangPicturePaths[index])
 		if langPicturePath == "" {
+			// skip not configured picture
 			continue
 		}
 		// user should use absolute path or path relative to STATIC_PATH
 		if langPicturePath[0] != '/' {
 			langPicturePath = augmentedStaticPath + langPicturePath
 		}
-
-		langPicture, err := os.ReadFile(langPicturePath)
-		if err == nil {
-			langPictures[lang] = langPicture
-		} else {
-			fmt.Println("can not read :", langPicturePath)
-		}
+		langPicturePaths[lang] = langPicturePath
 	}
 
 	// if not setted in configuration, profile are public
@@ -180,14 +175,14 @@ func LoadDefault() *GlobalConfig {
 		TemplatesPath: retrievePath("TEMPLATES_PATH", "templates"),
 		TemplatesExt:  retrieveWithDefault("TEMPLATES_EXT", ".html"),
 
-		Logger:          logger,
-		LangPictures:    langPictures,
-		SessionService:  sessionService,
-		SaltService:     saltService,
-		SettingsService: settingsService,
-		LoginService:    loginService,
-		RightClient:     rightClient,
-		ProfileService:  profileService,
+		Logger:           logger,
+		LangPicturePaths: langPicturePaths,
+		SessionService:   sessionService,
+		SaltService:      saltService,
+		SettingsService:  settingsService,
+		LoginService:     loginService,
+		RightClient:      rightClient,
+		ProfileService:   profileService,
 	}
 }
 

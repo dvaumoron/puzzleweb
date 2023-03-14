@@ -39,7 +39,7 @@ type Site struct {
 	authService        adminservice.AuthService
 	root               Page
 	adders             []common.DataAdder
-	langPictures       map[string][]byte
+	langPicturePaths   map[string]string
 	Page404Url         string
 	FaviconPath        string
 	HTMLRender         render.HTMLRender
@@ -55,7 +55,7 @@ func NewSite(globalConfig *config.GlobalConfig, localesManager *locale.LocalesMa
 
 	return &Site{
 		logger: globalConfig.Logger, localesManager: localesManager, authService: globalConfig.RightClient,
-		root: root, langPictures: globalConfig.LangPictures,
+		root: root, langPicturePaths: globalConfig.LangPicturePaths,
 	}
 }
 
@@ -87,19 +87,27 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	favicon := "/favicon.ico"
 	faviconPath := site.FaviconPath
 	if faviconPath == "" {
-		faviconPath = favicon
+		faviconPath = staticPath + favicon
+	} else if faviconPath[0] != '/' {
+		faviconPath = staticPath + faviconPath
 	}
-	engine.StaticFile(favicon, staticPath+faviconPath)
+	engine.StaticFile(favicon, faviconPath)
 
 	engine.Use(makeSessionManager(siteConfig.ExtractSessionConfig()).Manage, func(c *gin.Context) {
 		c.Set(siteName, site)
 	})
 
-	if site.localesManager.MultipleLang {
+	if localesManager := site.localesManager; localesManager.MultipleLang {
 		engine.GET("/changeLang", changeLangHandler)
-	}
 
-	engine.GET("/langPicture/:lang", langPictureHandler)
+		langPicturePaths := site.langPicturePaths
+		for _, lang := range localesManager.AllLang {
+			if langPicturePath, ok := langPicturePaths[lang]; ok {
+				// allow modified time check (instead of always sending same data)
+				engine.StaticFile("/langPicture/"+lang, langPicturePath)
+			}
+		}
+	}
 
 	site.root.Widget.LoadInto(engine)
 	engine.NoRoute(common.CreateRedirectString(site.Page404Url))
@@ -132,21 +140,6 @@ var changeLangHandler = common.CreateRedirect(func(c *gin.Context) string {
 	getSite(c).localesManager.SetLangCookie(c.Query(locale.LangName), c)
 	return c.Query(common.RedirectName)
 })
-
-func langPictureHandler(c *gin.Context) {
-	lang := c.Param(locale.LangName)
-	if lang == "" {
-		c.AbortWithStatus(http.StatusNotFound)
-		return
-	}
-
-	data := getSite(c).langPictures[lang]
-	if len(data) == 0 {
-		c.AbortWithStatus(http.StatusNotFound)
-		return
-	}
-	c.Data(http.StatusOK, http.DetectContentType(data), data)
-}
 
 func checkPort(port string) string {
 	if port[0] != ':' {

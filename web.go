@@ -35,14 +35,14 @@ const unknownUserKey = "ErrorUnknownUser"
 
 type Site struct {
 	logger         *zap.Logger
-	localesManager *locale.LocalesManager
+	localesManager locale.Manager
 	authService    adminservice.AuthService
 	root           Page
 	adders         []common.DataAdder
 	HTMLRender     render.HTMLRender
 }
 
-func NewSite(configExtracter config.BaseConfigExtracter, localesManager *locale.LocalesManager, settingsManager *SettingsManager) *Site {
+func NewSite(configExtracter config.BaseConfigExtracter, localesManager locale.Manager, settingsManager *SettingsManager) *Site {
 	adminConfig := configExtracter.ExtractAdminConfig()
 	root := MakeStaticPage("root", adminservice.PublicGroupId, "index"+configExtracter.GetTemplatesExt())
 	root.AddSubPage(newLoginPage(configExtracter.ExtractLoginConfig(), settingsManager))
@@ -83,11 +83,11 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 		c.Set(siteName, site)
 	})
 
-	if localesManager := site.localesManager; localesManager.MultipleLang {
+	if localesManager := site.localesManager; localesManager.GetMultipleLang() {
 		engine.GET("/changeLang", changeLangHandler)
 
 		langPicturePaths := siteConfig.LangPicturePaths
-		for _, lang := range localesManager.AllLang {
+		for _, lang := range localesManager.GetAllLang() {
 			if langPicturePath, ok := langPicturePaths[lang]; ok {
 				// allow modified time check (instead of always sending same data)
 				engine.StaticFile("/langPicture/"+lang, langPicturePath)

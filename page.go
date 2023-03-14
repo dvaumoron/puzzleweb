@@ -70,7 +70,7 @@ func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 			return "", common.DefaultErrorRedirect(err.Error())
 		}
 		localesManager := GetLocalesManager(c)
-		if lang := localesManager.GetLang(c); lang != localesManager.DefaultLang {
+		if lang := localesManager.GetLang(c); lang != localesManager.GetDefaultLang() {
 			site.logger.Info("Using alternative static page", zap.String(locale.LangName, lang))
 			var builder strings.Builder
 			builder.WriteString(lang)

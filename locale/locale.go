@@ -32,7 +32,17 @@ import (
 const LangName = "lang"
 const pathName = "Path"
 
-type LocalesManager struct {
+type Manager interface {
+	GetDefaultLang() string
+	GetAllLang() []string
+	GetMultipleLang() bool
+	GetLang(*gin.Context) string
+	CheckLang(string) string
+	SetLangCookie(string, *gin.Context) string
+	GetMessages(*gin.Context) map[string]string
+}
+
+type localesManager struct {
 	logger         *zap.Logger
 	AllLang        []string
 	DefaultLang    string
@@ -43,7 +53,7 @@ type LocalesManager struct {
 	domain         string
 }
 
-func NewManager(localesConfig config.LocalesConfig) *LocalesManager {
+func NewManager(localesConfig config.LocalesConfig) Manager {
 	logger := localesConfig.Logger
 	localesPath := localesConfig.Path
 	allLang := localesConfig.AllLang
@@ -106,13 +116,25 @@ func NewManager(localesConfig config.LocalesConfig) *LocalesManager {
 		}
 	}
 
-	return &LocalesManager{
+	return &localesManager{
 		logger: logger, AllLang: allLang, DefaultLang: defaultLang, MultipleLang: multipleLang, matcher: matcher,
 		messages: messages, sessionTimeOut: localesConfig.SessionTimeOut, domain: localesConfig.Domain,
 	}
 }
 
-func (m *LocalesManager) GetLang(c *gin.Context) string {
+func (m *localesManager) GetDefaultLang() string {
+	return m.DefaultLang
+}
+
+func (m *localesManager) GetAllLang() []string {
+	return m.AllLang
+}
+
+func (m *localesManager) GetMultipleLang() bool {
+	return m.MultipleLang
+}
+
+func (m *localesManager) GetLang(c *gin.Context) string {
 	lang, err := c.Cookie(LangName)
 	if err != nil {
 		tag, _ := language.MatchStrings(m.matcher, c.GetHeader("Accept-Language"))
@@ -122,7 +144,7 @@ func (m *LocalesManager) GetLang(c *gin.Context) string {
 	return m.SetLangCookie(lang, c)
 }
 
-func (m *LocalesManager) CheckLang(lang string) string {
+func (m *localesManager) CheckLang(lang string) string {
 	for _, l := range m.AllLang {
 		if lang == l {
 			return lang
@@ -132,16 +154,16 @@ func (m *LocalesManager) CheckLang(lang string) string {
 	return m.DefaultLang
 }
 
-func (m *LocalesManager) setLangCookie(lang string, c *gin.Context) string {
+func (m *localesManager) setLangCookie(lang string, c *gin.Context) string {
 	c.SetCookie(LangName, lang, m.sessionTimeOut, "/", m.domain, false, false)
 	return lang
 }
 
-func (m *LocalesManager) SetLangCookie(lang string, c *gin.Context) string {
+func (m *localesManager) SetLangCookie(lang string, c *gin.Context) string {
 	return m.setLangCookie(m.CheckLang(lang), c)
 }
 
-func (m *LocalesManager) GetMessages(c *gin.Context) map[string]string {
+func (m *localesManager) GetMessages(c *gin.Context) map[string]string {
 	return m.messages[m.GetLang(c)]
 }
 

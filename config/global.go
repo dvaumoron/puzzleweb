@@ -112,6 +112,7 @@ func LoadDefault() *GlobalConfig {
 	for _, s := range confLang {
 		allLang = append(allLang, strings.TrimSpace(s))
 	}
+	fmt.Println("Declared locales : ", allLang)
 
 	sessionTimeOutStr := os.Getenv("SESSION_TIME_OUT")
 	if sessionTimeOutStr == "" {
@@ -175,9 +176,10 @@ func LoadDefault() *GlobalConfig {
 
 	langPicturePaths := map[string]string{}
 	confLangPicturePaths := strings.Split(os.Getenv("LOCALE_PICTURE_PATHS"), ",")
-	langPicturePathsLen := len(langPicturePaths)
+	confLangPicturePathsLen := len(confLangPicturePaths)
 	for index, lang := range allLang {
-		if index >= langPicturePathsLen {
+		if index >= confLangPicturePathsLen {
+			fmt.Println("LOCALE_PICTURE_PATHS have less element than AVAILABLE_LOCALES")
 			break
 		}
 

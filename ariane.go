@@ -58,7 +58,7 @@ func getSite(c *gin.Context) *Site {
 	return siteUntyped.(*Site)
 }
 
-func GetLocalesManager(c *gin.Context) *locale.LocalesManager {
+func GetLocalesManager(c *gin.Context) locale.Manager {
 	return getSite(c).localesManager
 }
 
@@ -89,9 +89,9 @@ func initData(c *gin.Context) gin.H {
 		data[errorMsgName] = messages[errorKey]
 	}
 	escapedUrl := url.QueryEscape(c.Request.URL.Path)
-	if localesManager.MultipleLang {
+	if localesManager.GetMultipleLang() {
 		data["LangSelectorUrl"] = "/changeLang?Redirect=" + escapedUrl
-		data["AllLang"] = localesManager.AllLang
+		data["AllLang"] = localesManager.GetAllLang()
 	}
 	session := GetSession(c)
 	var currentUserId uint64

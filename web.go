@@ -34,28 +34,24 @@ const siteName = "Site"
 const unknownUserKey = "ErrorUnknownUser"
 
 type Site struct {
-	logger             *zap.Logger
-	localesManager     *locale.LocalesManager
-	authService        adminservice.AuthService
-	faviconPath        string
-	langPicturePaths   map[string]string
-	root               Page
-	adders             []common.DataAdder
-	Page404Url         string
-	HTMLRender         render.HTMLRender
-	MaxMultipartMemory int64
+	logger         *zap.Logger
+	localesManager *locale.LocalesManager
+	authService    adminservice.AuthService
+	root           Page
+	adders         []common.DataAdder
+	HTMLRender     render.HTMLRender
 }
 
-func NewSite(globalConfig *config.GlobalConfig, localesManager *locale.LocalesManager, settingsManager *SettingsManager) *Site {
-	root := MakeStaticPage("root", adminservice.PublicGroupId, "index"+globalConfig.TemplatesExt)
-	root.AddSubPage(newLoginPage(globalConfig.ExtractLoginConfig(), settingsManager))
-	root.AddSubPage(newAdminPage(globalConfig.ExtractAdminConfig()))
-	root.AddSubPage(newSettingsPage(config.CreateServiceExtConfig(globalConfig, settingsManager)))
-	root.AddSubPage(newProfilePage(globalConfig.ExtractProfileConfig()))
+func NewSite(configExtracter config.BaseConfigExtracter, localesManager *locale.LocalesManager, settingsManager *SettingsManager) *Site {
+	adminConfig := configExtracter.ExtractAdminConfig()
+	root := MakeStaticPage("root", adminservice.PublicGroupId, "index"+configExtracter.GetTemplatesExt())
+	root.AddSubPage(newLoginPage(configExtracter.ExtractLoginConfig(), settingsManager))
+	root.AddSubPage(newAdminPage(adminConfig))
+	root.AddSubPage(newSettingsPage(config.MakeServiceConfig(configExtracter, settingsManager)))
+	root.AddSubPage(newProfilePage(configExtracter.ExtractProfileConfig()))
 
 	return &Site{
-		logger: globalConfig.Logger, localesManager: localesManager, authService: globalConfig.RightClient,
-		faviconPath: globalConfig.FaviconPath, langPicturePaths: globalConfig.LangPicturePaths, root: root,
+		logger: configExtracter.GetLogger(), localesManager: localesManager, authService: adminConfig.Service, root: root,
 	}
 }
 
@@ -68,22 +64,20 @@ func (site *Site) AddDefaultData(adder common.DataAdder) {
 }
 
 func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
-	staticPath := siteConfig.StaticPath
-
 	engine := gin.Default()
 
-	if memorySize := site.MaxMultipartMemory; memorySize != 0 {
+	if memorySize := siteConfig.MaxMultipartMemory; memorySize != 0 {
 		engine.MaxMultipartMemory = memorySize
 	}
 
 	if htmlRender := site.HTMLRender; htmlRender == nil {
-		siteConfig.Logger.Fatal("no HTMLRender initialized")
+		site.logger.Fatal("no HTMLRender initialized")
 	} else {
 		engine.HTMLRender = htmlRender
 	}
 
-	engine.Static("/static", staticPath)
-	engine.StaticFile(config.DefaultFavicon, site.faviconPath)
+	engine.Static("/static", siteConfig.StaticPath)
+	engine.StaticFile(config.DefaultFavicon, siteConfig.FaviconPath)
 
 	engine.Use(makeSessionManager(siteConfig.ExtractSessionConfig()).Manage, func(c *gin.Context) {
 		c.Set(siteName, site)
@@ -92,7 +86,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	if localesManager := site.localesManager; localesManager.MultipleLang {
 		engine.GET("/changeLang", changeLangHandler)
 
-		langPicturePaths := site.langPicturePaths
+		langPicturePaths := siteConfig.LangPicturePaths
 		for _, lang := range localesManager.AllLang {
 			if langPicturePath, ok := langPicturePaths[lang]; ok {
 				// allow modified time check (instead of always sending same data)
@@ -102,7 +96,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	}
 
 	site.root.Widget.LoadInto(engine)
-	engine.NoRoute(common.CreateRedirectString(site.Page404Url))
+	engine.NoRoute(common.CreateRedirectString(siteConfig.Page404Url))
 	return engine
 }
 

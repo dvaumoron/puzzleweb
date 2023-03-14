@@ -24,7 +24,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/login/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -51,7 +50,7 @@ func (w loginWidget) LoadInto(router gin.IRouter) {
 	router.GET("/logout", w.logoutHandler)
 }
 
-func newLoginPage(loginConfig config.ServiceExtConfig[service.LoginService], settingsManager *SettingsManager) Page {
+func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManager) Page {
 	loginService := loginConfig.Service
 
 	tmpl := "login" + loginConfig.Ext

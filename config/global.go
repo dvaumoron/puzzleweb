@@ -27,7 +27,6 @@ import (
 	adminclient "github.com/dvaumoron/puzzleweb/admin/client"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogclient "github.com/dvaumoron/puzzleweb/blog/client"
-	blogservice "github.com/dvaumoron/puzzleweb/blog/service"
 	forumclient "github.com/dvaumoron/puzzleweb/forum/client"
 	forumservice "github.com/dvaumoron/puzzleweb/forum/service"
 	loginclient "github.com/dvaumoron/puzzleweb/login/client"
@@ -39,7 +38,6 @@ import (
 	sessionclient "github.com/dvaumoron/puzzleweb/session/client"
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
-	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
@@ -48,21 +46,34 @@ const defaultSessionTimeOut = 1200
 
 const DefaultFavicon = "/favicon.ico"
 
+type AuthConfig = ServiceConfig[adminservice.AuthService]
+type LoginConfig = ServiceConfig[loginservice.LoginService]
+type SettingsConfig = ServiceConfig[sessionservice.SessionService]
+
+type BaseConfigExtracter interface {
+	BaseConfig
+	ExtractLoginConfig() LoginConfig
+	ExtractAdminConfig() AdminConfig
+	ExtractProfileConfig() ProfileConfig
+}
+
 type GlobalConfig struct {
 	Domain string
 	Port   string
 
-	AllLang        []string
-	SessionTimeOut int
-	DateFormat     string
-	PageSize       uint64
-	ExtractSize    uint64
+	AllLang            []string
+	SessionTimeOut     int
+	MaxMultipartMemory int64
+	DateFormat         string
+	PageSize           uint64
+	ExtractSize        uint64
 
 	StaticPath    string
 	FaviconPath   string
 	LocalesPath   string
 	TemplatesPath string
 	TemplatesExt  string
+	Page404Url    string
 
 	Logger           *zap.Logger
 	LangPicturePaths map[string]string
@@ -91,6 +102,7 @@ func LoadDefault() *GlobalConfig {
 	var err error
 	var logConfig []byte
 	var sessionTimeOut int
+	var maxMultipartMemory int64
 
 	domain := retrieveWithDefault("SITE_DOMAIN", "localhost")
 	port := retrieveWithDefault("SITE_PORT", "8080")
@@ -110,6 +122,16 @@ func LoadDefault() *GlobalConfig {
 		if sessionTimeOut == 0 {
 			fmt.Println("Failed to parse SESSION_TIME_OUT, using default :", defaultSessionTimeOut)
 			sessionTimeOut = defaultSessionTimeOut
+		}
+	}
+
+	maxMultipartMemoryStr := os.Getenv("MAX_MULTIPART_MEMORY")
+	if maxMultipartMemoryStr == "" {
+		fmt.Println("MAX_MULTIPART_MEMORY not found, using gin default")
+	} else {
+		maxMultipartMemory, _ = strconv.ParseInt(maxMultipartMemoryStr, 10, 64)
+		if maxMultipartMemory == 0 {
+			fmt.Println("Failed to parse MAX_MULTIPART_MEMORY, using gin default")
 		}
 	}
 
@@ -138,6 +160,7 @@ func LoadDefault() *GlobalConfig {
 	faviconPath := os.Getenv("FAVICON_PATH")
 	if faviconPath == "" {
 		faviconPath = staticPath + DefaultFavicon
+		fmt.Println("FAVICON_PATH not found, using default :", faviconPath)
 	} else if faviconPath[0] != '/' {
 		// user should use absolute path or path relative to STATIC_PATH
 		faviconPath = augmentedStaticPath + faviconPath
@@ -179,13 +202,14 @@ func LoadDefault() *GlobalConfig {
 
 	return &GlobalConfig{
 		Domain: domain, Port: port, AllLang: allLang, SessionTimeOut: sessionTimeOut,
-		DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
+		MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
 
 		StaticPath:    staticPath,
 		FaviconPath:   faviconPath,
 		LocalesPath:   retrievePath("LOCALES_PATH", "locales"),
 		TemplatesPath: retrievePath("TEMPLATES_PATH", "templates"),
 		TemplatesExt:  retrieveWithDefault("TEMPLATES_EXT", ".html"),
+		Page404Url:    os.Getenv("PAGE_404_URL"),
 
 		Logger:           logger,
 		LangPicturePaths: langPicturePaths,
@@ -225,12 +249,16 @@ func (c *GlobalConfig) loadBlog() {
 	}
 }
 
-func CreateServiceExtConfig[ServiceType any](c *GlobalConfig, service ServiceType) ServiceExtConfig[ServiceType] {
-	return ServiceExtConfig[ServiceType]{Logger: c.Logger, Service: service, Ext: c.TemplatesExt}
+func (c *GlobalConfig) GetLogger() *zap.Logger {
+	return c.Logger
 }
 
-func (c *GlobalConfig) ExtractAuthConfig() ServiceConfig[adminservice.AuthService] {
-	return ServiceConfig[adminservice.AuthService]{Logger: c.Logger, Service: c.RightClient}
+func (c *GlobalConfig) GetTemplatesExt() string {
+	return c.TemplatesExt
+}
+
+func (c *GlobalConfig) ExtractAuthConfig() AuthConfig {
+	return MakeServiceConfig[adminservice.AuthService](c, c.RightClient)
 }
 
 func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
@@ -242,42 +270,40 @@ func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
 
 func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {
 	return SiteConfig{
-		ServiceConfig: ServiceConfig[sessionservice.SessionService]{
-			Logger: c.Logger, Service: c.SessionService,
-		},
-		Domain: c.Domain, Port: c.Port,
-		SessionTimeOut: c.SessionTimeOut, StaticPath: c.StaticPath,
+		ServiceConfig: MakeServiceConfig(c, c.SessionService),
+		Domain:        c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut, MaxMultipartMemory: c.MaxMultipartMemory,
+		StaticPath: c.StaticPath, FaviconPath: c.FaviconPath, LangPicturePaths: c.LangPicturePaths, Page404Url: c.Page404Url,
 	}
 }
 
-func (c *GlobalConfig) ExtractLoginConfig() ServiceExtConfig[loginservice.LoginService] {
-	return CreateServiceExtConfig[loginservice.LoginService](c, c.LoginService)
+func (c *GlobalConfig) ExtractLoginConfig() LoginConfig {
+	return MakeServiceConfig[loginservice.LoginService](c, c.LoginService)
 }
 
 func (c *GlobalConfig) ExtractAdminConfig() AdminConfig {
 	return AdminConfig{
-		ServiceExtConfig: CreateServiceExtConfig[adminservice.AdminService](c, c.RightClient),
-		UserService:      c.LoginService, ProfileService: c.ProfileService, PageSize: c.PageSize,
+		ServiceConfig: MakeServiceConfig[adminservice.AdminService](c, c.RightClient),
+		UserService:   c.LoginService, ProfileService: c.ProfileService, PageSize: c.PageSize,
 	}
 }
 
 func (c *GlobalConfig) ExtractProfileConfig() ProfileConfig {
 	return ProfileConfig{
-		ServiceExtConfig: CreateServiceExtConfig(c, c.ProfileService),
-		AdminService:     c.RightClient, LoginService: c.LoginService,
+		ServiceConfig: MakeServiceConfig(c, c.ProfileService),
+		AdminService:  c.RightClient, LoginService: c.LoginService,
 	}
 }
 
-func (c *GlobalConfig) ExtractSettingsConfig() ServiceConfig[sessionservice.SessionService] {
-	return ServiceConfig[sessionservice.SessionService]{Logger: c.Logger, Service: c.SettingsService}
+func (c *GlobalConfig) ExtractSettingsConfig() SettingsConfig {
+	return MakeServiceConfig(c, c.SettingsService)
 }
 
 func (c *GlobalConfig) CreateWikiConfig(wikiId uint64, groupId uint64, args ...string) WikiConfig {
 	c.loadWiki()
 	return WikiConfig{
-		ServiceConfig: ServiceConfig[wikiservice.WikiService]{Logger: c.Logger, Service: wikiclient.New(
+		ServiceConfig: MakeServiceConfig(c, wikiclient.New(
 			c.WikiServiceAddr, c.Logger, wikiId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
-		)},
+		)),
 		MarkdownService: c.MarkdownService, Args: args,
 	}
 }
@@ -285,9 +311,9 @@ func (c *GlobalConfig) CreateWikiConfig(wikiId uint64, groupId uint64, args ...s
 func (c *GlobalConfig) CreateForumConfig(forumId uint64, groupId uint64, args ...string) ForumConfig {
 	c.loadForum()
 	return ForumConfig{
-		ServiceConfig: ServiceConfig[forumservice.ForumService]{Logger: c.Logger, Service: forumclient.New(
+		ServiceConfig: MakeServiceConfig[forumservice.ForumService](c, forumclient.New(
 			c.ForumServiceAddr, c.Logger, forumId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
-		)},
+		)),
 		PageSize: c.PageSize, Args: args,
 	}
 }
@@ -295,9 +321,9 @@ func (c *GlobalConfig) CreateForumConfig(forumId uint64, groupId uint64, args ..
 func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...string) BlogConfig {
 	c.loadBlog()
 	return BlogConfig{
-		ServiceConfig: ServiceConfig[blogservice.BlogService]{Logger: c.Logger, Service: blogclient.New(
+		ServiceConfig: MakeServiceConfig(c, blogclient.New(
 			c.BlogServiceAddr, c.Logger, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
-		)},
+		)),
 		MarkdownService: c.MarkdownService, CommentService: forumclient.New(
 			c.ForumServiceAddr, c.Logger, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		),

@@ -29,6 +29,11 @@ import (
 	"go.uber.org/zap"
 )
 
+type BaseConfig interface {
+	GetLogger() *zap.Logger
+	GetTemplatesExt() string
+}
+
 type LocalesConfig struct {
 	Logger         *zap.Logger
 	Domain         string
@@ -40,16 +45,19 @@ type LocalesConfig struct {
 type ServiceConfig[ServiceType any] struct {
 	Logger  *zap.Logger
 	Service ServiceType
-}
-
-type ServiceExtConfig[ServiceType any] struct {
-	Logger  *zap.Logger
-	Service ServiceType
 	Ext     string
 }
 
-func (sc ServiceExtConfig[ServiceType]) ExtractServiceConfig() ServiceConfig[ServiceType] {
-	return ServiceConfig[ServiceType]{Logger: sc.Logger, Service: sc.Service}
+func MakeServiceConfig[ServiceType any](c BaseConfig, service ServiceType) ServiceConfig[ServiceType] {
+	return ServiceConfig[ServiceType]{Logger: c.GetLogger(), Service: service, Ext: c.GetTemplatesExt()}
+}
+
+func (c *ServiceConfig[ServiceType]) GetLogger() *zap.Logger {
+	return c.Logger
+}
+
+func (c *ServiceConfig[ServiceType]) GetTemplatesExt() string {
+	return c.Ext
 }
 
 type SessionConfig struct {
@@ -60,10 +68,14 @@ type SessionConfig struct {
 
 type SiteConfig struct {
 	ServiceConfig[sessionservice.SessionService]
-	Domain         string
-	Port           string
-	SessionTimeOut int
-	StaticPath     string
+	Domain             string
+	Port               string
+	SessionTimeOut     int
+	MaxMultipartMemory int64
+	StaticPath         string
+	FaviconPath        string
+	Page404Url         string
+	LangPicturePaths   map[string]string
 }
 
 func (sc *SiteConfig) ExtractSessionConfig() SessionConfig {
@@ -73,14 +85,14 @@ func (sc *SiteConfig) ExtractSessionConfig() SessionConfig {
 }
 
 type AdminConfig struct {
-	ServiceExtConfig[adminservice.AdminService]
+	ServiceConfig[adminservice.AdminService]
 	UserService    loginservice.AdvancedUserService
 	ProfileService profileservice.AdvancedProfileService
 	PageSize       uint64
 }
 
 type ProfileConfig struct {
-	ServiceExtConfig[profileservice.AdvancedProfileService]
+	ServiceConfig[profileservice.AdvancedProfileService]
 	AdminService adminservice.AdminService
 	LoginService loginservice.LoginService
 }

@@ -24,7 +24,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/session/service"
 	"go.uber.org/zap"
 
 	"github.com/gin-gonic/gin"
@@ -35,15 +34,13 @@ const settingsName = "Settings"
 var errWrongLang = errors.New(common.WrongLangKey)
 
 type SettingsManager struct {
-	config.ServiceConfig[service.SessionService]
+	config.SettingsConfig
 	InitSettings  func(*gin.Context) map[string]string
 	CheckSettings func(map[string]string, *gin.Context) error
 }
 
-func NewSettingsManager(settingsConfig config.ServiceConfig[service.SessionService]) *SettingsManager {
-	return &SettingsManager{
-		ServiceConfig: settingsConfig, InitSettings: initSettings, CheckSettings: checkSettings,
-	}
+func NewSettingsManager(settingsConfig config.SettingsConfig) *SettingsManager {
+	return &SettingsManager{SettingsConfig: settingsConfig, InitSettings: initSettings, CheckSettings: checkSettings}
 }
 
 func initSettings(c *gin.Context) map[string]string {
@@ -96,7 +93,7 @@ func (w settingsWidget) LoadInto(router gin.IRouter) {
 	router.POST("/save", w.saveHandler)
 }
 
-func newSettingsPage(settingsConfig config.ServiceExtConfig[*SettingsManager]) Page {
+func newSettingsPage(settingsConfig config.ServiceConfig[*SettingsManager]) Page {
 	settingsManager := settingsConfig.Service
 
 	editTmpl := "settings/edit" + settingsConfig.Ext

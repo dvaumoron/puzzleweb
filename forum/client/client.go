@@ -30,6 +30,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/grpcclient"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 type forumClient struct {
@@ -41,9 +42,9 @@ type forumClient struct {
 	profileService profileservice.ProfileService
 }
 
-func New(serviceAddr string, logger *zap.Logger, forumId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.FullForumService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, forumId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.FullForumService {
 	return forumClient{
-		Client: grpcclient.Make(serviceAddr, logger), forumId: forumId, groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger), forumId: forumId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }

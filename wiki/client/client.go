@@ -21,6 +21,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
@@ -29,6 +30,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/wiki/service"
 	pb "github.com/dvaumoron/puzzlewikiservice"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 type wikiClient struct {
@@ -41,10 +43,10 @@ type wikiClient struct {
 	profileService profileservice.ProfileService
 }
 
-func New(serviceAddr string, logger *zap.Logger, wikiId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.WikiService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, wikiId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.WikiService {
 	return wikiClient{
-		Client: grpcclient.Make(serviceAddr, logger), cache: newCache(), wikiId: wikiId, groupId: groupId,
-		dateFormat: dateFormat, authService: authService, profileService: profileService,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger), cache: newCache(), wikiId: wikiId,
+		groupId: groupId, dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }
 

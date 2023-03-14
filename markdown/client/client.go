@@ -19,20 +19,22 @@ package client
 
 import (
 	"html/template"
+	"time"
 
 	pb "github.com/dvaumoron/puzzlemarkdownservice"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/grpcclient"
 	"github.com/dvaumoron/puzzleweb/markdown/service"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 type markdownClient struct {
 	grpcclient.Client
 }
 
-func New(serviceAddr string, logger *zap.Logger) service.MarkdownService {
-	return markdownClient{Client: grpcclient.Make(serviceAddr, logger)}
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger) service.MarkdownService {
+	return markdownClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger)}
 }
 
 func (client markdownClient) Apply(text string) (template.HTML, error) {

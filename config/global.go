@@ -22,6 +22,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dvaumoron/puzzlesaltclient"
 	adminclient "github.com/dvaumoron/puzzleweb/admin/client"
@@ -40,9 +41,12 @@ import (
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const defaultSessionTimeOut = 1200
+const defaultServiceTimeOut = 5 * time.Second
 
 const DefaultFavicon = "/favicon.ico"
 
@@ -63,6 +67,7 @@ type GlobalConfig struct {
 
 	AllLang            []string
 	SessionTimeOut     int
+	ServiceTimeOut     time.Duration
 	MaxMultipartMemory int64
 	DateFormat         string
 	PageSize           uint64
@@ -78,6 +83,7 @@ type GlobalConfig struct {
 	Logger           *zap.Logger
 	LangPicturePaths map[string]string
 
+	DialOptions     grpc.DialOption
 	SessionService  sessionservice.SessionService
 	SaltService     loginservice.SaltService
 	SettingsService sessionservice.SessionService
@@ -102,6 +108,7 @@ func LoadDefault() *GlobalConfig {
 	var err error
 	var logConfig []byte
 	var sessionTimeOut int
+	var serviceTimeOut time.Duration
 	var maxMultipartMemory int64
 
 	domain := retrieveWithDefault("SITE_DOMAIN", "localhost")
@@ -124,6 +131,17 @@ func LoadDefault() *GlobalConfig {
 			fmt.Println("Failed to parse SESSION_TIME_OUT, using default :", defaultSessionTimeOut)
 			sessionTimeOut = defaultSessionTimeOut
 		}
+	}
+
+	serviceTimeOutStr := os.Getenv("SERVICE_TIME_OUT")
+	if serviceTimeOutStr == "" {
+		fmt.Println("SERVICE_TIME_OUT not found, using default :", defaultServiceTimeOut)
+		serviceTimeOut = defaultServiceTimeOut
+	} else if timeOut, _ := strconv.ParseInt(serviceTimeOutStr, 10, 64); timeOut == 0 {
+		fmt.Println("Failed to parse SERVICE_TIME_OUT, using default :", defaultServiceTimeOut)
+		serviceTimeOut = defaultServiceTimeOut
+	} else {
+		serviceTimeOut = time.Duration(timeOut) * time.Second
 	}
 
 	maxMultipartMemoryStr := os.Getenv("MAX_MULTIPART_MEMORY")
@@ -150,11 +168,15 @@ func LoadDefault() *GlobalConfig {
 	}
 	logger := newLogger(logConfig)
 
-	sessionService := sessionclient.New(requiredFromEnv("SESSION_SERVICE_ADDR"), logger)
-	saltService := puzzlesaltclient.Make(requiredFromEnv("SALT_SERVICE_ADDR"))
-	settingsService := sessionclient.New(requiredFromEnv("SETTINGS_SERVICE_ADDR"), logger)
-	loginService := loginclient.New(requiredFromEnv("LOGIN_SERVICE_ADDR"), logger, dateFormat, saltService)
-	rightClient := adminclient.Make(requiredFromEnv("RIGHT_SERVICE_ADDR"), logger)
+	dialOptions := grpc.WithTransportCredentials(insecure.NewCredentials())
+
+	sessionService := sessionclient.New(requiredFromEnv("SESSION_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
+	saltService := puzzlesaltclient.Make(requiredFromEnv("SALT_SERVICE_ADDR"), dialOptions, serviceTimeOut)
+	settingsService := sessionclient.New(requiredFromEnv("SETTINGS_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
+	loginService := loginclient.New(
+		requiredFromEnv("LOGIN_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger, dateFormat, saltService,
+	)
+	rightClient := adminclient.Make(requiredFromEnv("RIGHT_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
 
 	staticPath := retrievePath("STATIC_PATH", "static")
 	augmentedStaticPath := staticPath + "/"
@@ -198,12 +220,12 @@ func LoadDefault() *GlobalConfig {
 	// if not setted in configuration, profile are public
 	profileGroupId := retrieveUintWithDefault("PROFILE_GROUP_ID", adminservice.PublicGroupId)
 	profileService := profileclient.New(
-		requiredFromEnv("PROFILE_SERVICE_ADDR"), logger, profileGroupId,
-		loginService, rightClient, defaultPicture,
+		requiredFromEnv("PROFILE_SERVICE_ADDR"), dialOptions, serviceTimeOut,
+		logger, profileGroupId, loginService, rightClient, defaultPicture,
 	)
 
 	return &GlobalConfig{
-		Domain: domain, Port: port, AllLang: allLang, SessionTimeOut: sessionTimeOut,
+		Domain: domain, Port: port, AllLang: allLang, SessionTimeOut: sessionTimeOut, ServiceTimeOut: serviceTimeOut,
 		MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
 
 		StaticPath:    staticPath,
@@ -215,6 +237,7 @@ func LoadDefault() *GlobalConfig {
 
 		Logger:           logger,
 		LangPicturePaths: langPicturePaths,
+		DialOptions:      dialOptions,
 		SessionService:   sessionService,
 		SaltService:      saltService,
 		SettingsService:  settingsService,
@@ -226,7 +249,9 @@ func LoadDefault() *GlobalConfig {
 
 func (c *GlobalConfig) loadMarkdown() {
 	if c.MarkdownService == nil {
-		c.MarkdownService = markdownclient.New(requiredFromEnv("MARKDOWN_SERVICE_ADDR"), c.Logger)
+		c.MarkdownService = markdownclient.New(
+			requiredFromEnv("MARKDOWN_SERVICE_ADDR"), c.DialOptions, c.ServiceTimeOut, c.Logger,
+		)
 	}
 }
 
@@ -304,7 +329,8 @@ func (c *GlobalConfig) CreateWikiConfig(wikiId uint64, groupId uint64, args ...s
 	c.loadWiki()
 	return WikiConfig{
 		ServiceConfig: MakeServiceConfig(c, wikiclient.New(
-			c.WikiServiceAddr, c.Logger, wikiId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.WikiServiceAddr, c.DialOptions, c.ServiceTimeOut, c.Logger,
+			wikiId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		)),
 		MarkdownService: c.MarkdownService, Args: args,
 	}
@@ -314,7 +340,8 @@ func (c *GlobalConfig) CreateForumConfig(forumId uint64, groupId uint64, args ..
 	c.loadForum()
 	return ForumConfig{
 		ServiceConfig: MakeServiceConfig[forumservice.ForumService](c, forumclient.New(
-			c.ForumServiceAddr, c.Logger, forumId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.ForumServiceAddr, c.DialOptions, c.ServiceTimeOut, c.Logger,
+			forumId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		)),
 		PageSize: c.PageSize, Args: args,
 	}
@@ -324,10 +351,12 @@ func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...s
 	c.loadBlog()
 	return BlogConfig{
 		ServiceConfig: MakeServiceConfig(c, blogclient.New(
-			c.BlogServiceAddr, c.Logger, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.BlogServiceAddr, c.DialOptions, c.ServiceTimeOut, c.Logger,
+			blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		)),
 		MarkdownService: c.MarkdownService, CommentService: forumclient.New(
-			c.ForumServiceAddr, c.Logger, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.ForumServiceAddr, c.DialOptions, c.ServiceTimeOut, c.Logger,
+			blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		),
 		PageSize: c.PageSize, ExtractSize: c.ExtractSize, Args: args,
 	}

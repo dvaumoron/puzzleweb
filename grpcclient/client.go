@@ -23,22 +23,23 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Client struct {
 	serviceAddr string
+	dialOptions grpc.DialOption
+	timeOut     time.Duration
 	Logger      *zap.Logger
 }
 
-func Make(serviceAddr string, logger *zap.Logger) Client {
-	return Client{serviceAddr: serviceAddr, Logger: logger}
+func Make(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger) Client {
+	return Client{serviceAddr: serviceAddr, dialOptions: dialOptions, timeOut: timeOut, Logger: logger}
 }
 
 func (client Client) Dial() (*grpc.ClientConn, error) {
-	return grpc.Dial(client.serviceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	return grpc.Dial(client.serviceAddr, client.dialOptions)
 }
 
-func (Client) InitContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), time.Second)
+func (client Client) InitContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), client.timeOut)
 }

@@ -9,7 +9,7 @@ require (
 	github.com/dvaumoron/puzzlemarkdownservice v1.0.1
 	github.com/dvaumoron/puzzleprofileservice v1.2.0
 	github.com/dvaumoron/puzzlerightservice v1.3.0
-	github.com/dvaumoron/puzzlesaltclient v1.0.1
+	github.com/dvaumoron/puzzlesaltclient v1.1.0
 	github.com/dvaumoron/puzzlesessionservice v1.2.0
 	github.com/dvaumoron/puzzlewikiservice v1.3.0
 	github.com/gin-gonic/gin v1.8.1

@@ -27,6 +27,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/grpcclient"
 	"github.com/dvaumoron/puzzleweb/login/service"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 type loginClient struct {
@@ -35,9 +36,9 @@ type loginClient struct {
 	saltService service.SaltService
 }
 
-func New(serviceAddr string, logger *zap.Logger, dateFormat string, saltService service.SaltService) service.FullLoginService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, dateFormat string, saltService service.SaltService) service.FullLoginService {
 	return loginClient{
-		Client: grpcclient.Make(serviceAddr, logger), dateFormat: dateFormat, saltService: saltService,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger), dateFormat: dateFormat, saltService: saltService,
 	}
 }
 

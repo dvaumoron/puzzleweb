@@ -21,10 +21,10 @@ import (
 	"context"
 	"time"
 
+	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzlerightservice"
 	"github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/grpcclient"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -34,6 +34,7 @@ var _ service.AdminService = RightClient{}
 
 type RightClient struct {
 	grpcclient.Client
+	Logger        *zap.Logger
 	groupIdToName map[uint64]string
 	nameToGroupId map[string]uint64
 }
@@ -46,7 +47,7 @@ func Make(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration
 		service.PublicName: service.PublicGroupId, service.AdminName: service.AdminGroupId,
 	}
 	return RightClient{
-		Client:        grpcclient.Make(serviceAddr, dialOptions, timeOut, logger),
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger,
 		groupIdToName: groupIdToName, nameToGroupId: nameToGroupId,
 	}
 }

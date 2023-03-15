@@ -24,10 +24,10 @@ import (
 	"time"
 
 	pb "github.com/dvaumoron/puzzleforumservice"
+	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/forum/service"
-	"github.com/dvaumoron/puzzleweb/grpcclient"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -35,6 +35,7 @@ import (
 
 type forumClient struct {
 	grpcclient.Client
+	Logger         *zap.Logger
 	forumId        uint64
 	groupId        uint64
 	dateFormat     string
@@ -44,7 +45,7 @@ type forumClient struct {
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, forumId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.FullForumService {
 	return forumClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger), forumId: forumId, groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger, forumId: forumId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }

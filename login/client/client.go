@@ -22,9 +22,9 @@ import (
 	"sort"
 	"time"
 
+	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzleloginservice"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/grpcclient"
 	"github.com/dvaumoron/puzzleweb/login/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -32,13 +32,15 @@ import (
 
 type loginClient struct {
 	grpcclient.Client
+	Logger      *zap.Logger
 	dateFormat  string
 	saltService service.SaltService
 }
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, dateFormat string, saltService service.SaltService) service.FullLoginService {
 	return loginClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger), dateFormat: dateFormat, saltService: saltService,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut),
+		Logger: logger, dateFormat: dateFormat, saltService: saltService,
 	}
 }
 

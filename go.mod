@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/dvaumoron/puzzleblogservice v1.1.0
 	github.com/dvaumoron/puzzleforumservice v1.4.0
+	github.com/dvaumoron/puzzlegrpcclient v1.0.0
 	github.com/dvaumoron/puzzleloginservice v1.7.0
 	github.com/dvaumoron/puzzlemarkdownservice v1.0.1
 	github.com/dvaumoron/puzzleprofileservice v1.2.0
@@ -18,7 +19,7 @@ require (
 	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.6.0
-	google.golang.org/grpc v1.52.3
+	google.golang.org/grpc v1.53.0
 )
 
 require (
@@ -41,7 +42,7 @@ require (
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
-	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

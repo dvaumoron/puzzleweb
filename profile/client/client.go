@@ -20,10 +20,10 @@ package client
 import (
 	"time"
 
+	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzleprofileservice"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/grpcclient"
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
 	"github.com/dvaumoron/puzzleweb/profile/service"
 	"go.uber.org/zap"
@@ -32,6 +32,7 @@ import (
 
 type profileClient struct {
 	grpcclient.Client
+	Logger         *zap.Logger
 	groupId        uint64
 	userService    loginservice.UserService
 	authService    adminservice.AuthService
@@ -40,7 +41,7 @@ type profileClient struct {
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, groupId uint64, userService loginservice.UserService, authService adminservice.AuthService, defaultPicture []byte) service.AdvancedProfileService {
 	return profileClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger), groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger, groupId: groupId,
 		userService: userService, authService: authService, defaultPicture: defaultPicture,
 	}
 }

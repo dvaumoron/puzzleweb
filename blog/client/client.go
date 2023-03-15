@@ -23,10 +23,10 @@ import (
 	"time"
 
 	pb "github.com/dvaumoron/puzzleblogservice"
+	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/blog/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/grpcclient"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -34,6 +34,7 @@ import (
 
 type blogClient struct {
 	grpcclient.Client
+	Logger         *zap.Logger
 	blogId         uint64
 	groupId        uint64
 	dateFormat     string
@@ -43,7 +44,7 @@ type blogClient struct {
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, blogId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.BlogService {
 	return blogClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger), blogId: blogId, groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger, blogId: blogId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }

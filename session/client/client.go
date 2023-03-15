@@ -20,9 +20,9 @@ package client
 import (
 	"time"
 
+	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzlesessionservice"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/grpcclient"
 	"github.com/dvaumoron/puzzleweb/session/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -30,10 +30,11 @@ import (
 
 type sessionClient struct {
 	grpcclient.Client
+	Logger *zap.Logger
 }
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger) service.SessionService {
-	return sessionClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger)}
+	return sessionClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger}
 }
 
 func (client sessionClient) Generate() (uint64, error) {

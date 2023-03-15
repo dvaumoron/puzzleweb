@@ -21,9 +21,9 @@ import (
 	"html/template"
 	"time"
 
+	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzlemarkdownservice"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/grpcclient"
 	"github.com/dvaumoron/puzzleweb/markdown/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -31,10 +31,11 @@ import (
 
 type markdownClient struct {
 	grpcclient.Client
+	Logger *zap.Logger
 }
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger) service.MarkdownService {
-	return markdownClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger)}
+	return markdownClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger}
 }
 
 func (client markdownClient) Apply(text string) (template.HTML, error) {

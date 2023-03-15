@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
+	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/grpcclient"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"github.com/dvaumoron/puzzleweb/wiki/service"
 	pb "github.com/dvaumoron/puzzlewikiservice"
@@ -35,6 +35,7 @@ import (
 
 type wikiClient struct {
 	grpcclient.Client
+	Logger         *zap.Logger
 	cache          *wikiCache
 	wikiId         uint64
 	groupId        uint64
@@ -45,7 +46,7 @@ type wikiClient struct {
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, wikiId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.WikiService {
 	return wikiClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut, logger), cache: newCache(), wikiId: wikiId,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger, cache: newCache(), wikiId: wikiId,
 		groupId: groupId, dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }

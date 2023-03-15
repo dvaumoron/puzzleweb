@@ -11,10 +11,10 @@
     </div>
 {{end}}
 {{define "search"}}
-    <form action="{{.CurrentUrl}}" method="GET">
+    <form action="{{.CurrentUrl}}" method="GET" role="search">
         <label>
             {{.Messages.FilterLabel}}
-            <input type="text" name="filter"/>
+            <input type="search" name="filter"/>
         </label>
         <div class="hide">
             <input type="text" name="pageNumber" value="1"/>

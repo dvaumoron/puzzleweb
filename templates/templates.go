@@ -15,18 +15,15 @@
  * limitations under the License.
  *
  */
-package puzzleweb
+package templates
 
 import (
 	"fmt"
 	"html/template"
 	"io/fs"
-	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 )
 
@@ -73,16 +70,4 @@ func LoadTemplates(templatesPath string) render.HTMLRender {
 		panic(err)
 	}
 	return puzzleHTMLRender{templates: tmpl}
-}
-
-func CreateTemplate(redirecter common.TemplateRedirecter) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		data := initData(c)
-		tmpl, redirect := redirecter(data, c)
-		if redirect == "" {
-			c.HTML(http.StatusOK, tmpl, data)
-		} else {
-			c.Redirect(http.StatusFound, redirect)
-		}
-	}
 }

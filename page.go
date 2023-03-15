@@ -18,6 +18,7 @@
 package puzzleweb
 
 import (
+	"net/http"
 	"strings"
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
@@ -154,4 +155,16 @@ func (p Page) extractSubPageNames(messages map[string]string, url string, c *gin
 		}
 	}
 	return pageDescs
+}
+
+func CreateTemplate(redirecter common.TemplateRedirecter) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		data := initData(c)
+		tmpl, redirect := redirecter(data, c)
+		if redirect == "" {
+			c.HTML(http.StatusOK, tmpl, data)
+		} else {
+			c.Redirect(http.StatusFound, redirect)
+		}
+	}
 }

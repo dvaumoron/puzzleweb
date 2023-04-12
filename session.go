@@ -18,7 +18,8 @@
 package puzzleweb
 
 import (
-	"fmt"
+	"encoding/base64"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -29,6 +30,8 @@ import (
 
 const cookieName = "pw_session_id"
 const sessionName = "Session"
+
+var errDecodeTooShort = errors.New("the result from base64 decoding is too short")
 
 type sessionManager config.SessionConfig
 
@@ -42,8 +45,7 @@ func (m sessionManager) getSessionId(c *gin.Context) (uint64, error) {
 		m.Logger.Info("Failed to retrieve session cookie", zap.Error(err))
 		return m.generateSessionCookie(c)
 	}
-	// TODO better uint64 encoding
-	sessionId, err := strconv.ParseUint(cookie, 10, 64)
+	sessionId, err := decodeFromBase64(cookie)
 	if err != nil {
 		m.Logger.Info("Failed to parse session cookie", zap.Error(err))
 		return m.generateSessionCookie(c)
@@ -62,7 +64,46 @@ func (m sessionManager) generateSessionCookie(c *gin.Context) (uint64, error) {
 }
 
 func (m sessionManager) setSessionCookie(sessionId uint64, c *gin.Context) {
-	c.SetCookie(cookieName, fmt.Sprint(sessionId), m.TimeOut, "/", m.Domain, true, true)
+	c.SetCookie(cookieName, encodeToBase64(sessionId), m.TimeOut, "/", m.Domain, true, true)
+}
+
+func encodeToBase64(i uint64) string {
+	bs := make([]byte, 8)
+	bs[0] = byte(i)
+	i >>= 8
+	bs[1] = byte(i)
+	i >>= 8
+	bs[2] = byte(i)
+	i >>= 8
+	bs[3] = byte(i)
+	i >>= 8
+	bs[4] = byte(i)
+	i >>= 8
+	bs[5] = byte(i)
+	i >>= 8
+	bs[6] = byte(i)
+	i >>= 8
+	bs[7] = byte(i)
+	return base64.StdEncoding.EncodeToString(bs)
+}
+
+func decodeFromBase64(s string) (uint64, error) {
+	bs, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return 0, err
+	}
+	if len(bs) < 8 {
+		return 0, errDecodeTooShort
+	}
+	res := uint64(bs[0])
+	res |= uint64(bs[1]) << 8
+	res |= uint64(bs[2]) << 16
+	res |= uint64(bs[3]) << 24
+	res |= uint64(bs[4]) << 32
+	res |= uint64(bs[5]) << 40
+	res |= uint64(bs[6]) << 48
+	res |= uint64(bs[7]) << 56
+	return res, nil
 }
 
 type Session struct {

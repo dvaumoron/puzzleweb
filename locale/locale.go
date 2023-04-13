@@ -77,9 +77,9 @@ func NewManager(localesConfig config.LocalesConfig) Manager {
 
 		var pathBuilder strings.Builder
 		pathBuilder.WriteString(localesPath)
-		pathBuilder.WriteString("/message_")
+		pathBuilder.WriteString("/messages_")
 		pathBuilder.WriteString(lang)
-		pathBuilder.WriteString(".property")
+		pathBuilder.WriteString(".properties")
 		path := pathBuilder.String()
 		file, err := os.Open(path)
 		if err != nil {

@@ -19,7 +19,6 @@ package puzzleweb
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -243,6 +242,6 @@ func GetRequestedUserId(logger *zap.Logger, c *gin.Context) uint64 {
 func profileUrlBuilder(userId uint64) *strings.Builder {
 	targetBuilder := new(strings.Builder)
 	targetBuilder.WriteString("/profile/view/")
-	targetBuilder.WriteString(fmt.Sprint(userId))
+	targetBuilder.WriteString(strconv.FormatUint(userId, 10))
 	return targetBuilder
 }

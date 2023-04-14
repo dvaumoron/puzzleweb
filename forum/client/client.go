@@ -486,6 +486,7 @@ func convertContent(content *pb.Content, creator profileservice.UserProfile, dat
 }
 
 func logCommentThreadNotFound(logger *zap.Logger, objectId uint64, elemTitle string) error {
+	// TODO improve here
 	return common.LogOriginalError(logger, fmt.Errorf(
 		"comment thread not found : %d, %s", objectId, elemTitle,
 	), "ForumClient27")

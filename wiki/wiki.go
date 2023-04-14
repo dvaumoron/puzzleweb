@@ -18,7 +18,7 @@
 package wiki
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb"
@@ -129,7 +129,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 
 			data[wikiTitleName] = title
 			if version != "" {
-				data[wikiVersionName] = fmt.Sprint(content.Version)
+				data[wikiVersionName] = strconv.FormatUint(content.Version, 10)
 			}
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data[wikiContentName] = body
@@ -157,7 +157,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			if content == nil {
 				data[wikiVersionName] = "0"
 			} else {
-				data[wikiVersionName] = fmt.Sprint(content.Version)
+				data[wikiVersionName] = strconv.FormatUint(content.Version, 10)
 				data[wikiContentName] = content.Markdown
 			}
 			return editTmpl, ""

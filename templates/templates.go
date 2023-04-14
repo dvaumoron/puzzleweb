@@ -17,6 +17,8 @@
  */
 package templates
 
+// TODO use zap everywhere
+
 import (
 	"fmt"
 	"html/template"

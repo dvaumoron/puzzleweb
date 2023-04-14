@@ -19,7 +19,6 @@ package blog
 
 import (
 	"errors"
-	"fmt"
 	"html/template"
 	"strconv"
 	"strings"
@@ -306,7 +305,7 @@ func postUrlBuilder(base string, postId uint64) *strings.Builder {
 	targetBuilder := new(strings.Builder)
 	targetBuilder.WriteString(base)
 	targetBuilder.WriteString("view/")
-	targetBuilder.WriteString(fmt.Sprint(postId))
+	targetBuilder.WriteString(strconv.FormatUint(postId, 10))
 	return targetBuilder
 }
 

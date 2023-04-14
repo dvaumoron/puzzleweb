@@ -18,8 +18,8 @@
 package puzzleweb
 
 import (
-	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
@@ -116,7 +116,7 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 
 			s := GetSession(c)
 			s.Store(loginName, login)
-			s.Store(userIdName, fmt.Sprint(userId))
+			s.Store(userIdName, strconv.FormatUint(userId, 10))
 
 			GetLocalesManager(c).SetLangCookie(settingsManager.Get(userId, c)[locale.LangName], c)
 

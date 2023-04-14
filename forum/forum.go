@@ -19,7 +19,6 @@ package forum
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -215,6 +214,6 @@ func threadUrlBuilder(base string, threadId uint64) *strings.Builder {
 	targetBuilder := new(strings.Builder)
 	targetBuilder.WriteString(base)
 	targetBuilder.WriteString("view/")
-	targetBuilder.WriteString(fmt.Sprint(threadId))
+	targetBuilder.WriteString(strconv.FormatUint(threadId, 10))
 	return targetBuilder
 }

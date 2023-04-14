@@ -17,6 +17,8 @@
  */
 package config
 
+// TODO use zap everywhere
+
 import (
 	"encoding/json"
 	"fmt"

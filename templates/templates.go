@@ -43,7 +43,7 @@ func (r puzzleHTMLRender) Instance(name string, data any) render.Render {
 func Load(templatesPath string) render.HTMLRender {
 	templatesPath, err := filepath.Abs(templatesPath)
 	if err != nil {
-		fmt.Println("wrong templatesPath :", err)
+		fmt.Println("Wrong templatesPath :", err)
 		os.Exit(1)
 	}
 	if last := len(templatesPath) - 1; templatesPath[last] != '/' {
@@ -67,7 +67,8 @@ func Load(templatesPath string) render.HTMLRender {
 	})
 
 	if err != nil {
-		panic(err)
+		fmt.Println("Failed to load templates :", err)
+		os.Exit(1)
 	}
 	return puzzleHTMLRender{templates: tmpl}
 }

@@ -18,7 +18,9 @@
 package puzzleweb
 
 import (
+	"io/fs"
 	"net/http"
+	"path/filepath"
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
@@ -142,4 +144,34 @@ func BuildDefaultSite() (*Site, *config.GlobalConfig) {
 	site := NewSite(globalConfig, localesManager, settingsManager)
 
 	return site, globalConfig
+}
+
+func (site *Site) AddStaticPagesFromFolder(groupId uint64, folderPath string, templateExt string) {
+	folderPath, err := filepath.Abs(folderPath)
+	if err != nil {
+		site.logger.Fatal("Wrong folderPath", zap.Error(err))
+	}
+	if last := len(folderPath) - 1; folderPath[last] != '/' {
+		folderPath += "/"
+	}
+
+	current := site.root
+
+	inSize := len(folderPath)
+	extSize := len(templateExt)
+	err = filepath.WalkDir(folderPath, func(path string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			name := path[inSize:]
+			cut := len(name) - extSize
+			if name[cut:] == templateExt {
+				// TODO manage subfolder with index
+				current.AddSubPage(MakeStaticPage(name[:cut], groupId, name))
+			}
+		}
+		return err
+	})
+
+	if err != nil {
+		site.logger.Fatal("Failed to load static pages", zap.Error(err))
+	}
 }

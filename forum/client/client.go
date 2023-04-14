@@ -88,7 +88,7 @@ func (client forumClient) CreateThread(userId uint64, title string, message stri
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, common.LogOriginalError(client.Logger, err)
+		return 0, common.LogOriginalError(client.Logger, err, "ForumClient1")
 	}
 	defer conn.Close()
 
@@ -99,7 +99,7 @@ func (client forumClient) CreateThread(userId uint64, title string, message stri
 		ContainerId: client.forumId, UserId: userId, Title: title, Text: message,
 	})
 	if err != nil {
-		return 0, common.LogOriginalError(client.Logger, err)
+		return 0, common.LogOriginalError(client.Logger, err, "ForumClient2")
 	}
 	if !response.Success {
 		return 0, common.ErrUpdate
@@ -115,7 +115,7 @@ func (client forumClient) CreateCommentThread(userId uint64, elemTitle string) e
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient3")
 	}
 	defer conn.Close()
 
@@ -126,7 +126,7 @@ func (client forumClient) CreateCommentThread(userId uint64, elemTitle string) e
 		ContainerId: client.forumId, UserId: userId, Title: elemTitle,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient4")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -142,7 +142,7 @@ func (client forumClient) CreateMessage(userId uint64, threadId uint64, message 
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient5")
 	}
 	defer conn.Close()
 
@@ -153,7 +153,7 @@ func (client forumClient) CreateMessage(userId uint64, threadId uint64, message 
 		ContainerId: threadId, UserId: userId, Text: message,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient6")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -169,7 +169,7 @@ func (client forumClient) CreateComment(userId uint64, elemTitle string, comment
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient7")
 	}
 	defer conn.Close()
 
@@ -180,7 +180,7 @@ func (client forumClient) CreateComment(userId uint64, elemTitle string, comment
 	forumClient := pb.NewForumClient(conn)
 	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient8")
 	}
 
 	var threadId uint64
@@ -191,7 +191,7 @@ func (client forumClient) CreateComment(userId uint64, elemTitle string, comment
 			ContainerId: client.forumId, UserId: userId, Title: elemTitle,
 		})
 		if err != nil {
-			return common.LogOriginalError(client.Logger, err)
+			return common.LogOriginalError(client.Logger, err, "ForumClient9")
 		}
 		threadId = response2.Id
 	} else {
@@ -202,7 +202,7 @@ func (client forumClient) CreateComment(userId uint64, elemTitle string, comment
 		ContainerId: threadId, UserId: userId, Text: comment,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient10")
 	}
 	if !response2.Success {
 		return common.ErrUpdate
@@ -218,7 +218,7 @@ func (client forumClient) GetThread(userId uint64, threadId uint64, start uint64
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.Logger, err)
+		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.Logger, err, "ForumClient11")
 	}
 	defer conn.Close()
 
@@ -226,18 +226,16 @@ func (client forumClient) GetThread(userId uint64, threadId uint64, start uint64
 	defer cancel()
 
 	forumClient := pb.NewForumClient(conn)
-	response, err := forumClient.GetThread(ctx, &pb.IdRequest{
-		ContainerId: client.forumId, Id: threadId,
-	})
+	response, err := forumClient.GetThread(ctx, &pb.IdRequest{ContainerId: client.forumId, Id: threadId})
 	if err != nil {
-		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.Logger, err)
+		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.Logger, err, "ForumClient12")
 	}
 
 	response2, err := forumClient.GetMessages(ctx, &pb.SearchRequest{
 		ContainerId: threadId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.Logger, err)
+		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.Logger, err, "ForumClient13")
 	}
 
 	list := response2.List
@@ -264,7 +262,7 @@ func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.Logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err, "ForumClient14")
 	}
 	defer conn.Close()
 
@@ -275,7 +273,7 @@ func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 		ContainerId: client.forumId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.Logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err, "ForumClient15")
 	}
 
 	total := response.Total
@@ -289,7 +287,7 @@ func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 		return 0, nil, err
 	}
 	sort.Sort(sortableContentsDesc(list))
-	return total, convertContents(list, users, client.dateFormat), err
+	return total, convertContents(list, users, client.dateFormat), nil
 }
 
 func (client forumClient) GetCommentThread(userId uint64, elemTitle string, start uint64, end uint64) (uint64, []service.ForumContent, error) {
@@ -300,7 +298,7 @@ func (client forumClient) GetCommentThread(userId uint64, elemTitle string, star
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.Logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err, "ForumClient16")
 	}
 	defer conn.Close()
 
@@ -311,7 +309,7 @@ func (client forumClient) GetCommentThread(userId uint64, elemTitle string, star
 	forumClient := pb.NewForumClient(conn)
 	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.Logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err, "ForumClient17")
 	}
 	if response.Total == 0 {
 		return 0, nil, logCommentThreadNotFound(client.Logger, objectId, elemTitle)
@@ -322,7 +320,7 @@ func (client forumClient) GetCommentThread(userId uint64, elemTitle string, star
 		ContainerId: threadId, Start: start, End: end,
 	})
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.Logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err, "ForumClient18")
 	}
 
 	total := response2.Total
@@ -340,9 +338,7 @@ func (client forumClient) GetCommentThread(userId uint64, elemTitle string, star
 }
 
 func (client forumClient) DeleteThread(userId uint64, threadId uint64) error {
-	return client.deleteContent(
-		userId, deleteThread, &pb.IdRequest{ContainerId: client.forumId, Id: threadId},
-	)
+	return client.deleteContent(userId, deleteThread, &pb.IdRequest{ContainerId: client.forumId, Id: threadId})
 }
 
 func (client forumClient) DeleteCommentThread(userId uint64, elemTitle string) error {
@@ -353,7 +349,7 @@ func (client forumClient) DeleteCommentThread(userId uint64, elemTitle string) e
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient19")
 	}
 	defer conn.Close()
 
@@ -364,7 +360,7 @@ func (client forumClient) DeleteCommentThread(userId uint64, elemTitle string) e
 	forumClient := pb.NewForumClient(conn)
 	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient20")
 	}
 	if response.Total == 0 {
 		return nil
@@ -373,7 +369,7 @@ func (client forumClient) DeleteCommentThread(userId uint64, elemTitle string) e
 
 	response2, err := forumClient.DeleteThread(ctx, &pb.IdRequest{ContainerId: objectId, Id: threadId})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient21")
 	}
 	if !response2.Success {
 		return common.ErrUpdate
@@ -395,7 +391,7 @@ func (client forumClient) DeleteComment(userId uint64, elemTitle string, comment
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient22")
 	}
 	defer conn.Close()
 
@@ -406,7 +402,7 @@ func (client forumClient) DeleteComment(userId uint64, elemTitle string, comment
 	forumClient := pb.NewForumClient(conn)
 	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient23")
 	}
 	if response.Total == 0 {
 		return logCommentThreadNotFound(client.Logger, objectId, elemTitle)
@@ -415,7 +411,7 @@ func (client forumClient) DeleteComment(userId uint64, elemTitle string, comment
 
 	response2, err := forumClient.DeleteThread(ctx, &pb.IdRequest{ContainerId: threadId, Id: commentId})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient24")
 	}
 	if !response2.Success {
 		return common.ErrUpdate
@@ -443,7 +439,7 @@ func (client forumClient) deleteContent(userId uint64, kind deleteRequestKind, r
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient25")
 	}
 	defer conn.Close()
 
@@ -452,7 +448,7 @@ func (client forumClient) deleteContent(userId uint64, kind deleteRequestKind, r
 
 	response, err := kind(pb.NewForumClient(conn), ctx, request)
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ForumClient26")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -492,7 +488,7 @@ func convertContent(content *pb.Content, creator profileservice.UserProfile, dat
 func logCommentThreadNotFound(logger *zap.Logger, objectId uint64, elemTitle string) error {
 	return common.LogOriginalError(logger, fmt.Errorf(
 		"comment thread not found : %d, %s", objectId, elemTitle,
-	))
+	), "ForumClient27")
 }
 
 // no duplicate check, there is one in GetProfiles

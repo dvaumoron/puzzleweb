@@ -39,7 +39,7 @@ type LocalesConfig struct {
 	Domain         string
 	SessionTimeOut int
 	Path           string
-	AllLang        []string
+	PasswordRules  map[string]string
 }
 
 type ServiceConfig[ServiceType any] struct {

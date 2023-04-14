@@ -49,7 +49,7 @@ func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration,
 func (client profileClient) UpdateProfile(userId uint64, desc string, info map[string]string) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ProfileClient1")
 	}
 	defer conn.Close()
 
@@ -60,7 +60,7 @@ func (client profileClient) UpdateProfile(userId uint64, desc string, info map[s
 		UserId: userId, Desc: desc, Info: info,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ProfileClient2")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -71,7 +71,7 @@ func (client profileClient) UpdateProfile(userId uint64, desc string, info map[s
 func (client profileClient) UpdatePicture(userId uint64, data []byte) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ProfileClient3")
 	}
 	defer conn.Close()
 
@@ -80,7 +80,7 @@ func (client profileClient) UpdatePicture(userId uint64, data []byte) error {
 
 	response, err := pb.NewProfileClient(conn).UpdatePicture(ctx, &pb.Picture{UserId: userId, Data: data})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ProfileClient4")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -91,7 +91,7 @@ func (client profileClient) UpdatePicture(userId uint64, data []byte) error {
 func (client profileClient) GetPicture(userId uint64) []byte {
 	conn, err := client.Dial()
 	if err != nil {
-		common.LogOriginalError(client.Logger, err)
+		common.LogOriginalError(client.Logger, err, "ProfileClient5")
 		return client.defaultPicture
 	}
 	defer conn.Close()
@@ -101,7 +101,7 @@ func (client profileClient) GetPicture(userId uint64) []byte {
 
 	response, err := pb.NewProfileClient(conn).GetPicture(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		common.LogOriginalError(client.Logger, err)
+		common.LogOriginalError(client.Logger, err, "ProfileClient6")
 		return client.defaultPicture
 	}
 	return response.Data
@@ -110,7 +110,7 @@ func (client profileClient) GetPicture(userId uint64) []byte {
 func (client profileClient) GetProfiles(userIds []uint64) (map[uint64]service.UserProfile, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "ProfileClient7")
 	}
 	defer conn.Close()
 
@@ -124,7 +124,7 @@ func (client profileClient) GetProfiles(userIds []uint64) (map[uint64]service.Us
 		Ids: userIds,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "ProfileClient8")
 	}
 
 	users, err := client.userService.GetUsers(userIds)
@@ -155,7 +155,7 @@ func (client profileClient) GetProfiles(userIds []uint64) (map[uint64]service.Us
 func (client profileClient) Delete(userId uint64) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ProfileClient9")
 	}
 	defer conn.Close()
 
@@ -164,7 +164,7 @@ func (client profileClient) Delete(userId uint64) error {
 
 	response, err := pb.NewProfileClient(conn).Delete(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "ProfileClient10")
 	}
 	if !response.Success {
 		return common.ErrUpdate

@@ -134,7 +134,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 
 			picture, err := c.FormFile("picture")
 			if err != nil {
-				common.LogOriginalError(logger, err)
+				common.LogOriginalError(logger, err, "ProfileWidget1")
 				return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
@@ -142,7 +142,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 				var pictureFile multipart.File
 				pictureFile, err = picture.Open()
 				if err != nil {
-					common.LogOriginalError(logger, err)
+					common.LogOriginalError(logger, err, "ProfileWidget2")
 					return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 				}
 				defer pictureFile.Close()
@@ -150,7 +150,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 				var pictureData []byte
 				pictureData, err = io.ReadAll(pictureFile)
 				if err != nil {
-					common.LogOriginalError(logger, err)
+					common.LogOriginalError(logger, err, "ProfileWidget3")
 					return common.DefaultErrorRedirect(common.ErrTechnical.Error())
 				}
 
@@ -207,8 +207,6 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			if newPassword != "" {
 				err = errWrongConfirm
 				if newPassword == confirmPassword {
-					// TODO check password strength
-
 					err = loginService.ChangePassword(userId, login, oldPassword, newPassword)
 				}
 			}
@@ -218,7 +216,8 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 				common.WriteError(targetBuilder, err.Error())
 			}
 			return targetBuilder.String()
-		}), pictureHandler: func(c *gin.Context) {
+		}),
+		pictureHandler: func(c *gin.Context) {
 			userId := GetRequestedUserId(logger, c)
 			if userId == 0 {
 				c.AbortWithStatus(http.StatusNotFound)

@@ -41,7 +41,7 @@ func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration,
 func (client markdownClient) Apply(text string) (template.HTML, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return "", common.LogOriginalError(client.Logger, err)
+		return "", common.LogOriginalError(client.Logger, err, "MarkdownClient1")
 	}
 	defer conn.Close()
 
@@ -50,7 +50,7 @@ func (client markdownClient) Apply(text string) (template.HTML, error) {
 
 	markdownHtml, err := pb.NewMarkdownClient(conn).Apply(ctx, &pb.MarkdownText{Text: text})
 	if err != nil {
-		return "", common.LogOriginalError(client.Logger, err)
+		return "", common.LogOriginalError(client.Logger, err, "MarkdownClient2")
 	}
 	return template.HTML(markdownHtml.Html), nil
 }

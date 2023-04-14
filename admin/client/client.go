@@ -81,7 +81,7 @@ func (client RightClient) GetAllGroups() []service.Group {
 func (client RightClient) AuthQuery(userId uint64, groupId uint64, action string) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "RightClient1")
 	}
 	defer conn.Close()
 
@@ -92,7 +92,7 @@ func (client RightClient) AuthQuery(userId uint64, groupId uint64, action string
 		UserId: userId, ObjectId: groupId, Action: convertActionForRequest(action),
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "RightClient2")
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -111,7 +111,7 @@ func (client RightClient) GetAllRoles(adminId uint64) ([]service.Role, error) {
 func (client RightClient) GetActions(adminId uint64, roleName string, groupName string) ([]string, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "RightClient3")
 	}
 	defer conn.Close()
 
@@ -123,7 +123,7 @@ func (client RightClient) GetActions(adminId uint64, roleName string, groupName 
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "RightClient4")
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
@@ -133,7 +133,7 @@ func (client RightClient) GetActions(adminId uint64, roleName string, groupName 
 		Name: roleName, ObjectId: client.nameToGroupId[groupName],
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "RightClient5")
 	}
 	return convertActionsFromRequest(actions.List), nil
 }
@@ -141,7 +141,7 @@ func (client RightClient) GetActions(adminId uint64, roleName string, groupName 
 func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []service.Role) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "RightClient6")
 	}
 	defer conn.Close()
 
@@ -153,7 +153,7 @@ func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []serv
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_UPDATE,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "RightClient7")
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -168,7 +168,7 @@ func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []serv
 
 	response, err = rightClient.UpdateUser(ctx, &pb.UserRight{UserId: userId, List: converted})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "RightClient8")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -179,7 +179,7 @@ func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []serv
 func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "RightClient9")
 	}
 	defer conn.Close()
 
@@ -191,7 +191,7 @@ func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_UPDATE,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "RightClient10")
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -202,7 +202,7 @@ func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 		List: convertActionsForRequest(role.Actions),
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "RightClient11")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -213,7 +213,7 @@ func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 func (client RightClient) GetUserRoles(adminId uint64, userId uint64) ([]service.Role, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "RightClient12")
 	}
 	defer conn.Close()
 
@@ -229,7 +229,7 @@ func (client RightClient) GetUserRoles(adminId uint64, userId uint64) ([]service
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "RightClient13")
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
@@ -240,7 +240,7 @@ func (client RightClient) GetUserRoles(adminId uint64, userId uint64) ([]service
 func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]service.Role, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "RightClient14")
 	}
 	defer conn.Close()
 
@@ -252,7 +252,7 @@ func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]se
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "RightClient15")
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
@@ -260,7 +260,7 @@ func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]se
 
 	roles, err := rightClient.ListRoles(ctx, &pb.ObjectIds{Ids: groupIds})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "RightClient16")
 	}
 	return convertRolesFromRequest(roles.List, client.groupIdToName), nil
 }
@@ -268,7 +268,7 @@ func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]se
 func (client RightClient) getUserRoles(rightClient pb.RightClient, ctx context.Context, userId uint64) ([]service.Role, error) {
 	roles, err := rightClient.ListUserRoles(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err)
+		return nil, common.LogOriginalError(client.Logger, err, "RightClient17")
 	}
 	return convertRolesFromRequest(roles.List, client.groupIdToName), nil
 }

@@ -56,8 +56,12 @@ type localesManager struct {
 func NewManager(localesConfig config.LocalesConfig) Manager {
 	logger := localesConfig.Logger
 	localesPath := localesConfig.Path
-	allLang := localesConfig.AllLang
-	size := len(allLang)
+	passwordRules := localesConfig.PasswordRules
+	size := len(passwordRules)
+	allLang := make([]string, 0, size)
+	for lang := range passwordRules {
+		allLang = append(allLang, lang)
+	}
 	if size == 0 {
 		logger.Fatal("No locales declared")
 	}
@@ -81,10 +85,13 @@ func NewManager(localesConfig config.LocalesConfig) Manager {
 		pathBuilder.WriteString(lang)
 		pathBuilder.WriteString(".properties")
 		path := pathBuilder.String()
+
 		file, err := os.Open(path)
 		if err != nil {
 			logger.Fatal("Failed to load locale file", zap.String(pathName, path), zap.Error(err))
 		}
+		defer file.Close()
+
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -101,6 +108,8 @@ func NewManager(localesConfig config.LocalesConfig) Manager {
 		if err = scanner.Err(); err != nil {
 			logger.Error("Error reading locale file", zap.String(pathName, path), zap.Error(err))
 		}
+
+		messagesLang["PasswordRules"] = passwordRules[lang]
 	}
 
 	messagesDefaultLang := messages[defaultLang]

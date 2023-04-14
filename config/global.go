@@ -34,6 +34,7 @@ import (
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
 	markdownclient "github.com/dvaumoron/puzzleweb/markdown/client"
 	markdownservice "github.com/dvaumoron/puzzleweb/markdown/service"
+	strengthclient "github.com/dvaumoron/puzzleweb/passwordstrength/client"
 	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	sessionclient "github.com/dvaumoron/puzzleweb/session/client"
@@ -65,7 +66,7 @@ type GlobalConfig struct {
 	Domain string
 	Port   string
 
-	AllLang            []string
+	PasswordRules      map[string]string
 	SessionTimeOut     int
 	ServiceTimeOut     time.Duration
 	MaxMultipartMemory int64
@@ -113,13 +114,6 @@ func LoadDefault() *GlobalConfig {
 
 	domain := retrieveWithDefault("SITE_DOMAIN", "localhost")
 	port := retrieveWithDefault("SITE_PORT", "8080")
-
-	confLang := strings.Split(os.Getenv("AVAILABLE_LOCALES"), ",")
-	allLang := make([]string, 0, len(confLang))
-	for _, s := range confLang {
-		allLang = append(allLang, strings.TrimSpace(s))
-	}
-	fmt.Println("Declared locales : ", allLang)
 
 	sessionTimeOutStr := os.Getenv("SESSION_TIME_OUT")
 	if sessionTimeOutStr == "" {
@@ -171,10 +165,12 @@ func LoadDefault() *GlobalConfig {
 	dialOptions := grpc.WithTransportCredentials(insecure.NewCredentials())
 
 	sessionService := sessionclient.New(requiredFromEnv("SESSION_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
-	saltService := puzzlesaltclient.Make(requiredFromEnv("SALT_SERVICE_ADDR"), dialOptions, serviceTimeOut)
 	settingsService := sessionclient.New(requiredFromEnv("SETTINGS_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
+	strengthService := strengthclient.New(requiredFromEnv("PASSSTRENGTH_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
+	saltService := puzzlesaltclient.Make(requiredFromEnv("SALT_SERVICE_ADDR"), dialOptions, serviceTimeOut)
 	loginService := loginclient.New(
-		requiredFromEnv("LOGIN_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger, dateFormat, saltService,
+		requiredFromEnv("LOGIN_SERVICE_ADDR"), dialOptions, serviceTimeOut,
+		logger, dateFormat, saltService, strengthService,
 	)
 	rightClient := adminclient.Make(requiredFromEnv("RIGHT_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
 
@@ -192,11 +188,26 @@ func LoadDefault() *GlobalConfig {
 	defaultPicturePath := retrieveWithDefault("PROFILE_DEFAULT_PICTURE_PATH", staticPath+"/images/unknownuser.png")
 	defaultPicture, err := os.ReadFile(defaultPicturePath)
 	if err != nil {
-		fmt.Println("can not read :", defaultPicturePath)
+		fmt.Println("Can not read :", defaultPicturePath)
 		os.Exit(1)
 	}
 
-	langPicturePaths := map[string]string{}
+	confLangs := strings.Split(os.Getenv("AVAILABLE_LOCALES"), ",")
+	langNumber := len(confLangs)
+	allLang := make([]string, 0, langNumber)
+	passwordRules := make(map[string]string, langNumber)
+	for _, confLang := range confLangs {
+		lang := strings.TrimSpace(confLang)
+		allLang = append(allLang, lang)
+		passwordRule, err := strengthService.GetRules(lang)
+		if err != nil {
+			fmt.Println("Failed to retrieve password rule for", lang, "locale :", err)
+		}
+		passwordRules[lang] = passwordRule
+	}
+	fmt.Println("Declared locales : ", allLang)
+
+	langPicturePaths := make(map[string]string, langNumber)
 	confLangPicturePaths := strings.Split(os.Getenv("LOCALE_PICTURE_PATHS"), ",")
 	confLangPicturePathsLen := len(confLangPicturePaths)
 	for index, lang := range allLang {
@@ -225,7 +236,7 @@ func LoadDefault() *GlobalConfig {
 	)
 
 	return &GlobalConfig{
-		Domain: domain, Port: port, AllLang: allLang, SessionTimeOut: sessionTimeOut, ServiceTimeOut: serviceTimeOut,
+		Domain: domain, Port: port, PasswordRules: passwordRules, SessionTimeOut: sessionTimeOut, ServiceTimeOut: serviceTimeOut,
 		MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
 
 		StaticPath:    staticPath,
@@ -291,7 +302,7 @@ func (c *GlobalConfig) ExtractAuthConfig() AuthConfig {
 func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
 	return LocalesConfig{
 		Logger: c.Logger, Domain: c.Domain, SessionTimeOut: c.SessionTimeOut,
-		Path: c.LocalesPath, AllLang: c.AllLang,
+		Path: c.LocalesPath, PasswordRules: c.PasswordRules,
 	}
 }
 

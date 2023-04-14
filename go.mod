@@ -8,6 +8,7 @@ require (
 	github.com/dvaumoron/puzzlegrpcclient v1.0.0
 	github.com/dvaumoron/puzzleloginservice v1.7.0
 	github.com/dvaumoron/puzzlemarkdownservice v1.0.1
+	github.com/dvaumoron/puzzlepassstrengthservice v1.0.0
 	github.com/dvaumoron/puzzleprofileservice v1.2.0
 	github.com/dvaumoron/puzzlerightservice v1.3.0
 	github.com/dvaumoron/puzzlesaltclient v1.1.1
@@ -48,6 +49,6 @@ require (
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

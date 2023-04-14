@@ -71,7 +71,7 @@ func (client blogClient) CreatePost(userId uint64, title string, content string)
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, common.LogOriginalError(client.Logger, err)
+		return 0, common.LogOriginalError(client.Logger, err, "BlogClient1")
 	}
 	defer conn.Close()
 
@@ -82,7 +82,7 @@ func (client blogClient) CreatePost(userId uint64, title string, content string)
 		BlogId: client.blogId, UserId: userId, Title: title, Text: content,
 	})
 	if err != nil {
-		return 0, common.LogOriginalError(client.Logger, err)
+		return 0, common.LogOriginalError(client.Logger, err, "BlogClient2")
 	}
 	if !response.Success {
 		return 0, common.ErrUpdate
@@ -98,7 +98,7 @@ func (client blogClient) GetPost(userId uint64, postId uint64) (service.BlogPost
 
 	conn, err := client.Dial()
 	if err != nil {
-		return service.BlogPost{}, common.LogOriginalError(client.Logger, err)
+		return service.BlogPost{}, common.LogOriginalError(client.Logger, err, "BlogClient3")
 	}
 	defer conn.Close()
 
@@ -109,7 +109,7 @@ func (client blogClient) GetPost(userId uint64, postId uint64) (service.BlogPost
 		BlogId: client.blogId, PostId: postId,
 	})
 	if err != nil {
-		return service.BlogPost{}, common.LogOriginalError(client.Logger, err)
+		return service.BlogPost{}, common.LogOriginalError(client.Logger, err, "BlogClient4")
 	}
 
 	creatorId := response.UserId
@@ -128,7 +128,7 @@ func (client blogClient) GetPosts(userId uint64, start uint64, end uint64, filte
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.Logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err, "BlogClient5")
 	}
 	defer conn.Close()
 
@@ -139,7 +139,7 @@ func (client blogClient) GetPosts(userId uint64, start uint64, end uint64, filte
 		BlogId: client.blogId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.Logger, err)
+		return 0, nil, common.LogOriginalError(client.Logger, err, "BlogClient6")
 	}
 
 	total := response.Total
@@ -163,7 +163,7 @@ func (client blogClient) DeletePost(userId uint64, postId uint64) error {
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "BlogClient7")
 	}
 	defer conn.Close()
 
@@ -174,7 +174,7 @@ func (client blogClient) DeletePost(userId uint64, postId uint64) error {
 		BlogId: client.blogId, PostId: postId,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err)
+		return common.LogOriginalError(client.Logger, err, "BlogClient8")
 	}
 	if !response.Success {
 		return common.ErrUpdate

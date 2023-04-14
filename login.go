@@ -93,7 +93,6 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 				if c.PostForm(confirmPasswordName) != password {
 					return c.PostForm(prevUrlWithErrorName) + wrongConfirmPasswordKey
 				}
-				// TODO check password strength
 
 				success, userId, err = loginService.Register(login, password)
 			} else {

@@ -33,8 +33,8 @@ var ErrNotAuthorized = errors.New("ErrorNotAuthorized")
 var ErrTechnical = errors.New("ErrorTechnicalProblem")
 var ErrUpdate = errors.New("ErrorUpdate")
 
-func LogOriginalError(logger *zap.Logger, err error) error {
-	logger.Warn("Original error", zap.Error(err))
+func LogOriginalError(logger *zap.Logger, err error, place string) error {
+	logger.Warn("Original error", zap.Error(err), zap.String("reporting_place", place))
 	return ErrTechnical
 }
 

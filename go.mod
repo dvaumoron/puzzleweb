@@ -11,7 +11,7 @@ require (
 	github.com/dvaumoron/puzzlepassstrengthservice v1.0.0
 	github.com/dvaumoron/puzzleprofileservice v1.2.0
 	github.com/dvaumoron/puzzlerightservice v1.3.0
-	github.com/dvaumoron/puzzlesaltclient v1.1.1
+	github.com/dvaumoron/puzzlesaltclient v1.1.2
 	github.com/dvaumoron/puzzlesessionservice v1.2.0
 	github.com/dvaumoron/puzzlewikiservice v1.3.0
 	github.com/gin-gonic/gin v1.9.0

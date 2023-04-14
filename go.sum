@@ -24,8 +24,8 @@ github.com/dvaumoron/puzzleprofileservice v1.2.0 h1:zg7KCjU7nqG8yJTQZ3cXb/Dl8J9L
 github.com/dvaumoron/puzzleprofileservice v1.2.0/go.mod h1:E75JbpF/o5L52ifNN8QYaFK5zDviHJnPl2jiq4QBmJ8=
 github.com/dvaumoron/puzzlerightservice v1.3.0 h1:QUWa3H2uSo/Mh7d7vKQjSLZ6Q362oNcksJXvVO2aTwI=
 github.com/dvaumoron/puzzlerightservice v1.3.0/go.mod h1:Nj4Jj1ica09zvsATXKDhUqGWLWjAvrkt60V92ObrPvk=
-github.com/dvaumoron/puzzlesaltclient v1.1.1 h1:W3p1gGAD8pPrrNBAhAj7pcZExWdu5OLiYn2de2Yf4xw=
-github.com/dvaumoron/puzzlesaltclient v1.1.1/go.mod h1:dxbNoVtv7SJR7hcghcQA5CWRjqSJm4jgqH63KU5aWOs=
+github.com/dvaumoron/puzzlesaltclient v1.1.2 h1:5Cm/WFdEmr4SpbSvNIKoIgsIY4dNYnMYciqTIejtfT8=
+github.com/dvaumoron/puzzlesaltclient v1.1.2/go.mod h1:07z0vkgKC1Jb2Ctdw16AASW1NnS9HhWCjJDmKrQdnUk=
 github.com/dvaumoron/puzzlesaltservice v1.0.1 h1:VbqSOfYYTX2RZrKn0FIiL5ULie/cbSRx/7zSRGmFc5g=
 github.com/dvaumoron/puzzlesaltservice v1.0.1/go.mod h1:S95i9P8YgmzHpVEXiBIZhaBnlyhsfJD+UBsgFQIKkzc=
 github.com/dvaumoron/puzzlesessionservice v1.2.0 h1:SHAZnBgSyCtyLJI69lQIX+MbKoR3vv+/PO4m5hafymQ=

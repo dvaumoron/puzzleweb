@@ -62,6 +62,10 @@ func (site *Site) AddPage(page Page) {
 	site.root.AddSubPage(page)
 }
 
+func (site *Site) AddStaticPagesFromFolder(groupId uint64, folderPath string, templatesPath string, templateExt string) {
+	site.root.AddStaticPagesFromFolder(site.logger, groupId, folderPath, templatesPath, templateExt)
+}
+
 func (site *Site) GetPage(name string) (Page, bool) {
 	return site.root.GetSubPage(name)
 }
@@ -151,54 +155,42 @@ func BuildDefaultSite() (*Site, *config.GlobalConfig) {
 	return site, globalConfig
 }
 
-func (site *Site) AddStaticPagesFromFolder(groupId uint64, folderPath string, templateExt string) {
-	folderPath, err := filepath.Abs(folderPath)
+func (p Page) AddStaticPagesFromFolder(logger *zap.Logger, groupId uint64, folderName string, templatesPath string, templateExt string) {
+	templatesPath, err := filepath.Abs(templatesPath)
 	if err != nil {
-		site.logger.Fatal("Wrong folderPath", zap.Error(err))
-	}
-	if last := len(folderPath) - 1; folderPath[last] != '/' {
-		folderPath += "/"
+		logger.Fatal("Wrong templatesPath", zap.Error(err))
 	}
 
-	inSize := len(folderPath)
+	inSize := len(templatesPath)
+	var folderPathBuilder strings.Builder
+	folderPathBuilder.WriteString(templatesPath)
+	if last := len(templatesPath) - 1; templatesPath[last] != '/' {
+		folderPathBuilder.WriteByte('/')
+		inSize++
+	}
+	folderPathBuilder.WriteString(folderName)
+	folderSize := len(folderName) + 1
+
 	extSize := len(templateExt)
-	indexName := "index" + templateExt
-	slashIndexName := "/" + indexName
-	err = filepath.WalkDir(folderPath, func(path string, d fs.DirEntry, err error) error {
+	slashIndexName := "/index" + templateExt
+	err = filepath.WalkDir(folderPathBuilder.String(), func(path string, d fs.DirEntry, err error) error {
 		if err == nil {
-			innerPath := path[inSize:]
-			if d.IsDir() {
-				currentPage, name := site.extractPageFromPath(innerPath)
-				currentPage.AddSubPage(MakeStaticPage(name, groupId, innerPath+slashIndexName))
-			} else {
-				cut := len(innerPath) - extSize
-				if innerPath[cut:] == templateExt {
-					currentPage, name := site.extractPageFromPath(innerPath)
-					if name != indexName {
-						cut = len(name) - extSize
-						currentPage.AddSubPage(MakeStaticPage(name[:cut], groupId, innerPath))
-					}
+			if innerPath := path[inSize:]; d.IsDir() {
+				if len(innerPath) != folderSize {
+					currentPage, name := p.extractSubPageFromPath(innerPath[folderSize:])
+					currentPage.AddSubPage(MakeStaticPage(name, groupId, innerPath+slashIndexName))
+				}
+			} else if cut := len(innerPath) - extSize; innerPath[cut:] == templateExt {
+				if currentPage, name := p.extractSubPageFromPath(innerPath[folderSize:cut]); name != "index" {
+					currentPage.AddSubPage(MakeStaticPage(name, groupId, innerPath))
 				}
 			}
+
 		}
 		return err
 	})
 
 	if err != nil {
-		site.logger.Fatal("Failed to load static pages", zap.Error(err))
+		logger.Fatal("Failed to load static pages", zap.Error(err))
 	}
-}
-
-func (site *Site) extractPageFromPath(path string) (Page, string) {
-	current := site.root
-	splitted := strings.Split(path, "/")
-	last := len(splitted) - 1
-	for _, name := range splitted[:last] {
-		subPage, ok := current.GetSubPage(name)
-		if !ok {
-			break
-		}
-		current = subPage
-	}
-	return current, splitted[last]
 }

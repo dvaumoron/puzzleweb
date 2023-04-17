@@ -72,12 +72,49 @@ func InitNoELementMsg(data gin.H, size int, c *gin.Context) {
 	}
 }
 
+func (site *Site) extractArianeInfoFromUrl(url string) (Page, []string) {
+	current := site.root
+	splitted := strings.Split(url, "/")[1:]
+	names := make([]string, 0, len(splitted))
+	for _, name := range splitted {
+		subPage, ok := current.GetSubPage(name)
+		if !ok {
+			break
+		}
+		current = subPage
+		names = append(names, name)
+	}
+	return current, names
+}
+
+func (p Page) extractSubPageNames(messages map[string]string, url string, c *gin.Context) []PageDesc {
+	sw, ok := p.Widget.(*staticWidget)
+	if !ok {
+		return nil
+	}
+
+	pages := sw.subPages
+	size := len(pages)
+	if size == 0 {
+		return nil
+	}
+
+	pageDescs := make([]PageDesc, 0, size)
+	for _, page := range pages {
+		if page.visible {
+			name := page.name
+			pageDescs = append(pageDescs, makePageDesc(messages, name, url+name))
+		}
+	}
+	return pageDescs
+}
+
 func initData(c *gin.Context) gin.H {
 	site := getSite(c)
 	localesManager := site.localesManager
 	messages := localesManager.GetMessages(c)
 	currentUrl := common.GetCurrentUrl(c)
-	page, path := site.root.extractArianeInfoFromUrl(currentUrl)
+	page, path := site.extractArianeInfoFromUrl(currentUrl)
 	data := gin.H{
 		"PageTitle":  getPageTitle(messages, page.name),
 		"CurrentUrl": currentUrl,

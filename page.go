@@ -121,40 +121,17 @@ func (p Page) GetSubPage(name string) (Page, bool) {
 	return Page{}, false
 }
 
-func (current Page) extractArianeInfoFromUrl(url string) (Page, []string) {
-	splitted := strings.Split(url, "/")[1:]
-	names := make([]string, 0, len(splitted))
-	for _, name := range splitted {
+func (current Page) extractSubPageFromPath(path string) (Page, string) {
+	splitted := strings.Split(path, "/")
+	last := len(splitted) - 1
+	for _, name := range splitted[:last] {
 		subPage, ok := current.GetSubPage(name)
 		if !ok {
 			break
 		}
 		current = subPage
-		names = append(names, name)
 	}
-	return current, names
-}
-
-func (p Page) extractSubPageNames(messages map[string]string, url string, c *gin.Context) []PageDesc {
-	sw, ok := p.Widget.(*staticWidget)
-	if !ok {
-		return nil
-	}
-
-	pages := sw.subPages
-	size := len(pages)
-	if size == 0 {
-		return nil
-	}
-
-	pageDescs := make([]PageDesc, 0, size)
-	for _, page := range pages {
-		if page.visible {
-			name := page.name
-			pageDescs = append(pageDescs, makePageDesc(messages, name, url+name))
-		}
-	}
-	return pageDescs
+	return current, splitted[last]
 }
 
 func CreateTemplate(redirecter common.TemplateRedirecter) gin.HandlerFunc {

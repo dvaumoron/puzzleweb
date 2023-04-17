@@ -237,8 +237,9 @@ func LoadDefault() *GlobalConfig {
 	)
 
 	return &GlobalConfig{
-		Domain: domain, Port: port, PasswordRules: passwordRules, SessionTimeOut: sessionTimeOut, ServiceTimeOut: serviceTimeOut,
-		MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
+		Domain: domain, Port: port, PasswordRules: passwordRules, SessionTimeOut: sessionTimeOut,
+		ServiceTimeOut: serviceTimeOut, MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat,
+		PageSize: pageSize, ExtractSize: extractSize,
 
 		StaticPath:    staticPath,
 		FaviconPath:   faviconPath,

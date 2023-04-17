@@ -176,7 +176,7 @@ func (p Page) AddStaticPagesFromFolder(logger *zap.Logger, groupId uint64, folde
 	err = filepath.WalkDir(folderPathBuilder.String(), func(path string, d fs.DirEntry, err error) error {
 		if err == nil {
 			if innerPath := path[inSize:]; d.IsDir() {
-				if len(innerPath) <= folderSize {
+				if len(innerPath) > folderSize {
 					currentPage, name := p.extractSubPageFromPath(innerPath[folderSize:])
 					currentPage.AddSubPage(MakeStaticPage(name, groupId, innerPath+slashIndexName))
 				}

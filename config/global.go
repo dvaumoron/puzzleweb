@@ -18,7 +18,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -46,10 +45,16 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const defaultName = "default"
 const defaultSessionTimeOut = 1200
 const defaultServiceTimeOut = 5 * time.Second
 
 const DefaultFavicon = "/favicon.ico"
+
+type waitingLog struct {
+	Message string
+	Error   error
+}
 
 type AuthConfig = ServiceConfig[adminservice.AuthService]
 type LoginConfig = ServiceConfig[loginservice.LoginService]
@@ -102,37 +107,45 @@ type GlobalConfig struct {
 }
 
 func LoadDefault() *GlobalConfig {
+	waitingLogs := make([]waitingLog, 0, 2)
 	if godotenv.Overload() == nil {
-		fmt.Println("Loaded .env file")
+		waitingLogs = append(waitingLogs, waitingLog{Message: "Loaded .env file"})
 	}
 
 	var err error
 	var logConfig []byte
+	fileLogConfigPath := os.Getenv("LOG_CONFIG_PATH")
+	if fileLogConfigPath != "" {
+		logConfig, err = os.ReadFile(fileLogConfigPath)
+		if err != nil {
+			waitingLogs = append(waitingLogs, waitingLog{Message: "Failed to read logging config file", Error: err})
+			logConfig = nil
+		}
+	}
+	logger := newLogger(logConfig, waitingLogs)
+
 	var sessionTimeOut int
 	var serviceTimeOut time.Duration
 	var maxMultipartMemory int64
 
-	domain := retrieveWithDefault("SITE_DOMAIN", "localhost")
-	port := retrieveWithDefault("SITE_PORT", "8080")
+	domain := retrieveWithDefault(logger, "SITE_DOMAIN", "localhost")
+	port := retrieveWithDefault(logger, "SITE_PORT", "8080")
 
 	sessionTimeOutStr := os.Getenv("SESSION_TIME_OUT")
 	if sessionTimeOutStr == "" {
-		fmt.Println("SESSION_TIME_OUT not found, using default :", defaultSessionTimeOut)
+		logger.Info("SESSION_TIME_OUT not found, using default", zap.Int(defaultName, defaultSessionTimeOut))
 		sessionTimeOut = defaultSessionTimeOut
-	} else {
-		sessionTimeOut, _ = strconv.Atoi(sessionTimeOutStr)
-		if sessionTimeOut == 0 {
-			fmt.Println("Failed to parse SESSION_TIME_OUT, using default :", defaultSessionTimeOut)
-			sessionTimeOut = defaultSessionTimeOut
-		}
+	} else if sessionTimeOut, _ = strconv.Atoi(sessionTimeOutStr); sessionTimeOut == 0 {
+		logger.Warn("Failed to parse SESSION_TIME_OUT, using default", zap.Int(defaultName, defaultSessionTimeOut))
+		sessionTimeOut = defaultSessionTimeOut
 	}
 
 	serviceTimeOutStr := os.Getenv("SERVICE_TIME_OUT")
 	if serviceTimeOutStr == "" {
-		fmt.Println("SERVICE_TIME_OUT not found, using default :", defaultServiceTimeOut)
+		logger.Info("SERVICE_TIME_OUT not found, using default", zap.Duration(defaultName, defaultServiceTimeOut))
 		serviceTimeOut = defaultServiceTimeOut
 	} else if timeOut, _ := strconv.ParseInt(serviceTimeOutStr, 10, 64); timeOut == 0 {
-		fmt.Println("Failed to parse SERVICE_TIME_OUT, using default :", defaultServiceTimeOut)
+		logger.Warn("Failed to parse SERVICE_TIME_OUT, using default", zap.Duration(defaultName, defaultServiceTimeOut))
 		serviceTimeOut = defaultServiceTimeOut
 	} else {
 		serviceTimeOut = time.Duration(timeOut) * time.Second
@@ -140,56 +153,44 @@ func LoadDefault() *GlobalConfig {
 
 	maxMultipartMemoryStr := os.Getenv("MAX_MULTIPART_MEMORY")
 	if maxMultipartMemoryStr == "" {
-		fmt.Println("MAX_MULTIPART_MEMORY not found, using gin default")
+		logger.Info("MAX_MULTIPART_MEMORY not found, using gin default")
 	} else {
-		maxMultipartMemory, _ = strconv.ParseInt(maxMultipartMemoryStr, 10, 64)
-		if maxMultipartMemory == 0 {
-			fmt.Println("Failed to parse MAX_MULTIPART_MEMORY, using gin default")
+		if maxMultipartMemory, _ = strconv.ParseInt(maxMultipartMemoryStr, 10, 64); maxMultipartMemory == 0 {
+			logger.Warn("Failed to parse MAX_MULTIPART_MEMORY, using gin default")
 		}
 	}
 
-	dateFormat := retrieveWithDefault("DATE_FORMAT", "2/1/2006 15:04:05")
-	pageSize := retrieveUintWithDefault("PAGE_SIZE", 20)
-	extractSize := retrieveUintWithDefault("EXTRACT_SIZE", 200)
-
-	fileLogConfigPath := os.Getenv("LOG_CONFIG_PATH")
-	if fileLogConfigPath != "" {
-		logConfig, err = os.ReadFile(fileLogConfigPath)
-		if err != nil {
-			fmt.Println("Failed to read logging config file :", err)
-			logConfig = nil
-		}
-	}
-	logger := newLogger(logConfig)
+	dateFormat := retrieveWithDefault(logger, "DATE_FORMAT", "2/1/2006 15:04:05")
+	pageSize := retrieveUintWithDefault(logger, "PAGE_SIZE", 20)
+	extractSize := retrieveUintWithDefault(logger, "EXTRACT_SIZE", 200)
 
 	dialOptions := grpc.WithTransportCredentials(insecure.NewCredentials())
 
-	sessionService := sessionclient.New(requiredFromEnv("SESSION_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
-	settingsService := sessionclient.New(requiredFromEnv("SETTINGS_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
-	strengthService := strengthclient.New(requiredFromEnv("PASSSTRENGTH_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
-	saltService := puzzlesaltclient.Make(requiredFromEnv("SALT_SERVICE_ADDR"), dialOptions, serviceTimeOut)
+	sessionService := sessionclient.New(requiredFromEnv(logger, "SESSION_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
+	settingsService := sessionclient.New(requiredFromEnv(logger, "SETTINGS_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
+	strengthService := strengthclient.New(requiredFromEnv(logger, "PASSSTRENGTH_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
+	saltService := puzzlesaltclient.Make(requiredFromEnv(logger, "SALT_SERVICE_ADDR"), dialOptions, serviceTimeOut)
 	loginService := loginclient.New(
-		requiredFromEnv("LOGIN_SERVICE_ADDR"), dialOptions, serviceTimeOut,
+		requiredFromEnv(logger, "LOGIN_SERVICE_ADDR"), dialOptions, serviceTimeOut,
 		logger, dateFormat, saltService, strengthService,
 	)
-	rightClient := adminclient.Make(requiredFromEnv("RIGHT_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
+	rightClient := adminclient.Make(requiredFromEnv(logger, "RIGHT_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
 
-	staticPath := retrievePath("STATIC_PATH", "static")
+	staticPath := retrievePath(logger, "STATIC_PATH", "static")
 	augmentedStaticPath := staticPath + "/"
 	faviconPath := os.Getenv("FAVICON_PATH")
 	if faviconPath == "" {
 		faviconPath = staticPath + DefaultFavicon
-		fmt.Println("FAVICON_PATH not found, using default :", faviconPath)
+		logger.Info("FAVICON_PATH not found, using default", zap.String(defaultName, faviconPath))
 	} else if faviconPath[0] != '/' {
 		// user should use absolute path or path relative to STATIC_PATH
 		faviconPath = augmentedStaticPath + faviconPath
 	}
 
-	defaultPicturePath := retrieveWithDefault("PROFILE_DEFAULT_PICTURE_PATH", staticPath+"/images/unknownuser.png")
+	defaultPicturePath := retrieveWithDefault(logger, "PROFILE_DEFAULT_PICTURE_PATH", staticPath+"/images/unknownuser.png")
 	defaultPicture, err := os.ReadFile(defaultPicturePath)
 	if err != nil {
-		fmt.Println("Can not read :", defaultPicturePath)
-		os.Exit(1)
+		logger.Fatal("Can not read", zap.String("filepath", defaultPicturePath), zap.Error(err))
 	}
 
 	confLangs := strings.Split(os.Getenv("AVAILABLE_LOCALES"), ",")
@@ -201,18 +202,18 @@ func LoadDefault() *GlobalConfig {
 		allLang = append(allLang, lang)
 		passwordRule, err := strengthService.GetRules(lang)
 		if err != nil {
-			fmt.Println("Failed to retrieve password rule for", lang, "locale :", err)
+			logger.Warn("Failed to retrieve password rule", zap.String("locale", lang), zap.Error(err))
 		}
 		passwordRules[lang] = passwordRule
 	}
-	fmt.Println("Declared locales : ", allLang)
+	logger.Info("Declared locales", zap.Strings("locales", allLang))
 
 	langPicturePaths := make(map[string]string, langNumber)
 	confLangPicturePaths := strings.Split(os.Getenv("LOCALE_PICTURE_PATHS"), ",")
 	confLangPicturePathsLen := len(confLangPicturePaths)
 	for index, lang := range allLang {
 		if index >= confLangPicturePathsLen {
-			fmt.Println("LOCALE_PICTURE_PATHS have less element than AVAILABLE_LOCALES")
+			logger.Warn("LOCALE_PICTURE_PATHS have less element than AVAILABLE_LOCALES")
 			break
 		}
 
@@ -229,9 +230,9 @@ func LoadDefault() *GlobalConfig {
 	}
 
 	// if not setted in configuration, profile are public
-	profileGroupId := retrieveUintWithDefault("PROFILE_GROUP_ID", adminservice.PublicGroupId)
+	profileGroupId := retrieveUintWithDefault(logger, "PROFILE_GROUP_ID", adminservice.PublicGroupId)
 	profileService := profileclient.New(
-		requiredFromEnv("PROFILE_SERVICE_ADDR"), dialOptions, serviceTimeOut,
+		requiredFromEnv(logger, "PROFILE_SERVICE_ADDR"), dialOptions, serviceTimeOut,
 		logger, profileGroupId, loginService, rightClient, defaultPicture,
 	)
 
@@ -241,9 +242,9 @@ func LoadDefault() *GlobalConfig {
 
 		StaticPath:    staticPath,
 		FaviconPath:   faviconPath,
-		LocalesPath:   retrievePath("LOCALES_PATH", "locales"),
-		TemplatesPath: retrievePath("TEMPLATES_PATH", "templates"),
-		TemplatesExt:  retrieveWithDefault("TEMPLATES_EXT", ".html"),
+		LocalesPath:   retrievePath(logger, "LOCALES_PATH", "locales"),
+		TemplatesPath: retrievePath(logger, "TEMPLATES_PATH", "templates"),
+		TemplatesExt:  retrieveWithDefault(logger, "TEMPLATES_EXT", ".html"),
 		Page404Url:    os.Getenv("PAGE_404_URL"),
 
 		Logger:           logger,
@@ -261,7 +262,7 @@ func LoadDefault() *GlobalConfig {
 func (c *GlobalConfig) loadMarkdown() {
 	if c.MarkdownService == nil {
 		c.MarkdownService = markdownclient.New(
-			requiredFromEnv("MARKDOWN_SERVICE_ADDR"), c.DialOptions, c.ServiceTimeOut, c.Logger,
+			requiredFromEnv(c.Logger, "MARKDOWN_SERVICE_ADDR"), c.DialOptions, c.ServiceTimeOut, c.Logger,
 		)
 	}
 }
@@ -269,13 +270,13 @@ func (c *GlobalConfig) loadMarkdown() {
 func (c *GlobalConfig) loadWiki() {
 	if c.WikiServiceAddr == "" {
 		c.loadMarkdown()
-		c.WikiServiceAddr = requiredFromEnv("WIKI_SERVICE_ADDR")
+		c.WikiServiceAddr = requiredFromEnv(c.Logger, "WIKI_SERVICE_ADDR")
 	}
 }
 
 func (c *GlobalConfig) loadForum() {
 	if c.ForumServiceAddr == "" {
-		c.ForumServiceAddr = requiredFromEnv("FORUM_SERVICE_ADDR")
+		c.ForumServiceAddr = requiredFromEnv(c.Logger, "FORUM_SERVICE_ADDR")
 	}
 }
 
@@ -283,7 +284,7 @@ func (c *GlobalConfig) loadBlog() {
 	if c.BlogServiceAddr == "" {
 		c.loadForum()
 		c.loadMarkdown()
-		c.BlogServiceAddr = requiredFromEnv("BLOG_SERVICE_ADDR")
+		c.BlogServiceAddr = requiredFromEnv(c.Logger, "BLOG_SERVICE_ADDR")
 	}
 }
 
@@ -373,45 +374,47 @@ func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...s
 	}
 }
 
-func retrieveWithDefault(name string, defaultValue string) string {
+func retrieveWithDefault(logger *zap.Logger, name string, defaultValue string) string {
 	if value := os.Getenv(name); value != "" {
 		return value
 	}
-	fmt.Println(name, "not found, using default :", defaultValue)
+	logger.Info(name+" not found, using default", zap.String(defaultName, defaultValue))
 	return defaultValue
 }
 
-func retrieveUintWithDefault(name string, defaultValue uint64) uint64 {
-	var value uint64
+func retrieveUintWithDefault(logger *zap.Logger, name string, defaultValue uint64) uint64 {
 	valueStr := os.Getenv(name)
 	if valueStr == "" {
-		fmt.Println(name, "not found, using default :", defaultValue)
+		logger.Info(name+" not found, using default", zap.Uint64(defaultName, defaultValue))
 		return defaultValue
 	}
-	value, _ = strconv.ParseUint(valueStr, 10, 64)
+	value, _ := strconv.ParseUint(valueStr, 10, 64)
 	if value == 0 {
-		fmt.Println("Failed to parse", name, "using default :", defaultValue)
+		var messageBuilder strings.Builder
+		messageBuilder.WriteString("Failed to parse ")
+		messageBuilder.WriteString(name)
+		messageBuilder.WriteString(" using default")
+		logger.Warn(messageBuilder.String(), zap.Uint64(defaultName, defaultValue))
 		return defaultValue
 	}
 	return value
 }
 
-func retrievePath(name string, defaultPath string) string {
+func retrievePath(logger *zap.Logger, name string, defaultPath string) string {
 	if path := os.Getenv(name); path != "" {
 		if last := len(path) - 1; path[last] == '/' {
 			path = path[:last]
 		}
 		return path
 	}
-	fmt.Println(name, "not found, using default :", defaultPath)
+	logger.Info(name+" not found, using default", zap.String(defaultName, defaultPath))
 	return defaultPath
 }
 
-func requiredFromEnv(name string) string {
+func requiredFromEnv(logger *zap.Logger, name string) string {
 	value := os.Getenv(name)
 	if value == "" {
-		fmt.Println(name, "not found in env")
-		os.Exit(1)
+		logger.Fatal(name + " not found in env")
 	}
 	return value
 }

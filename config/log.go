@@ -25,33 +25,43 @@ import (
 	"go.uber.org/zap"
 )
 
-func newLogger(logConfig []byte) *zap.Logger {
+func newLogger(logConfig []byte, waitingLogs []waitingLog) *zap.Logger {
 	if len(logConfig) == 0 {
-		return defaultLogConfig("", nil)
+		return defaultLogConfig(waitingLogs)
 	}
 
 	var cfg zap.Config
 	err := json.Unmarshal(logConfig, &cfg)
 	if err != nil {
-		return defaultLogConfig("Failed to parse logging config file", err)
+		waitingLogs = append(waitingLogs, waitingLog{Message: "Failed to parse logging config file", Error: err})
+		return defaultLogConfig(waitingLogs)
 	}
 
 	logger, err := cfg.Build()
 	if err != nil {
-		return defaultLogConfig("Failed to init logger with config", err)
+		waitingLogs = append(waitingLogs, waitingLog{Message: "Failed to init logger with config", Error: err})
+		return defaultLogConfig(waitingLogs)
 	}
 	return logger
 }
 
-func defaultLogConfig(errorMsg string, previousError error) *zap.Logger {
+func defaultLogConfig(waitingLogs []waitingLog) *zap.Logger {
 	logger, err := zap.NewProduction()
 	if err == nil {
-		if previousError != nil {
-			logger.Warn(errorMsg, zap.Error(previousError))
+		for _, waitingLog := range waitingLogs {
+			if err := waitingLog.Error; err == nil {
+				logger.Info(waitingLog.Message)
+			} else {
+				logger.Warn(waitingLog.Message, zap.Error(err))
+			}
 		}
 	} else {
-		if previousError != nil {
-			fmt.Println(errorMsg+" :", previousError)
+		for _, waitingLog := range waitingLogs {
+			if err := waitingLog.Error; err == nil {
+				fmt.Println(waitingLog.Message)
+			} else {
+				fmt.Println(waitingLog.Message+" :", err)
+			}
 		}
 		fmt.Println("Failed to init logging with default config :", err)
 		os.Exit(1)

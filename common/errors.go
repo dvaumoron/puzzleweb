@@ -28,13 +28,15 @@ const QueryError = "?error="
 
 const WrongLangKey = "WrongLang"
 
+const ReportingPlaceName = "reporting_place"
+
 // error displayed to user
 var ErrNotAuthorized = errors.New("ErrorNotAuthorized")
 var ErrTechnical = errors.New("ErrorTechnicalProblem")
 var ErrUpdate = errors.New("ErrorUpdate")
 
 func LogOriginalError(logger *zap.Logger, err error, place string) error {
-	logger.Warn("Original error", zap.Error(err), zap.String("reporting_place", place))
+	logger.Warn("Original error", zap.Error(err), zap.String(ReportingPlaceName, place))
 	return ErrTechnical
 }
 

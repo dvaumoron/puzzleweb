@@ -42,7 +42,7 @@ func getPageTitle(messages map[string]string, name string) string {
 	return messages["PageTitle"+locale.CamelCase(name)]
 }
 
-func extractAriane(messages map[string]string, splittedPath []string) []PageDesc {
+func buildAriane(messages map[string]string, splittedPath []string) []PageDesc {
 	pageDescs := make([]PageDesc, 0, len(splittedPath))
 	var urlBuilder strings.Builder
 	for _, name := range splittedPath {
@@ -77,11 +77,11 @@ func initData(c *gin.Context) gin.H {
 	localesManager := site.localesManager
 	messages := localesManager.GetMessages(c)
 	currentUrl := common.GetCurrentUrl(c)
-	page, path := site.root.extractPageAndPath(currentUrl)
+	page, path := site.root.extractArianeInfoFromUrl(currentUrl)
 	data := gin.H{
 		"PageTitle":  getPageTitle(messages, page.name),
 		"CurrentUrl": currentUrl,
-		"Ariane":     extractAriane(messages, path),
+		"Ariane":     buildAriane(messages, path),
 		"SubPages":   page.extractSubPageNames(messages, currentUrl, c),
 		"Messages":   messages,
 	}

@@ -17,8 +17,6 @@
  */
 package config
 
-// TODO use zap everywhere
-
 import (
 	"encoding/json"
 	"fmt"
@@ -29,27 +27,32 @@ import (
 
 func newLogger(logConfig []byte) *zap.Logger {
 	if len(logConfig) == 0 {
-		return defaultLogConfig()
+		return defaultLogConfig("", nil)
 	}
 
 	var cfg zap.Config
 	err := json.Unmarshal(logConfig, &cfg)
 	if err != nil {
-		fmt.Println("Failed to parse logging config file :", err)
-		return defaultLogConfig()
+		return defaultLogConfig("Failed to parse logging config file", err)
 	}
 
 	logger, err := cfg.Build()
 	if err != nil {
-		fmt.Println("Failed to init logging with config file :", err)
-		return defaultLogConfig()
+		return defaultLogConfig("Failed to init logger with config", err)
 	}
 	return logger
 }
 
-func defaultLogConfig() *zap.Logger {
+func defaultLogConfig(errorMsg string, previousError error) *zap.Logger {
 	logger, err := zap.NewProduction()
-	if err != nil {
+	if err == nil {
+		if previousError != nil {
+			logger.Warn(errorMsg, zap.Error(previousError))
+		}
+	} else {
+		if previousError != nil {
+			fmt.Println(errorMsg+" :", previousError)
+		}
 		fmt.Println("Failed to init logging with default config :", err)
 		os.Exit(1)
 	}

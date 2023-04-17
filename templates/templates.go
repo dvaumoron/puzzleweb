@@ -17,16 +17,14 @@
  */
 package templates
 
-// TODO use zap everywhere
-
 import (
-	"fmt"
 	"html/template"
 	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/gin-gonic/gin/render"
+	"go.uber.org/zap"
 )
 
 // As HTMLProduction from gin, but without the unused Delims.
@@ -42,11 +40,10 @@ func (r puzzleHTMLRender) Instance(name string, data any) render.Render {
 	}
 }
 
-func Load(templatesPath string) render.HTMLRender {
+func Load(logger *zap.Logger, templatesPath string) render.HTMLRender {
 	templatesPath, err := filepath.Abs(templatesPath)
 	if err != nil {
-		fmt.Println("Wrong templatesPath :", err)
-		os.Exit(1)
+		logger.Fatal("Wrong templatesPath :", zap.Error(err))
 	}
 	if last := len(templatesPath) - 1; templatesPath[last] != '/' {
 		templatesPath += "/"
@@ -69,8 +66,7 @@ func Load(templatesPath string) render.HTMLRender {
 	})
 
 	if err != nil {
-		fmt.Println("Failed to load templates :", err)
-		os.Exit(1)
+		logger.Fatal("Failed to load templates :", zap.Error(err))
 	}
 	return puzzleHTMLRender{templates: tmpl}
 }

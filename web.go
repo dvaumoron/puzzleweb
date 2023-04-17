@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
@@ -155,17 +156,25 @@ func (site *Site) AddStaticPagesFromFolder(groupId uint64, folderPath string, te
 		folderPath += "/"
 	}
 
-	current := site.root
-
 	inSize := len(folderPath)
 	extSize := len(templateExt)
+	indexName := "index" + templateExt
+	slashIndexName := "/" + indexName
 	err = filepath.WalkDir(folderPath, func(path string, d fs.DirEntry, err error) error {
-		if err == nil && !d.IsDir() {
-			name := path[inSize:]
-			cut := len(name) - extSize
-			if name[cut:] == templateExt {
-				// TODO manage subfolder with index
-				current.AddSubPage(MakeStaticPage(name[:cut], groupId, name))
+		if err == nil {
+			innerPath := path[inSize:]
+			if d.IsDir() {
+				currentPage, name := site.extractPageFromPath(innerPath)
+				currentPage.AddSubPage(MakeStaticPage(name, groupId, innerPath+slashIndexName))
+			} else {
+				cut := len(innerPath) - extSize
+				if innerPath[cut:] == templateExt {
+					currentPage, name := site.extractPageFromPath(innerPath)
+					if name != indexName {
+						cut = len(name) - extSize
+						currentPage.AddSubPage(MakeStaticPage(name[:cut], groupId, innerPath))
+					}
+				}
 			}
 		}
 		return err
@@ -174,4 +183,18 @@ func (site *Site) AddStaticPagesFromFolder(groupId uint64, folderPath string, te
 	if err != nil {
 		site.logger.Fatal("Failed to load static pages", zap.Error(err))
 	}
+}
+
+func (site *Site) extractPageFromPath(path string) (Page, string) {
+	current := site.root
+	splitted := strings.Split(path, "/")
+	last := len(splitted) - 1
+	for _, name := range splitted[:last] {
+		subPage, ok := current.GetSubPage(name)
+		if !ok {
+			break
+		}
+		current = subPage
+	}
+	return current, splitted[last]
 }

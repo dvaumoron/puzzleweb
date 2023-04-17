@@ -121,8 +121,8 @@ func (p Page) GetSubPage(name string) (Page, bool) {
 	return Page{}, false
 }
 
-func (current Page) extractPageAndPath(path string) (Page, []string) {
-	splitted := strings.Split(path, "/")[1:]
+func (current Page) extractArianeInfoFromUrl(url string) (Page, []string) {
+	splitted := strings.Split(url, "/")[1:]
 	names := make([]string, 0, len(splitted))
 	for _, name := range splitted {
 		subPage, ok := current.GetSubPage(name)

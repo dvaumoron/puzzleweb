@@ -19,7 +19,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"time"
 
@@ -486,10 +485,11 @@ func convertContent(content *pb.Content, creator profileservice.UserProfile, dat
 }
 
 func logCommentThreadNotFound(logger *zap.Logger, objectId uint64, elemTitle string) error {
-	// TODO improve here
-	return common.LogOriginalError(logger, fmt.Errorf(
-		"comment thread not found : %d, %s", objectId, elemTitle,
-	), "ForumClient27")
+	logger.Warn(
+		"comment thread not found", zap.Uint64("objectId", objectId), zap.String("elemTitle", elemTitle),
+		zap.String(common.ReportingPlaceName, "ForumClient27"),
+	)
+	return common.ErrTechnical
 }
 
 // no duplicate check, there is one in GetProfiles

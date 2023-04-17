@@ -62,8 +62,8 @@ func (site *Site) AddPage(page Page) {
 	site.root.AddSubPage(page)
 }
 
-func (site *Site) AddStaticPagesFromFolder(groupId uint64, folderPath string, templatesPath string, templateExt string) {
-	site.root.AddStaticPagesFromFolder(site.logger, groupId, folderPath, templatesPath, templateExt)
+func (site *Site) AddStaticPagesFromFolder(groupId uint64, folderName string, templatesPath string, templateExt string) {
+	site.root.AddStaticPagesFromFolder(site.logger, groupId, folderName, templatesPath, templateExt)
 }
 
 func (site *Site) GetPage(name string) (Page, bool) {
@@ -164,7 +164,7 @@ func (p Page) AddStaticPagesFromFolder(logger *zap.Logger, groupId uint64, folde
 	inSize := len(templatesPath)
 	var folderPathBuilder strings.Builder
 	folderPathBuilder.WriteString(templatesPath)
-	if last := len(templatesPath) - 1; templatesPath[last] != '/' {
+	if last := inSize - 1; templatesPath[last] != '/' {
 		folderPathBuilder.WriteByte('/')
 		inSize++
 	}
@@ -176,7 +176,7 @@ func (p Page) AddStaticPagesFromFolder(logger *zap.Logger, groupId uint64, folde
 	err = filepath.WalkDir(folderPathBuilder.String(), func(path string, d fs.DirEntry, err error) error {
 		if err == nil {
 			if innerPath := path[inSize:]; d.IsDir() {
-				if len(innerPath) != folderSize {
+				if len(innerPath) <= folderSize {
 					currentPage, name := p.extractSubPageFromPath(innerPath[folderSize:])
 					currentPage.AddSubPage(MakeStaticPage(name, groupId, innerPath+slashIndexName))
 				}

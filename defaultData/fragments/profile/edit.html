@@ -11,6 +11,7 @@
     <span id="errorEmptyLoginMessage">{{.Messages.EmptyLogin}}</span>
     <span id="errorEmptyPasswordMessage">{{.Messages.EmptyPassword}}</span>
     <span id="errorWrongConfimPasswordMessage">{{.Messages.WrongConfirmPassword}}</span>
+    <span id="passwordHelpMessage">{{.Messages.PasswordRules}}</span>
 </div>
 
 <details>
@@ -37,6 +38,7 @@
         </label>
         <label>
             {{.Messages.NewPasswordLabel}}
+            <a href id="passwordHelp"><span class="material-symbols-outlined">help</span></a>
             <input type="password" id="changePasswordField" name="newPassword"/>
         </label>
         <label>

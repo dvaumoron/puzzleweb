@@ -185,7 +185,6 @@ func (p Page) AddStaticPagesFromFolder(logger *zap.Logger, groupId uint64, folde
 					currentPage.AddSubPage(MakeStaticPage(name, groupId, innerPath))
 				}
 			}
-
 		}
 		return err
 	})

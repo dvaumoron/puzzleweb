@@ -75,6 +75,8 @@ func (site *Site) AddDefaultData(adder common.DataAdder) {
 }
 
 func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
+	gin.DefaultWriter = loggerInfoWrapper{site.logger}
+	gin.DefaultErrorWriter = loggerErrorWrapper{site.logger}
 	engine := gin.Default()
 
 	if memorySize := siteConfig.MaxMultipartMemory; memorySize != 0 {

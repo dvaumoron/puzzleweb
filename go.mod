@@ -6,6 +6,7 @@ require (
 	github.com/dvaumoron/puzzleblogservice v1.1.0
 	github.com/dvaumoron/puzzleforumservice v1.4.0
 	github.com/dvaumoron/puzzlegrpcclient v1.0.1
+	github.com/dvaumoron/puzzlelogger v1.0.0
 	github.com/dvaumoron/puzzleloginservice v1.7.0
 	github.com/dvaumoron/puzzlemarkdownservice v1.0.1
 	github.com/dvaumoron/puzzlepassstrengthservice v1.0.0
@@ -15,7 +16,6 @@ require (
 	github.com/dvaumoron/puzzlesessionservice v1.2.0
 	github.com/dvaumoron/puzzlewikiservice v1.3.0
 	github.com/gin-gonic/gin v1.9.0
-	github.com/joho/godotenv v1.5.1
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	golang.org/x/sync v0.1.0
@@ -33,6 +33,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.2 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect

@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dvaumoron/puzzlelogger"
 	"github.com/dvaumoron/puzzlesaltclient"
 	adminclient "github.com/dvaumoron/puzzleweb/admin/client"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
@@ -39,7 +40,6 @@ import (
 	sessionclient "github.com/dvaumoron/puzzleweb/session/client"
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
-	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -50,11 +50,6 @@ const defaultSessionTimeOut = 1200
 const defaultServiceTimeOut = 5 * time.Second
 
 const DefaultFavicon = "/favicon.ico"
-
-type waitingLog struct {
-	Message string
-	Error   error
-}
 
 type AuthConfig = ServiceConfig[adminservice.AuthService]
 type LoginConfig = ServiceConfig[loginservice.LoginService]
@@ -107,22 +102,7 @@ type GlobalConfig struct {
 }
 
 func LoadDefault() *GlobalConfig {
-	waitingLogs := make([]waitingLog, 0, 2)
-	if godotenv.Overload() == nil {
-		waitingLogs = append(waitingLogs, waitingLog{Message: "Loaded .env file"})
-	}
-
-	var err error
-	var logConfig []byte
-	fileLogConfigPath := os.Getenv("LOG_CONFIG_PATH")
-	if fileLogConfigPath != "" {
-		logConfig, err = os.ReadFile(fileLogConfigPath)
-		if err != nil {
-			waitingLogs = append(waitingLogs, waitingLog{Message: "Failed to read logging config file", Error: err})
-			logConfig = nil
-		}
-	}
-	logger := newLogger(logConfig, waitingLogs)
+	logger := puzzlelogger.New()
 
 	var sessionTimeOut int
 	var serviceTimeOut time.Duration

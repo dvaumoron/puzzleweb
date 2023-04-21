@@ -35,7 +35,7 @@ import (
 
 type wikiClient struct {
 	grpcclient.Client
-	Logger         *zap.Logger
+	logger         *zap.Logger
 	cache          *wikiCache
 	wikiId         uint64
 	groupId        uint64
@@ -46,7 +46,7 @@ type wikiClient struct {
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, wikiId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.WikiService {
 	return wikiClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger, cache: newCache(), wikiId: wikiId,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, cache: newCache(), wikiId: wikiId,
 		groupId: groupId, dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }
@@ -61,7 +61,7 @@ func (client wikiClient) LoadContent(userId uint64, lang string, title string, v
 	if versionStr != "" {
 		version, err = strconv.ParseUint(versionStr, 10, 64)
 		if err != nil {
-			client.Logger.Info("Failed to parse wiki version, falling to last", zap.Error(err))
+			client.logger.Info("Failed to parse wiki version, falling to last", zap.Error(err))
 		}
 	}
 	return client.loadContent(buildRef(lang, title), version)
@@ -75,7 +75,7 @@ func (client wikiClient) StoreContent(userId uint64, lang string, title string, 
 
 	version, err := strconv.ParseUint(last, 10, 64)
 	if err != nil {
-		client.Logger.Warn("Failed to parse wiki last version", zap.Error(err))
+		client.logger.Warn("Failed to parse wiki last version", zap.Error(err))
 		return false, common.ErrTechnical
 	}
 	return client.storeContent(userId, buildRef(lang, title), version, markdown)
@@ -97,7 +97,7 @@ func (client wikiClient) DeleteContent(userId uint64, lang string, title string,
 
 	version, err := strconv.ParseUint(versionStr, 10, 64)
 	if err != nil {
-		client.Logger.Warn("Failed to parse wiki version to delete", zap.Error(err))
+		client.logger.Warn("Failed to parse wiki version to delete", zap.Error(err))
 		return common.ErrTechnical
 	}
 	return client.deleteContent(buildRef(lang, title), version)
@@ -110,7 +110,7 @@ func (client wikiClient) DeleteRight(userId uint64) bool {
 func (client wikiClient) loadContent(wikiRef string, version uint64) (*service.WikiContent, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "WikiClient1")
+		return nil, common.LogOriginalError(client.logger, err, "WikiClient1")
 	}
 	defer conn.Close()
 
@@ -127,7 +127,7 @@ func (client wikiClient) loadContent(wikiRef string, version uint64) (*service.W
 		WikiId: wikiId, WikiRef: wikiRef,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "WikiClient2")
+		return nil, common.LogOriginalError(client.logger, err, "WikiClient2")
 	}
 
 	if lastVersion := maxVersion(versions.List); lastVersion != nil {
@@ -144,7 +144,7 @@ func (client wikiClient) innerLoadContent(ctx context.Context, pbWikiClient pb.W
 		WikiId: client.wikiId, WikiRef: wikiRef, Version: askedVersion,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "WikiClient3")
+		return nil, common.LogOriginalError(client.logger, err, "WikiClient3")
 	}
 	version := response.Version
 	if version == 0 { // no stored wiki page
@@ -161,7 +161,7 @@ func (client wikiClient) innerLoadContent(ctx context.Context, pbWikiClient pb.W
 func (client wikiClient) storeContent(userId uint64, wikiRef string, last uint64, markdown string) (bool, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return false, common.LogOriginalError(client.Logger, err, "WikiClient4")
+		return false, common.LogOriginalError(client.logger, err, "WikiClient4")
 	}
 	defer conn.Close()
 
@@ -172,7 +172,7 @@ func (client wikiClient) storeContent(userId uint64, wikiRef string, last uint64
 		WikiId: client.wikiId, WikiRef: wikiRef, Last: last, Text: markdown, UserId: userId,
 	})
 	if err != nil {
-		return false, common.LogOriginalError(client.Logger, err, "WikiClient5")
+		return false, common.LogOriginalError(client.logger, err, "WikiClient5")
 	}
 	success := response.Success
 	if success {
@@ -186,7 +186,7 @@ func (client wikiClient) storeContent(userId uint64, wikiRef string, last uint64
 func (client wikiClient) getVersions(wikiRef string) ([]service.Version, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "WikiClient6")
+		return nil, common.LogOriginalError(client.logger, err, "WikiClient6")
 	}
 	defer conn.Close()
 
@@ -197,7 +197,7 @@ func (client wikiClient) getVersions(wikiRef string) ([]service.Version, error) 
 		WikiId: client.wikiId, WikiRef: wikiRef,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "WikiClient7")
+		return nil, common.LogOriginalError(client.logger, err, "WikiClient7")
 	}
 	return client.sortConvertVersions(response.List)
 }
@@ -205,7 +205,7 @@ func (client wikiClient) getVersions(wikiRef string) ([]service.Version, error) 
 func (client wikiClient) deleteContent(wikiRef string, version uint64) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "WikiClient8")
+		return common.LogOriginalError(client.logger, err, "WikiClient8")
 	}
 	defer conn.Close()
 
@@ -216,7 +216,7 @@ func (client wikiClient) deleteContent(wikiRef string, version uint64) error {
 		WikiId: client.wikiId, WikiRef: wikiRef, Version: version,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "WikiClient9")
+		return common.LogOriginalError(client.logger, err, "WikiClient9")
 	}
 	if !response.Success {
 		return common.ErrUpdate

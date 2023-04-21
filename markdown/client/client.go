@@ -31,17 +31,17 @@ import (
 
 type markdownClient struct {
 	grpcclient.Client
-	Logger *zap.Logger
+	logger *zap.Logger
 }
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger) service.MarkdownService {
-	return markdownClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger}
+	return markdownClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger}
 }
 
 func (client markdownClient) Apply(text string) (template.HTML, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return "", common.LogOriginalError(client.Logger, err, "MarkdownClient1")
+		return "", common.LogOriginalError(client.logger, err, "MarkdownClient1")
 	}
 	defer conn.Close()
 
@@ -50,7 +50,7 @@ func (client markdownClient) Apply(text string) (template.HTML, error) {
 
 	markdownHtml, err := pb.NewMarkdownClient(conn).Apply(ctx, &pb.MarkdownText{Text: text})
 	if err != nil {
-		return "", common.LogOriginalError(client.Logger, err, "MarkdownClient2")
+		return "", common.LogOriginalError(client.logger, err, "MarkdownClient2")
 	}
 	return template.HTML(markdownHtml.Html), nil
 }

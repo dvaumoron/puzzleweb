@@ -30,17 +30,17 @@ import (
 
 type strengthClient struct {
 	grpcclient.Client
-	Logger *zap.Logger
+	logger *zap.Logger
 }
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger) service.PasswordStrengthService {
-	return strengthClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger}
+	return strengthClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger}
 }
 
 func (client strengthClient) Validate(password string) (bool, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return false, common.LogOriginalError(client.Logger, err, "StrengthClient1")
+		return false, common.LogOriginalError(client.logger, err, "StrengthClient1")
 	}
 	defer conn.Close()
 
@@ -49,7 +49,7 @@ func (client strengthClient) Validate(password string) (bool, error) {
 
 	response, err := pb.NewPassstrengthClient(conn).Check(ctx, &pb.PasswordRequest{Password: password})
 	if err != nil {
-		return false, common.LogOriginalError(client.Logger, err, "StrengthClient2")
+		return false, common.LogOriginalError(client.logger, err, "StrengthClient2")
 	}
 	return response.Success, nil
 }
@@ -57,7 +57,7 @@ func (client strengthClient) Validate(password string) (bool, error) {
 func (client strengthClient) GetRules(lang string) (string, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return "", common.LogOriginalError(client.Logger, err, "StrengthClient3")
+		return "", common.LogOriginalError(client.logger, err, "StrengthClient3")
 	}
 	defer conn.Close()
 
@@ -66,7 +66,7 @@ func (client strengthClient) GetRules(lang string) (string, error) {
 
 	response, err := pb.NewPassstrengthClient(conn).GetRules(ctx, &pb.LangRequest{Lang: lang})
 	if err != nil {
-		return "", common.LogOriginalError(client.Logger, err, "StrengthClient4")
+		return "", common.LogOriginalError(client.logger, err, "StrengthClient4")
 	}
 	return response.Description, nil
 }

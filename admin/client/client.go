@@ -34,7 +34,7 @@ var _ service.AdminService = RightClient{}
 
 type RightClient struct {
 	grpcclient.Client
-	Logger        *zap.Logger
+	logger        *zap.Logger
 	groupIdToName map[uint64]string
 	nameToGroupId map[string]uint64
 }
@@ -47,7 +47,7 @@ func Make(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration
 		service.PublicName: service.PublicGroupId, service.AdminName: service.AdminGroupId,
 	}
 	return RightClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger,
 		groupIdToName: groupIdToName, nameToGroupId: nameToGroupId,
 	}
 }
@@ -55,7 +55,7 @@ func Make(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration
 func (client RightClient) RegisterGroup(groupId uint64, groupName string) {
 	for usedId := range client.groupIdToName {
 		if groupId == usedId {
-			client.Logger.Fatal("Duplicate groupId")
+			client.logger.Fatal("Duplicate groupId")
 		}
 	}
 	client.groupIdToName[groupId] = groupName
@@ -81,7 +81,7 @@ func (client RightClient) GetAllGroups() []service.Group {
 func (client RightClient) AuthQuery(userId uint64, groupId uint64, action string) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "RightClient1")
+		return common.LogOriginalError(client.logger, err, "RightClient1")
 	}
 	defer conn.Close()
 
@@ -92,7 +92,7 @@ func (client RightClient) AuthQuery(userId uint64, groupId uint64, action string
 		UserId: userId, ObjectId: groupId, Action: convertActionForRequest(action),
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "RightClient2")
+		return common.LogOriginalError(client.logger, err, "RightClient2")
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -111,7 +111,7 @@ func (client RightClient) GetAllRoles(adminId uint64) ([]service.Role, error) {
 func (client RightClient) GetActions(adminId uint64, roleName string, groupName string) ([]string, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "RightClient3")
+		return nil, common.LogOriginalError(client.logger, err, "RightClient3")
 	}
 	defer conn.Close()
 
@@ -123,7 +123,7 @@ func (client RightClient) GetActions(adminId uint64, roleName string, groupName 
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "RightClient4")
+		return nil, common.LogOriginalError(client.logger, err, "RightClient4")
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
@@ -133,7 +133,7 @@ func (client RightClient) GetActions(adminId uint64, roleName string, groupName 
 		Name: roleName, ObjectId: client.nameToGroupId[groupName],
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "RightClient5")
+		return nil, common.LogOriginalError(client.logger, err, "RightClient5")
 	}
 	return convertActionsFromRequest(actions.List), nil
 }
@@ -141,7 +141,7 @@ func (client RightClient) GetActions(adminId uint64, roleName string, groupName 
 func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []service.Role) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "RightClient6")
+		return common.LogOriginalError(client.logger, err, "RightClient6")
 	}
 	defer conn.Close()
 
@@ -153,7 +153,7 @@ func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []serv
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_UPDATE,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "RightClient7")
+		return common.LogOriginalError(client.logger, err, "RightClient7")
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -168,7 +168,7 @@ func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []serv
 
 	response, err = rightClient.UpdateUser(ctx, &pb.UserRight{UserId: userId, List: converted})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "RightClient8")
+		return common.LogOriginalError(client.logger, err, "RightClient8")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -179,7 +179,7 @@ func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []serv
 func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "RightClient9")
+		return common.LogOriginalError(client.logger, err, "RightClient9")
 	}
 	defer conn.Close()
 
@@ -191,7 +191,7 @@ func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_UPDATE,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "RightClient10")
+		return common.LogOriginalError(client.logger, err, "RightClient10")
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -202,7 +202,7 @@ func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 		List: convertActionsForRequest(role.Actions),
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "RightClient11")
+		return common.LogOriginalError(client.logger, err, "RightClient11")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -213,7 +213,7 @@ func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 func (client RightClient) GetUserRoles(adminId uint64, userId uint64) ([]service.Role, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "RightClient12")
+		return nil, common.LogOriginalError(client.logger, err, "RightClient12")
 	}
 	defer conn.Close()
 
@@ -229,7 +229,7 @@ func (client RightClient) GetUserRoles(adminId uint64, userId uint64) ([]service
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "RightClient13")
+		return nil, common.LogOriginalError(client.logger, err, "RightClient13")
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
@@ -240,7 +240,7 @@ func (client RightClient) GetUserRoles(adminId uint64, userId uint64) ([]service
 func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]service.Role, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "RightClient14")
+		return nil, common.LogOriginalError(client.logger, err, "RightClient14")
 	}
 	defer conn.Close()
 
@@ -252,7 +252,7 @@ func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]se
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "RightClient15")
+		return nil, common.LogOriginalError(client.logger, err, "RightClient15")
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
@@ -260,7 +260,7 @@ func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]se
 
 	roles, err := rightClient.ListRoles(ctx, &pb.ObjectIds{Ids: groupIds})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "RightClient16")
+		return nil, common.LogOriginalError(client.logger, err, "RightClient16")
 	}
 	return convertRolesFromRequest(roles.List, client.groupIdToName), nil
 }
@@ -268,7 +268,7 @@ func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]se
 func (client RightClient) getUserRoles(rightClient pb.RightClient, ctx context.Context, userId uint64) ([]service.Role, error) {
 	roles, err := rightClient.ListUserRoles(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "RightClient17")
+		return nil, common.LogOriginalError(client.logger, err, "RightClient17")
 	}
 	return convertRolesFromRequest(roles.List, client.groupIdToName), nil
 }

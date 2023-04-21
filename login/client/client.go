@@ -35,7 +35,7 @@ var errWeakPassword = errors.New("WeakPassword")
 
 type loginClient struct {
 	grpcclient.Client
-	Logger          *zap.Logger
+	logger          *zap.Logger
 	dateFormat      string
 	saltService     service.SaltService
 	strengthService strengthservice.PasswordStrengthService
@@ -43,7 +43,7 @@ type loginClient struct {
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, dateFormat string, saltService service.SaltService, strengthService strengthservice.PasswordStrengthService) service.FullLoginService {
 	return loginClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger, dateFormat: dateFormat,
+		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, dateFormat: dateFormat,
 		saltService: saltService, strengthService: strengthService,
 	}
 }
@@ -65,12 +65,12 @@ func (s sortableContents) Swap(i, j int) {
 func (client loginClient) Verify(login string, password string) (bool, uint64, error) {
 	salted, err := client.saltService.Salt(login, password)
 	if err != nil {
-		return false, 0, common.LogOriginalError(client.Logger, err, "LoginClient1")
+		return false, 0, common.LogOriginalError(client.logger, err, "LoginClient1")
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return false, 0, common.LogOriginalError(client.Logger, err, "LoginClient2")
+		return false, 0, common.LogOriginalError(client.logger, err, "LoginClient2")
 	}
 	defer conn.Close()
 
@@ -79,7 +79,7 @@ func (client loginClient) Verify(login string, password string) (bool, uint64, e
 
 	response, err := pb.NewLoginClient(conn).Verify(ctx, &pb.LoginRequest{Login: login, Salted: salted})
 	if err != nil {
-		return false, 0, common.LogOriginalError(client.Logger, err, "LoginClient3")
+		return false, 0, common.LogOriginalError(client.logger, err, "LoginClient3")
 	}
 	return response.Success, response.Id, nil
 }
@@ -95,12 +95,12 @@ func (client loginClient) Register(login string, password string) (bool, uint64,
 
 	salted, err := client.saltService.Salt(login, password)
 	if err != nil {
-		return false, 0, common.LogOriginalError(client.Logger, err, "LoginClient4")
+		return false, 0, common.LogOriginalError(client.logger, err, "LoginClient4")
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return false, 0, common.LogOriginalError(client.Logger, err, "LoginClient5")
+		return false, 0, common.LogOriginalError(client.logger, err, "LoginClient5")
 	}
 	defer conn.Close()
 
@@ -109,7 +109,7 @@ func (client loginClient) Register(login string, password string) (bool, uint64,
 
 	response, err := pb.NewLoginClient(conn).Register(ctx, &pb.LoginRequest{Login: login, Salted: salted})
 	if err != nil {
-		return false, 0, common.LogOriginalError(client.Logger, err, "LoginClient6")
+		return false, 0, common.LogOriginalError(client.logger, err, "LoginClient6")
 	}
 	return response.Success, response.Id, nil
 }
@@ -118,7 +118,7 @@ func (client loginClient) Register(login string, password string) (bool, uint64,
 func (client loginClient) GetUsers(userIds []uint64) (map[uint64]service.User, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "LoginClient7")
+		return nil, common.LogOriginalError(client.logger, err, "LoginClient7")
 	}
 	defer conn.Close()
 
@@ -127,7 +127,7 @@ func (client loginClient) GetUsers(userIds []uint64) (map[uint64]service.User, e
 
 	response, err := pb.NewLoginClient(conn).GetUsers(ctx, &pb.UserIds{Ids: userIds})
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "LoginClient8")
+		return nil, common.LogOriginalError(client.logger, err, "LoginClient8")
 	}
 
 	logins := map[uint64]service.User{}
@@ -140,17 +140,17 @@ func (client loginClient) GetUsers(userIds []uint64) (map[uint64]service.User, e
 func (client loginClient) ChangeLogin(userId uint64, oldLogin string, newLogin string, password string) error {
 	oldSalted, err := client.saltService.Salt(oldLogin, password)
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "LoginClient9")
+		return common.LogOriginalError(client.logger, err, "LoginClient9")
 	}
 
 	newSalted, err := client.saltService.Salt(newLogin, password)
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "LoginClient10")
+		return common.LogOriginalError(client.logger, err, "LoginClient10")
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "LoginClient11")
+		return common.LogOriginalError(client.logger, err, "LoginClient11")
 	}
 	defer conn.Close()
 
@@ -161,7 +161,7 @@ func (client loginClient) ChangeLogin(userId uint64, oldLogin string, newLogin s
 		UserId: userId, NewLogin: newLogin, OldSalted: oldSalted, NewSalted: newSalted,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "LoginClient12")
+		return common.LogOriginalError(client.logger, err, "LoginClient12")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -180,17 +180,17 @@ func (client loginClient) ChangePassword(userId uint64, login string, oldPasswor
 
 	oldSalted, err := client.saltService.Salt(login, oldPassword)
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "LoginClient13")
+		return common.LogOriginalError(client.logger, err, "LoginClient13")
 	}
 
 	newSalted, err := client.saltService.Salt(login, newPassword)
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "LoginClient14")
+		return common.LogOriginalError(client.logger, err, "LoginClient14")
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "LoginClient15")
+		return common.LogOriginalError(client.logger, err, "LoginClient15")
 	}
 	defer conn.Close()
 
@@ -201,7 +201,7 @@ func (client loginClient) ChangePassword(userId uint64, login string, oldPasswor
 		UserId: userId, OldSalted: oldSalted, NewSalted: newSalted,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "LoginClient16")
+		return common.LogOriginalError(client.logger, err, "LoginClient16")
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -212,7 +212,7 @@ func (client loginClient) ChangePassword(userId uint64, login string, oldPasswor
 func (client loginClient) ListUsers(start uint64, end uint64, filter string) (uint64, []service.User, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.Logger, err, "LoginClient17")
+		return 0, nil, common.LogOriginalError(client.logger, err, "LoginClient17")
 	}
 	defer conn.Close()
 
@@ -223,7 +223,7 @@ func (client loginClient) ListUsers(start uint64, end uint64, filter string) (ui
 		Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.Logger, err, "LoginClient18")
+		return 0, nil, common.LogOriginalError(client.logger, err, "LoginClient18")
 	}
 
 	list := response.List
@@ -239,7 +239,7 @@ func (client loginClient) ListUsers(start uint64, end uint64, filter string) (ui
 func (client loginClient) Delete(userId uint64) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "LoginClient19")
+		return common.LogOriginalError(client.logger, err, "LoginClient19")
 	}
 	defer conn.Close()
 
@@ -248,7 +248,7 @@ func (client loginClient) Delete(userId uint64) error {
 
 	response, err := pb.NewLoginClient(conn).Delete(ctx, &pb.UserId{Id: userId})
 	if err != nil {
-		return common.LogOriginalError(client.Logger, err, "LoginClient20")
+		return common.LogOriginalError(client.logger, err, "LoginClient20")
 	}
 	if !response.Success {
 		return common.ErrUpdate

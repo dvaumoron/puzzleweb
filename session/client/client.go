@@ -30,17 +30,17 @@ import (
 
 type sessionClient struct {
 	grpcclient.Client
-	Logger *zap.Logger
+	logger *zap.Logger
 }
 
 func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger) service.SessionService {
-	return sessionClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), Logger: logger}
+	return sessionClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger}
 }
 
 func (client sessionClient) Generate() (uint64, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, common.LogOriginalError(client.Logger, err, "SessionClient1")
+		return 0, common.LogOriginalError(client.logger, err, "SessionClient1")
 	}
 	defer conn.Close()
 
@@ -51,7 +51,7 @@ func (client sessionClient) Generate() (uint64, error) {
 		ctx, &pb.SessionInfo{Info: map[string]string{}},
 	)
 	if err != nil {
-		return 0, common.LogOriginalError(client.Logger, err, "SessionClient2")
+		return 0, common.LogOriginalError(client.logger, err, "SessionClient2")
 	}
 	return response.Id, nil
 }
@@ -59,7 +59,7 @@ func (client sessionClient) Generate() (uint64, error) {
 func (client sessionClient) Get(id uint64) (map[string]string, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "SessionClient3")
+		return nil, common.LogOriginalError(client.logger, err, "SessionClient3")
 	}
 	defer conn.Close()
 
@@ -70,7 +70,7 @@ func (client sessionClient) Get(id uint64) (map[string]string, error) {
 		ctx, &pb.SessionId{Id: id},
 	)
 	if err != nil {
-		return nil, common.LogOriginalError(client.Logger, err, "SessionClient4")
+		return nil, common.LogOriginalError(client.logger, err, "SessionClient4")
 	}
 	return response.Info, nil
 }
@@ -78,7 +78,7 @@ func (client sessionClient) Get(id uint64) (map[string]string, error) {
 func (client sessionClient) Update(id uint64, info map[string]string) error {
 	conn, err := client.Dial()
 	if err != nil {
-		common.LogOriginalError(client.Logger, err, "SessionClient5")
+		common.LogOriginalError(client.logger, err, "SessionClient5")
 		return common.ErrTechnical
 	}
 	defer conn.Close()
@@ -88,7 +88,7 @@ func (client sessionClient) Update(id uint64, info map[string]string) error {
 
 	response, err := pb.NewSessionClient(conn).UpdateSessionInfo(ctx, &pb.SessionUpdate{Id: id, Info: info})
 	if err != nil {
-		common.LogOriginalError(client.Logger, err, "SessionClient6")
+		common.LogOriginalError(client.logger, err, "SessionClient6")
 		return common.ErrTechnical
 	}
 	if !response.Success {

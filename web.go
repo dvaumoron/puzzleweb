@@ -34,6 +34,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const ginKey = "gin"
 const siteName = "Site"
 const unknownUserKey = "ErrorUnknownUser"
 
@@ -113,8 +114,8 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 }
 
 func (site *Site) Run(siteConfig config.SiteConfig) error {
-	gin.DefaultWriter = puzzlelogger.InfoWrapper{Inner: site.logger}
-	gin.DefaultErrorWriter = puzzlelogger.ErrorWrapper{Inner: site.logger}
+	gin.DefaultWriter = puzzlelogger.InfoWrapper{Inner: site.logger, Lib: ginKey}
+	gin.DefaultErrorWriter = puzzlelogger.ErrorWrapper{Inner: site.logger, Lib: ginKey}
 	return site.initEngine(siteConfig).Run(checkPort(siteConfig.Port))
 }
 
@@ -124,8 +125,8 @@ type SiteAndConfig struct {
 }
 
 func Run(ginLogger *zap.Logger, sites ...SiteAndConfig) error {
-	gin.DefaultWriter = puzzlelogger.InfoWrapper{Inner: ginLogger}
-	gin.DefaultErrorWriter = puzzlelogger.ErrorWrapper{Inner: ginLogger}
+	gin.DefaultWriter = puzzlelogger.InfoWrapper{Inner: ginLogger, Lib: ginKey}
+	gin.DefaultErrorWriter = puzzlelogger.ErrorWrapper{Inner: ginLogger, Lib: ginKey}
 	var g errgroup.Group
 	for _, siteAndConfig := range sites {
 		port := checkPort(siteAndConfig.Config.Port)

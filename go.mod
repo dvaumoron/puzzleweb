@@ -6,7 +6,7 @@ require (
 	github.com/dvaumoron/puzzleblogservice v1.1.0
 	github.com/dvaumoron/puzzleforumservice v1.4.0
 	github.com/dvaumoron/puzzlegrpcclient v1.0.1
-	github.com/dvaumoron/puzzlelogger v1.2.0
+	github.com/dvaumoron/puzzlelogger v1.2.1
 	github.com/dvaumoron/puzzleloginservice v1.7.0
 	github.com/dvaumoron/puzzlemarkdownservice v1.0.1
 	github.com/dvaumoron/puzzlepassstrengthservice v1.0.0

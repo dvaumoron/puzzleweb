@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/dvaumoron/puzzlelogger"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
@@ -75,8 +76,6 @@ func (site *Site) AddDefaultData(adder common.DataAdder) {
 }
 
 func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
-	gin.DefaultWriter = loggerInfoWrapper{site.logger}
-	gin.DefaultErrorWriter = loggerErrorWrapper{site.logger}
 	engine := gin.Default()
 
 	if memorySize := siteConfig.MaxMultipartMemory; memorySize != 0 {
@@ -114,6 +113,8 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 }
 
 func (site *Site) Run(siteConfig config.SiteConfig) error {
+	gin.DefaultWriter = puzzlelogger.InfoWrapper{Inner: site.logger}
+	gin.DefaultErrorWriter = puzzlelogger.ErrorWrapper{Inner: site.logger}
 	return site.initEngine(siteConfig).Run(checkPort(siteConfig.Port))
 }
 
@@ -122,7 +123,9 @@ type SiteAndConfig struct {
 	Config config.SiteConfig
 }
 
-func Run(sites ...SiteAndConfig) error {
+func Run(ginLogger *zap.Logger, sites ...SiteAndConfig) error {
+	gin.DefaultWriter = puzzlelogger.InfoWrapper{Inner: ginLogger}
+	gin.DefaultErrorWriter = puzzlelogger.ErrorWrapper{Inner: ginLogger}
 	var g errgroup.Group
 	for _, siteAndConfig := range sites {
 		port := checkPort(siteAndConfig.Config.Port)

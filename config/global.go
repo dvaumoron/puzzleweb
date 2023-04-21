@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/dvaumoron/puzzlelogger"
+	"github.com/dvaumoron/puzzlelogger/grpclogger"
 	"github.com/dvaumoron/puzzlesaltclient"
 	adminclient "github.com/dvaumoron/puzzleweb/admin/client"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
@@ -43,6 +44,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/grpclog"
 )
 
 const defaultName = "default"
@@ -103,6 +105,7 @@ type GlobalConfig struct {
 
 func LoadDefault() *GlobalConfig {
 	logger := puzzlelogger.New()
+	grpclog.SetLoggerV2(grpclogger.New(logger))
 
 	var sessionTimeOut int
 	var serviceTimeOut time.Duration

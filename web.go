@@ -23,18 +23,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dvaumoron/puzzlelogger"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
+	puzzlewebotel "github.com/dvaumoron/puzzleweb/otel"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
-const ginKey = "gin"
 const siteName = "Site"
 const unknownUserKey = "ErrorUnknownUser"
 
@@ -77,7 +77,8 @@ func (site *Site) AddDefaultData(adder common.DataAdder) {
 }
 
 func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
-	engine := gin.Default()
+	engine := gin.New()
+	engine.Use(otelgin.Middleware(puzzlewebotel.WebKey), gin.Recovery())
 
 	if memorySize := siteConfig.MaxMultipartMemory; memorySize != 0 {
 		engine.MaxMultipartMemory = memorySize
@@ -114,8 +115,6 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 }
 
 func (site *Site) Run(siteConfig config.SiteConfig) error {
-	gin.DefaultWriter = puzzlelogger.InfoWrapper{Inner: site.logger, Lib: ginKey}
-	gin.DefaultErrorWriter = puzzlelogger.ErrorWrapper{Inner: site.logger, Lib: ginKey}
 	return site.initEngine(siteConfig).Run(checkPort(siteConfig.Port))
 }
 
@@ -125,8 +124,6 @@ type SiteAndConfig struct {
 }
 
 func Run(ginLogger *zap.Logger, sites ...SiteAndConfig) error {
-	gin.DefaultWriter = puzzlelogger.InfoWrapper{Inner: ginLogger, Lib: ginKey}
-	gin.DefaultErrorWriter = puzzlelogger.ErrorWrapper{Inner: ginLogger, Lib: ginKey}
 	var g errgroup.Group
 	for _, siteAndConfig := range sites {
 		port := checkPort(siteAndConfig.Config.Port)

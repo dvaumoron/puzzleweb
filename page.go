@@ -25,6 +25,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 )
 
@@ -139,7 +140,7 @@ func CreateTemplate(redirecter common.TemplateRedirecter) gin.HandlerFunc {
 		data := initData(c)
 		tmpl, redirect := redirecter(data, c)
 		if redirect == "" {
-			c.HTML(http.StatusOK, tmpl, data)
+			otelgin.HTML(c, http.StatusOK, tmpl, data)
 		} else {
 			c.Redirect(http.StatusFound, redirect)
 		}

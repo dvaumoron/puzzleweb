@@ -56,7 +56,6 @@ func (w wikiWidget) LoadInto(router gin.IRouter) {
 }
 
 func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page {
-	logger := wikiConfig.Logger
 	wikiService := wikiConfig.Service
 	markdownService := wikiConfig.MarkdownService
 
@@ -66,7 +65,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 	listTmpl := "wiki/list.html"
 	switch args := wikiConfig.Args; len(args) {
 	default:
-		logger.Info("MakeWikiPage should be called with 0 to 4 optional arguments.")
+		wikiConfig.Logger.Info("MakeWikiPage should be called with 0 to 4 optional arguments.")
 		fallthrough
 	case 4:
 		if args[3] != "" {
@@ -96,7 +95,8 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			lang := puzzleweb.GetLocalesManager(c).GetLang(c)
 			return wikiUrlBuilder(common.GetCurrentUrl(c), lang, viewMode, defaultPage).String()
 		}),
-		viewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		viewHandler: puzzleweb.CreateTemplate("wikiWidget/viewHandler", func(data gin.H, c *gin.Context) (string, string) {
+			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			title := c.Param(titleName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
@@ -109,7 +109,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 
 			userId, _ := data[common.IdName].(uint64)
 			version := c.Query(versionName)
-			content, err := wikiService.LoadContent(userId, lang, title, version)
+			content, err := wikiService.LoadContent(logger, userId, lang, title, version)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -122,7 +122,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 				return "", wikiUrlBuilder(base, lang, viewMode, title).String()
 			}
 
-			body, err := content.GetBody(markdownService)
+			body, err := content.GetBody(logger, markdownService)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -135,7 +135,8 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			data[wikiContentName] = body
 			return viewTmpl, ""
 		}),
-		editHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		editHandler: puzzleweb.CreateTemplate("wikiWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
+			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			title := c.Param(titleName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
@@ -147,7 +148,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			}
 
 			userId, _ := data[common.IdName].(uint64)
-			content, err := wikiService.LoadContent(userId, lang, title, "")
+			content, err := wikiService.LoadContent(logger, userId, lang, title, "")
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -163,6 +164,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			return editTmpl, ""
 		}),
 		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
+			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
 			title := c.Param(titleName)
@@ -173,11 +175,11 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 				return targetBuilder.String()
 			}
 
-			userId := puzzleweb.GetSessionUserId(c)
+			userId := puzzleweb.GetSessionUserId(logger, c)
 			last := c.PostForm(versionName)
 			content := c.PostForm("content")
 
-			success, err := wikiService.StoreContent(userId, lang, title, last, content)
+			success, err := wikiService.StoreContent(logger, userId, lang, title, last, content)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
 				return targetBuilder.String()
@@ -187,7 +189,8 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			}
 			return targetBuilder.String()
 		}),
-		listHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		listHandler: puzzleweb.CreateTemplate("wikiWidget/listHandler", func(data gin.H, c *gin.Context) (string, string) {
+			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
 			title := c.Param(titleName)
@@ -199,7 +202,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			}
 
 			userId, _ := data[common.IdName].(uint64)
-			versions, err := wikiService.GetVersions(userId, lang, title)
+			versions, err := wikiService.GetVersions(logger, userId, lang, title)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
 				return "", targetBuilder.String()
@@ -208,11 +211,12 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			data[wikiTitleName] = title
 			data[versionsName] = versions
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
-			data[common.AllowedToDeleteName] = wikiService.DeleteRight(userId)
+			data[common.AllowedToDeleteName] = wikiService.DeleteRight(logger, userId)
 			puzzleweb.InitNoELementMsg(data, len(versions), c)
 			return listTmpl, ""
 		}),
 		deleteHandler: common.CreateRedirect(func(c *gin.Context) string {
+			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
 			title := c.Param(titleName)
@@ -223,9 +227,9 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 				return targetBuilder.String()
 			}
 
-			userId := puzzleweb.GetSessionUserId(c)
+			userId := puzzleweb.GetSessionUserId(logger, c)
 			version := c.Query(versionName)
-			err := wikiService.DeleteContent(userId, lang, title, version)
+			err := wikiService.DeleteContent(logger, userId, lang, title, version)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())
 			}

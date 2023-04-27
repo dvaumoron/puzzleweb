@@ -18,7 +18,6 @@
 package client
 
 import (
-	"context"
 	"sort"
 	"time"
 
@@ -35,7 +34,6 @@ import (
 
 type forumClient struct {
 	grpcclient.Client
-	logger         *otelzap.Logger
 	forumId        uint64
 	groupId        uint64
 	dateFormat     string
@@ -43,14 +41,14 @@ type forumClient struct {
 	profileService profileservice.ProfileService
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger, forumId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.FullForumService {
+func New(serviceAddr string, dialOptions []grpc.DialOption, forumId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.FullForumService {
 	return forumClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, forumId: forumId, groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, dialOptions...), forumId: forumId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }
 
-type deleteRequestKind func(pb.ForumClient, context.Context, *pb.IdRequest) (*pb.Response, error)
+type deleteRequestKind func(pb.ForumClient, otelzap.LoggerWithCtx, *pb.IdRequest) (*pb.Response, error)
 
 type sortableContentsDesc []*pb.Content
 
@@ -80,26 +78,23 @@ func (s sortableContentsAsc) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (client forumClient) CreateThread(userId uint64, title string, message string) (uint64, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
+func (client forumClient) CreateThread(logger otelzap.LoggerWithCtx, userId uint64, title string, message string) (uint64, error) {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return 0, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, common.LogOriginalError(client.logger, err, "ForumClient1")
+		return 0, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewForumClient(conn).CreateThread(ctx, &pb.CreateRequest{
+	response, err := pb.NewForumClient(conn).CreateThread(logger.Context(), &pb.CreateRequest{
 		ContainerId: client.forumId, UserId: userId, Title: title, Text: message,
 	})
 	if err != nil {
-		return 0, common.LogOriginalError(client.logger, err, "ForumClient2")
+		return 0, common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return 0, common.ErrUpdate
@@ -107,26 +102,23 @@ func (client forumClient) CreateThread(userId uint64, title string, message stri
 	return response.Id, nil
 }
 
-func (client forumClient) CreateCommentThread(userId uint64, elemTitle string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
+func (client forumClient) CreateCommentThread(logger otelzap.LoggerWithCtx, userId uint64, elemTitle string) error {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient3")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewForumClient(conn).CreateThread(ctx, &pb.CreateRequest{
+	response, err := pb.NewForumClient(conn).CreateThread(logger.Context(), &pb.CreateRequest{
 		ContainerId: client.forumId, UserId: userId, Title: elemTitle,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient4")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -134,26 +126,23 @@ func (client forumClient) CreateCommentThread(userId uint64, elemTitle string) e
 	return nil
 }
 
-func (client forumClient) CreateMessage(userId uint64, threadId uint64, message string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionUpdate)
+func (client forumClient) CreateMessage(logger otelzap.LoggerWithCtx, userId uint64, threadId uint64, message string) error {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionUpdate)
 	if err != nil {
 		return err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient5")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewForumClient(conn).CreateMessage(ctx, &pb.CreateRequest{
+	response, err := pb.NewForumClient(conn).CreateMessage(logger.Context(), &pb.CreateRequest{
 		ContainerId: threadId, UserId: userId, Text: message,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient6")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -161,48 +150,45 @@ func (client forumClient) CreateMessage(userId uint64, threadId uint64, message 
 	return nil
 }
 
-func (client forumClient) CreateComment(userId uint64, elemTitle string, comment string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
+func (client forumClient) CreateComment(logger otelzap.LoggerWithCtx, userId uint64, elemTitle string, comment string) error {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient7")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
 	objectId := client.forumId
 	forumClient := pb.NewForumClient(conn)
-	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
+	response, err := searchCommentThread(forumClient, logger, objectId, elemTitle)
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient8")
+		return common.LogOriginalError(logger, err)
 	}
 
 	var threadId uint64
 	if response.Total == 0 {
-		logCommentThreadNotFound(client.logger, objectId, elemTitle)
+		logCommentThreadNotFound(logger, objectId, elemTitle)
 
-		response2, err := forumClient.CreateThread(ctx, &pb.CreateRequest{
+		response2, err := forumClient.CreateThread(logger.Context(), &pb.CreateRequest{
 			ContainerId: client.forumId, UserId: userId, Title: elemTitle,
 		})
 		if err != nil {
-			return common.LogOriginalError(client.logger, err, "ForumClient9")
+			return common.LogOriginalError(logger, err)
 		}
 		threadId = response2.Id
 	} else {
 		threadId = response.List[0].Id
 	}
 
-	response2, err := forumClient.CreateMessage(ctx, &pb.CreateRequest{
+	response2, err := forumClient.CreateMessage(logger.Context(), &pb.CreateRequest{
 		ContainerId: threadId, UserId: userId, Text: comment,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient10")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response2.Success {
 		return common.ErrUpdate
@@ -210,32 +196,29 @@ func (client forumClient) CreateComment(userId uint64, elemTitle string, comment
 	return nil
 }
 
-func (client forumClient) GetThread(userId uint64, threadId uint64, start uint64, end uint64, filter string) (uint64, service.ForumContent, []service.ForumContent, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
+func (client forumClient) GetThread(logger otelzap.LoggerWithCtx, userId uint64, threadId uint64, start uint64, end uint64, filter string) (uint64, service.ForumContent, []service.ForumContent, error) {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return 0, service.ForumContent{}, nil, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.logger, err, "ForumClient11")
+		return 0, service.ForumContent{}, nil, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
 	forumClient := pb.NewForumClient(conn)
-	response, err := forumClient.GetThread(ctx, &pb.IdRequest{ContainerId: client.forumId, Id: threadId})
+	response, err := forumClient.GetThread(logger.Context(), &pb.IdRequest{ContainerId: client.forumId, Id: threadId})
 	if err != nil {
-		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.logger, err, "ForumClient12")
+		return 0, service.ForumContent{}, nil, common.LogOriginalError(logger, err)
 	}
 
-	response2, err := forumClient.GetMessages(ctx, &pb.SearchRequest{
+	response2, err := forumClient.GetMessages(logger.Context(), &pb.SearchRequest{
 		ContainerId: threadId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return 0, service.ForumContent{}, nil, common.LogOriginalError(client.logger, err, "ForumClient13")
+		return 0, service.ForumContent{}, nil, common.LogOriginalError(logger, err)
 	}
 
 	list := response2.List
@@ -243,7 +226,7 @@ func (client forumClient) GetThread(userId uint64, threadId uint64, start uint64
 	threadCreatorId := response.UserId
 	userIds = append(userIds, response.UserId)
 
-	users, err := client.profileService.GetProfiles(userIds)
+	users, err := client.profileService.GetProfiles(logger, userIds)
 	if err != nil {
 		return 0, service.ForumContent{}, nil, err
 	}
@@ -254,26 +237,23 @@ func (client forumClient) GetThread(userId uint64, threadId uint64, start uint64
 	return response2.Total, thread, messages, nil
 }
 
-func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, filter string) (uint64, []service.ForumContent, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
+func (client forumClient) GetThreads(logger otelzap.LoggerWithCtx, userId uint64, start uint64, end uint64, filter string) (uint64, []service.ForumContent, error) {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return 0, nil, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err, "ForumClient14")
+		return 0, nil, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewForumClient(conn).GetThreads(ctx, &pb.SearchRequest{
+	response, err := pb.NewForumClient(conn).GetThreads(logger.Context(), &pb.SearchRequest{
 		ContainerId: client.forumId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err, "ForumClient15")
+		return 0, nil, common.LogOriginalError(logger, err)
 	}
 
 	total := response.Total
@@ -282,7 +262,7 @@ func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 		return total, nil, nil
 	}
 
-	users, err := client.profileService.GetProfiles(extractUserIds(list))
+	users, err := client.profileService.GetProfiles(logger, extractUserIds(list))
 	if err != nil {
 		return 0, nil, err
 	}
@@ -290,37 +270,34 @@ func (client forumClient) GetThreads(userId uint64, start uint64, end uint64, fi
 	return total, convertContents(list, users, client.dateFormat), nil
 }
 
-func (client forumClient) GetCommentThread(userId uint64, elemTitle string, start uint64, end uint64) (uint64, []service.ForumContent, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
+func (client forumClient) GetCommentThread(logger otelzap.LoggerWithCtx, userId uint64, elemTitle string, start uint64, end uint64) (uint64, []service.ForumContent, error) {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return 0, nil, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err, "ForumClient16")
+		return 0, nil, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
 	objectId := client.forumId
 	forumClient := pb.NewForumClient(conn)
-	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
+	response, err := searchCommentThread(forumClient, logger, objectId, elemTitle)
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err, "ForumClient17")
+		return 0, nil, common.LogOriginalError(logger, err)
 	}
 	if response.Total == 0 {
-		return 0, nil, logCommentThreadNotFound(client.logger, objectId, elemTitle)
+		return 0, nil, logCommentThreadNotFound(logger, objectId, elemTitle)
 	}
 	threadId := response.List[0].Id
 
-	response2, err := forumClient.GetMessages(ctx, &pb.SearchRequest{
+	response2, err := forumClient.GetMessages(logger.Context(), &pb.SearchRequest{
 		ContainerId: threadId, Start: start, End: end,
 	})
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err, "ForumClient18")
+		return 0, nil, common.LogOriginalError(logger, err)
 	}
 
 	total := response2.Total
@@ -329,7 +306,7 @@ func (client forumClient) GetCommentThread(userId uint64, elemTitle string, star
 		return total, nil, nil
 	}
 
-	users, err := client.profileService.GetProfiles(extractUserIds(list))
+	users, err := client.profileService.GetProfiles(logger, extractUserIds(list))
 	if err != nil {
 		return 0, nil, err
 	}
@@ -337,39 +314,36 @@ func (client forumClient) GetCommentThread(userId uint64, elemTitle string, star
 	return total, convertContents(list, users, client.dateFormat), nil
 }
 
-func (client forumClient) DeleteThread(userId uint64, threadId uint64) error {
-	return client.deleteContent(userId, deleteThread, &pb.IdRequest{ContainerId: client.forumId, Id: threadId})
+func (client forumClient) DeleteThread(logger otelzap.LoggerWithCtx, userId uint64, threadId uint64) error {
+	return client.deleteContent(logger, userId, deleteThread, &pb.IdRequest{ContainerId: client.forumId, Id: threadId})
 }
 
-func (client forumClient) DeleteCommentThread(userId uint64, elemTitle string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
+func (client forumClient) DeleteCommentThread(logger otelzap.LoggerWithCtx, userId uint64, elemTitle string) error {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient19")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
 	objectId := client.forumId
 	forumClient := pb.NewForumClient(conn)
-	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
+	response, err := searchCommentThread(forumClient, logger, objectId, elemTitle)
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient20")
+		return common.LogOriginalError(logger, err)
 	}
 	if response.Total == 0 {
 		return nil
 	}
 	threadId := response.List[0].Id
 
-	response2, err := forumClient.DeleteThread(ctx, &pb.IdRequest{ContainerId: objectId, Id: threadId})
+	response2, err := forumClient.DeleteThread(logger.Context(), &pb.IdRequest{ContainerId: objectId, Id: threadId})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient21")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response2.Success {
 		return common.ErrUpdate
@@ -377,41 +351,38 @@ func (client forumClient) DeleteCommentThread(userId uint64, elemTitle string) e
 	return nil
 }
 
-func (client forumClient) DeleteMessage(userId uint64, threadId uint64, messageId uint64) error {
+func (client forumClient) DeleteMessage(logger otelzap.LoggerWithCtx, userId uint64, threadId uint64, messageId uint64) error {
 	return client.deleteContent(
-		userId, deleteMessage, &pb.IdRequest{ContainerId: threadId, Id: messageId},
+		logger, userId, deleteMessage, &pb.IdRequest{ContainerId: threadId, Id: messageId},
 	)
 }
 
-func (client forumClient) DeleteComment(userId uint64, elemTitle string, commentId uint64) error {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
+func (client forumClient) DeleteComment(logger otelzap.LoggerWithCtx, userId uint64, elemTitle string, commentId uint64) error {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient22")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
 	objectId := client.forumId
 	forumClient := pb.NewForumClient(conn)
-	response, err := searchCommentThread(forumClient, ctx, objectId, elemTitle)
+	response, err := searchCommentThread(forumClient, logger, objectId, elemTitle)
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient23")
+		return common.LogOriginalError(logger, err)
 	}
 	if response.Total == 0 {
-		return logCommentThreadNotFound(client.logger, objectId, elemTitle)
+		return logCommentThreadNotFound(logger, objectId, elemTitle)
 	}
 	threadId := response.List[0].Id
 
-	response2, err := forumClient.DeleteThread(ctx, &pb.IdRequest{ContainerId: threadId, Id: commentId})
+	response2, err := forumClient.DeleteThread(logger.Context(), &pb.IdRequest{ContainerId: threadId, Id: commentId})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient24")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response2.Success {
 		return common.ErrUpdate
@@ -419,36 +390,33 @@ func (client forumClient) DeleteComment(userId uint64, elemTitle string, comment
 	return nil
 }
 
-func (client forumClient) CreateThreadRight(userId uint64) bool {
-	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate) == nil
+func (client forumClient) CreateThreadRight(logger otelzap.LoggerWithCtx, userId uint64) bool {
+	return client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionCreate) == nil
 }
 
-func (client forumClient) CreateMessageRight(userId uint64) bool {
-	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionUpdate) == nil
+func (client forumClient) CreateMessageRight(logger otelzap.LoggerWithCtx, userId uint64) bool {
+	return client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionUpdate) == nil
 }
 
-func (client forumClient) DeleteRight(userId uint64) bool {
-	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete) == nil
+func (client forumClient) DeleteRight(logger otelzap.LoggerWithCtx, userId uint64) bool {
+	return client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionDelete) == nil
 }
 
-func (client forumClient) deleteContent(userId uint64, kind deleteRequestKind, request *pb.IdRequest) error {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
+func (client forumClient) deleteContent(logger otelzap.LoggerWithCtx, userId uint64, kind deleteRequestKind, request *pb.IdRequest) error {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient25")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := kind(pb.NewForumClient(conn), ctx, request)
+	response, err := kind(pb.NewForumClient(conn), logger, request)
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ForumClient26")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -456,18 +424,18 @@ func (client forumClient) deleteContent(userId uint64, kind deleteRequestKind, r
 	return nil
 }
 
-func searchCommentThread(forumClient pb.ForumClient, ctx context.Context, objectId uint64, elemTitle string) (*pb.Contents, error) {
-	return forumClient.GetThreads(ctx, &pb.SearchRequest{
+func searchCommentThread(forumClient pb.ForumClient, logger otelzap.LoggerWithCtx, objectId uint64, elemTitle string) (*pb.Contents, error) {
+	return forumClient.GetThreads(logger.Context(), &pb.SearchRequest{
 		ContainerId: objectId, Start: 0, End: 1, Filter: elemTitle,
 	})
 }
 
-func deleteThread(forumClient pb.ForumClient, ctx context.Context, request *pb.IdRequest) (*pb.Response, error) {
-	return forumClient.DeleteThread(ctx, request)
+func deleteThread(forumClient pb.ForumClient, logger otelzap.LoggerWithCtx, request *pb.IdRequest) (*pb.Response, error) {
+	return forumClient.DeleteThread(logger.Context(), request)
 }
 
-func deleteMessage(forumClient pb.ForumClient, ctx context.Context, request *pb.IdRequest) (*pb.Response, error) {
-	return forumClient.DeleteMessage(ctx, request)
+func deleteMessage(forumClient pb.ForumClient, logger otelzap.LoggerWithCtx, request *pb.IdRequest) (*pb.Response, error) {
+	return forumClient.DeleteMessage(logger.Context(), request)
 }
 
 func convertContents(list []*pb.Content, users map[uint64]profileservice.UserProfile, dateFormat string) []service.ForumContent {
@@ -485,7 +453,7 @@ func convertContent(content *pb.Content, creator profileservice.UserProfile, dat
 	}
 }
 
-func logCommentThreadNotFound(logger *otelzap.Logger, objectId uint64, elemTitle string) error {
+func logCommentThreadNotFound(logger otelzap.LoggerWithCtx, objectId uint64, elemTitle string) error {
 	logger.Warn(
 		"comment thread not found", zap.Uint64("objectId", objectId), zap.String("elemTitle", elemTitle),
 		zap.String(common.ReportingPlaceName, "ForumClient27"),

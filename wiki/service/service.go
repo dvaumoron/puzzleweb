@@ -23,6 +23,7 @@ import (
 
 	markdownservice "github.com/dvaumoron/puzzleweb/markdown/service"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
 type WikiContent struct {
@@ -33,7 +34,7 @@ type WikiContent struct {
 }
 
 // Lazy loading for markdown application on body.
-func (content *WikiContent) GetBody(markdownService markdownservice.MarkdownService) (template.HTML, error) {
+func (content *WikiContent) GetBody(logger otelzap.LoggerWithCtx, markdownService markdownservice.MarkdownService) (template.HTML, error) {
 	content.bodyMutex.RLock()
 	body := content.body
 	content.bodyMutex.RUnlock()
@@ -51,7 +52,7 @@ func (content *WikiContent) GetBody(markdownService markdownservice.MarkdownServ
 		return body, nil
 	}
 
-	body, err := markdownService.Apply(markdown)
+	body, err := markdownService.Apply(logger, markdown)
 	if err != nil {
 		return "", err
 	}
@@ -66,9 +67,9 @@ type Version struct {
 }
 
 type WikiService interface {
-	LoadContent(userId uint64, lang string, title string, versionStr string) (*WikiContent, error)
-	StoreContent(userId uint64, lang string, title string, last string, markdown string) (bool, error)
-	GetVersions(userId uint64, lang string, title string) ([]Version, error)
-	DeleteContent(userId uint64, lang string, title string, versionStr string) error
-	DeleteRight(userId uint64) bool
+	LoadContent(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string, versionStr string) (*WikiContent, error)
+	StoreContent(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string, last string, markdown string) (bool, error)
+	GetVersions(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string) ([]Version, error)
+	DeleteContent(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string, versionStr string) error
+	DeleteRight(logger otelzap.LoggerWithCtx, userId uint64) bool
 }

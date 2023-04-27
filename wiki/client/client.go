@@ -18,10 +18,8 @@
 package client
 
 import (
-	"context"
 	"strconv"
 	"strings"
-	"time"
 
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
@@ -36,7 +34,6 @@ import (
 
 type wikiClient struct {
 	grpcclient.Client
-	logger         *otelzap.Logger
 	cache          *wikiCache
 	wikiId         uint64
 	groupId        uint64
@@ -45,15 +42,15 @@ type wikiClient struct {
 	profileService profileservice.ProfileService
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger, wikiId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.WikiService {
+func New(serviceAddr string, dialOptions []grpc.DialOption, wikiId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.WikiService {
 	return wikiClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, cache: newCache(), wikiId: wikiId,
+		Client: grpcclient.Make(serviceAddr, dialOptions...), cache: newCache(), wikiId: wikiId,
 		groupId: groupId, dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }
 
-func (client wikiClient) LoadContent(userId uint64, lang string, title string, versionStr string) (*service.WikiContent, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
+func (client wikiClient) LoadContent(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string, versionStr string) (*service.WikiContent, error) {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -62,90 +59,87 @@ func (client wikiClient) LoadContent(userId uint64, lang string, title string, v
 	if versionStr != "" {
 		version, err = strconv.ParseUint(versionStr, 10, 64)
 		if err != nil {
-			client.logger.Info("Failed to parse wiki version, falling to last", zap.Error(err))
+			logger.Info("Failed to parse wiki version, falling to last", zap.Error(err))
 		}
 	}
-	return client.loadContent(buildRef(lang, title), version)
+	return client.loadContent(logger, buildRef(lang, title), version)
 }
 
-func (client wikiClient) StoreContent(userId uint64, lang string, title string, last string, markdown string) (bool, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
+func (client wikiClient) StoreContent(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string, last string, markdown string) (bool, error) {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return false, err
 	}
 
 	version, err := strconv.ParseUint(last, 10, 64)
 	if err != nil {
-		client.logger.Warn("Failed to parse wiki last version", zap.Error(err))
+		logger.Warn("Failed to parse wiki last version", zap.Error(err))
 		return false, common.ErrTechnical
 	}
-	return client.storeContent(userId, buildRef(lang, title), version, markdown)
+	return client.storeContent(logger, userId, buildRef(lang, title), version, markdown)
 }
 
-func (client wikiClient) GetVersions(userId uint64, lang string, title string) ([]service.Version, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
+func (client wikiClient) GetVersions(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string) ([]service.Version, error) {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return nil, err
 	}
-	return client.getVersions(buildRef(lang, title))
+	return client.getVersions(logger, buildRef(lang, title))
 }
 
-func (client wikiClient) DeleteContent(userId uint64, lang string, title string, versionStr string) error {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
+func (client wikiClient) DeleteContent(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string, versionStr string) error {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
 	}
 
 	version, err := strconv.ParseUint(versionStr, 10, 64)
 	if err != nil {
-		client.logger.Warn("Failed to parse wiki version to delete", zap.Error(err))
+		logger.Warn("Failed to parse wiki version to delete", zap.Error(err))
 		return common.ErrTechnical
 	}
-	return client.deleteContent(buildRef(lang, title), version)
+	return client.deleteContent(logger, buildRef(lang, title), version)
 }
 
-func (client wikiClient) DeleteRight(userId uint64) bool {
-	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete) == nil
+func (client wikiClient) DeleteRight(logger otelzap.LoggerWithCtx, userId uint64) bool {
+	return client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionDelete) == nil
 }
 
-func (client wikiClient) loadContent(wikiRef string, version uint64) (*service.WikiContent, error) {
+func (client wikiClient) loadContent(logger otelzap.LoggerWithCtx, wikiRef string, version uint64) (*service.WikiContent, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "WikiClient1")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
-
-	ctx, cancel := client.InitContext()
-	defer cancel()
 
 	wikiId := client.wikiId
 	pbWikiClient := pb.NewWikiClient(conn)
 	if version != 0 {
-		return client.innerLoadContent(ctx, pbWikiClient, wikiRef, version)
+		return client.innerLoadContent(logger, pbWikiClient, wikiRef, version)
 	}
 
-	versions, err := pbWikiClient.ListVersions(ctx, &pb.VersionRequest{
+	versions, err := pbWikiClient.ListVersions(logger.Context(), &pb.VersionRequest{
 		WikiId: wikiId, WikiRef: wikiRef,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "WikiClient2")
+		return nil, common.LogOriginalError(logger, err)
 	}
 
 	if lastVersion := maxVersion(versions.List); lastVersion != nil {
-		content := client.cache.load(wikiRef)
+		content := client.cache.load(logger, wikiRef)
 		if content != nil && lastVersion.Number == content.Version {
 			return content, nil
 		}
 	}
-	return client.innerLoadContent(ctx, pbWikiClient, wikiRef, 0)
+	return client.innerLoadContent(logger, pbWikiClient, wikiRef, 0)
 }
 
-func (client wikiClient) innerLoadContent(ctx context.Context, pbWikiClient pb.WikiClient, wikiRef string, askedVersion uint64) (*service.WikiContent, error) {
-	response, err := pbWikiClient.Load(ctx, &pb.WikiRequest{
+func (client wikiClient) innerLoadContent(logger otelzap.LoggerWithCtx, pbWikiClient pb.WikiClient, wikiRef string, askedVersion uint64) (*service.WikiContent, error) {
+	response, err := pbWikiClient.Load(logger.Context(), &pb.WikiRequest{
 		WikiId: client.wikiId, WikiRef: wikiRef, Version: askedVersion,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "WikiClient3")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	version := response.Version
 	if version == 0 { // no stored wiki page
@@ -154,83 +148,74 @@ func (client wikiClient) innerLoadContent(ctx context.Context, pbWikiClient pb.W
 
 	content := &service.WikiContent{Version: version, Markdown: response.Text}
 	if askedVersion == 0 {
-		client.cache.store(wikiRef, content)
+		client.cache.store(logger, wikiRef, content)
 	}
 	return content, nil
 }
 
-func (client wikiClient) storeContent(userId uint64, wikiRef string, last uint64, markdown string) (bool, error) {
+func (client wikiClient) storeContent(logger otelzap.LoggerWithCtx, userId uint64, wikiRef string, last uint64, markdown string) (bool, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return false, common.LogOriginalError(client.logger, err, "WikiClient4")
+		return false, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewWikiClient(conn).Store(ctx, &pb.ContentRequest{
+	response, err := pb.NewWikiClient(conn).Store(logger.Context(), &pb.ContentRequest{
 		WikiId: client.wikiId, WikiRef: wikiRef, Last: last, Text: markdown, UserId: userId,
 	})
 	if err != nil {
-		return false, common.LogOriginalError(client.logger, err, "WikiClient5")
+		return false, common.LogOriginalError(logger, err)
 	}
 	success := response.Success
 	if success {
-		client.cache.store(wikiRef, &service.WikiContent{
+		client.cache.store(logger, wikiRef, &service.WikiContent{
 			Version: response.Version, Markdown: markdown,
 		})
 	}
 	return success, nil
 }
 
-func (client wikiClient) getVersions(wikiRef string) ([]service.Version, error) {
+func (client wikiClient) getVersions(logger otelzap.LoggerWithCtx, wikiRef string) ([]service.Version, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "WikiClient6")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewWikiClient(conn).ListVersions(ctx, &pb.VersionRequest{
+	response, err := pb.NewWikiClient(conn).ListVersions(logger.Context(), &pb.VersionRequest{
 		WikiId: client.wikiId, WikiRef: wikiRef,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "WikiClient7")
+		return nil, common.LogOriginalError(logger, err)
 	}
-	return client.sortConvertVersions(response.List)
+	return client.sortConvertVersions(logger, response.List)
 }
 
-func (client wikiClient) deleteContent(wikiRef string, version uint64) error {
+func (client wikiClient) deleteContent(logger otelzap.LoggerWithCtx, wikiRef string, version uint64) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "WikiClient8")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewWikiClient(conn).Delete(ctx, &pb.WikiRequest{
+	response, err := pb.NewWikiClient(conn).Delete(logger.Context(), &pb.WikiRequest{
 		WikiId: client.wikiId, WikiRef: wikiRef, Version: version,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "WikiClient9")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
 	}
 
-	content := client.cache.load(wikiRef)
+	content := client.cache.load(logger, wikiRef)
 	if content != nil && version == content.Version {
-		client.cache.delete(wikiRef)
+		client.cache.delete(logger, wikiRef)
 	}
 	return nil
 }
 
-func (client wikiClient) sortConvertVersions(list []*pb.Version) ([]service.Version, error) {
+func (client wikiClient) sortConvertVersions(logger otelzap.LoggerWithCtx, list []*pb.Version) ([]service.Version, error) {
 	size := len(list)
 	if size == 0 {
 		return nil, nil
@@ -243,7 +228,7 @@ func (client wikiClient) sortConvertVersions(list []*pb.Version) ([]service.Vers
 		valueSet[value.Number] = value
 		userIds = append(userIds, value.UserId)
 	}
-	profiles, err := client.profileService.GetProfiles(userIds)
+	profiles, err := client.profileService.GetProfiles(logger, userIds)
 	if err != nil {
 		return nil, err
 	}

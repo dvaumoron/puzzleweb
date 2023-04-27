@@ -24,6 +24,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 
 	"github.com/gin-gonic/gin"
@@ -57,20 +58,20 @@ func checkSettings(settings map[string]string, c *gin.Context) error {
 	return nil
 }
 
-func (m *SettingsManager) Get(userId uint64, c *gin.Context) map[string]string {
+func (m *SettingsManager) Get(logger otelzap.LoggerWithCtx, userId uint64, c *gin.Context) map[string]string {
 	userSettings := c.GetStringMapString(settingsName)
 	if len(userSettings) != 0 {
 		return userSettings
 	}
 
-	userSettings, err := m.Service.Get(userId)
+	userSettings, err := m.Service.Get(logger, userId)
 	if err != nil {
 		m.Logger.Warn("Failed to retrieve user settings", zap.Error(err))
 	}
 
 	if len(userSettings) == 0 {
 		userSettings = m.InitSettings(c)
-		err = m.Service.Update(userId, userSettings)
+		err = m.Service.Update(logger, userId, userSettings)
 		if err != nil {
 			m.Logger.Warn("Failed to create user settings", zap.Error(err))
 		}
@@ -79,8 +80,8 @@ func (m *SettingsManager) Get(userId uint64, c *gin.Context) map[string]string {
 	return userSettings
 }
 
-func (m *SettingsManager) Update(userId uint64, settings map[string]string) error {
-	return m.Service.Update(userId, settings)
+func (m *SettingsManager) Update(logger otelzap.LoggerWithCtx, userId uint64, settings map[string]string) error {
+	return m.Service.Update(logger, userId, settings)
 }
 
 type settingsWidget struct {
@@ -100,17 +101,19 @@ func newSettingsPage(settingsConfig config.ServiceConfig[*SettingsManager]) Page
 
 	p := MakeHiddenPage("settings")
 	p.Widget = settingsWidget{
-		editHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		editHandler: CreateTemplate("settingsWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
+			logger := GetLogger(c)
 			userId, _ := data[common.IdName].(uint64)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(unknownUserKey)
 			}
 
-			data["Settings"] = settingsManager.Get(userId, c)
+			data["Settings"] = settingsManager.Get(logger, userId, c)
 			return editTmpl, ""
 		}),
 		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
-			userId := GetSessionUserId(c)
+			logger := GetLogger(c)
+			userId := GetSessionUserId(logger, c)
 			if userId == 0 {
 				return common.DefaultErrorRedirect(unknownUserKey)
 			}
@@ -118,7 +121,7 @@ func newSettingsPage(settingsConfig config.ServiceConfig[*SettingsManager]) Page
 			settings := c.PostFormMap("settings")
 			err := settingsManager.CheckSettings(settings, c)
 			if err == nil {
-				err = settingsManager.Update(userId, settings)
+				err = settingsManager.Update(logger, userId, settings)
 			}
 
 			var targetBuilder strings.Builder

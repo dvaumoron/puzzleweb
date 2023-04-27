@@ -17,6 +17,8 @@
  */
 package service
 
+import "github.com/uptrace/opentelemetry-go-extra/otelzap"
+
 const AdminName = "admin"
 const PublicName = "public"
 const PublicGroupId = 0 // groupId for content always allowed to access
@@ -42,15 +44,15 @@ type Role struct {
 }
 
 type AuthService interface {
-	AuthQuery(userId uint64, groupId uint64, action string) error
+	AuthQuery(logger otelzap.LoggerWithCtx, userId uint64, groupId uint64, action string) error
 }
 
 type AdminService interface {
 	AuthService
-	GetAllGroups() []Group
-	GetAllRoles(adminId uint64) ([]Role, error)
-	GetActions(adminId uint64, roleName string, groupName string) ([]string, error)
-	UpdateUser(adminId uint64, userId uint64, roles []Role) error
-	UpdateRole(adminId uint64, role Role) error
-	GetUserRoles(adminId uint64, userId uint64) ([]Role, error)
+	GetAllGroups(logger otelzap.LoggerWithCtx) []Group
+	GetAllRoles(logger otelzap.LoggerWithCtx, adminId uint64) ([]Role, error)
+	GetActions(logger otelzap.LoggerWithCtx, adminId uint64, roleName string, groupName string) ([]string, error)
+	UpdateUser(logger otelzap.LoggerWithCtx, adminId uint64, userId uint64, roles []Role) error
+	UpdateRole(logger otelzap.LoggerWithCtx, adminId uint64, role Role) error
+	GetUserRoles(logger otelzap.LoggerWithCtx, adminId uint64, userId uint64) ([]Role, error)
 }

@@ -18,6 +18,7 @@
 package config
 
 import (
+	"context"
 	"os"
 	"strconv"
 	"strings"
@@ -41,6 +42,7 @@ import (
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -85,7 +87,7 @@ type GlobalConfig struct {
 	Logger           *otelzap.Logger
 	LangPicturePaths map[string]string
 
-	DialOptions     grpc.DialOption
+	DialOptions     []grpc.DialOption
 	SessionService  sessionservice.SessionService
 	SaltService     loginservice.SaltService
 	SettingsService sessionservice.SessionService
@@ -145,17 +147,20 @@ func LoadDefault() *GlobalConfig {
 	pageSize := retrieveUintWithDefault(logger, "PAGE_SIZE", 20)
 	extractSize := retrieveUintWithDefault(logger, "EXTRACT_SIZE", 200)
 
-	dialOptions := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOptions := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+	}
 
-	sessionService := sessionclient.New(requiredFromEnv(logger, "SESSION_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
-	settingsService := sessionclient.New(requiredFromEnv(logger, "SETTINGS_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
-	strengthService := strengthclient.New(requiredFromEnv(logger, "PASSSTRENGTH_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
-	saltService := puzzlesaltclient.Make(requiredFromEnv(logger, "SALT_SERVICE_ADDR"), dialOptions, serviceTimeOut)
+	sessionService := sessionclient.New(requiredFromEnv(logger, "SESSION_SERVICE_ADDR"), dialOptions)
+	settingsService := sessionclient.New(requiredFromEnv(logger, "SETTINGS_SERVICE_ADDR"), dialOptions)
+	strengthService := strengthclient.New(requiredFromEnv(logger, "PASSSTRENGTH_SERVICE_ADDR"), dialOptions)
+	saltService := puzzlesaltclient.Make(requiredFromEnv(logger, "SALT_SERVICE_ADDR"), dialOptions)
 	loginService := loginclient.New(
-		requiredFromEnv(logger, "LOGIN_SERVICE_ADDR"), dialOptions, serviceTimeOut,
-		logger, dateFormat, saltService, strengthService,
+		requiredFromEnv(logger, "LOGIN_SERVICE_ADDR"), dialOptions, dateFormat, saltService, strengthService,
 	)
-	rightClient := adminclient.Make(requiredFromEnv(logger, "RIGHT_SERVICE_ADDR"), dialOptions, serviceTimeOut, logger)
+	rightClient := adminclient.Make(requiredFromEnv(logger, "RIGHT_SERVICE_ADDR"), dialOptions)
 
 	staticPath := retrievePath(logger, "STATIC_PATH", "static")
 	augmentedStaticPath := staticPath + "/"
@@ -178,10 +183,15 @@ func LoadDefault() *GlobalConfig {
 	langNumber := len(confLangs)
 	allLang := make([]string, 0, langNumber)
 	passwordRules := make(map[string]string, langNumber)
+
+	ctx, cancel := context.WithTimeout(context.Background(), serviceTimeOut)
+	ctxLogger := logger.Ctx(ctx)
+	defer cancel()
+
 	for _, confLang := range confLangs {
 		lang := strings.TrimSpace(confLang)
 		allLang = append(allLang, lang)
-		passwordRule, err := strengthService.GetRules(lang)
+		passwordRule, err := strengthService.GetRules(ctxLogger, lang)
 		if err != nil {
 			logger.Warn("Failed to retrieve password rule", zap.String("locale", lang), zap.Error(err))
 		}
@@ -213,8 +223,8 @@ func LoadDefault() *GlobalConfig {
 	// if not setted in configuration, profile are public
 	profileGroupId := retrieveUintWithDefault(logger, "PROFILE_GROUP_ID", adminservice.PublicGroupId)
 	profileService := profileclient.New(
-		requiredFromEnv(logger, "PROFILE_SERVICE_ADDR"), dialOptions, serviceTimeOut,
-		logger, profileGroupId, loginService, rightClient, defaultPicture,
+		requiredFromEnv(logger, "PROFILE_SERVICE_ADDR"), dialOptions,
+		profileGroupId, loginService, rightClient, defaultPicture,
 	)
 
 	return &GlobalConfig{
@@ -243,9 +253,7 @@ func LoadDefault() *GlobalConfig {
 
 func (c *GlobalConfig) loadMarkdown() {
 	if c.MarkdownService == nil {
-		c.MarkdownService = markdownclient.New(
-			requiredFromEnv(c.Logger, "MARKDOWN_SERVICE_ADDR"), c.DialOptions, c.ServiceTimeOut, c.Logger,
-		)
+		c.MarkdownService = markdownclient.New(requiredFromEnv(c.Logger, "MARKDOWN_SERVICE_ADDR"), c.DialOptions)
 	}
 }
 
@@ -323,8 +331,7 @@ func (c *GlobalConfig) CreateWikiConfig(wikiId uint64, groupId uint64, args ...s
 	c.loadWiki()
 	return WikiConfig{
 		ServiceConfig: MakeServiceConfig(c, wikiclient.New(
-			c.WikiServiceAddr, c.DialOptions, c.ServiceTimeOut, c.Logger,
-			wikiId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.WikiServiceAddr, c.DialOptions, wikiId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		)),
 		MarkdownService: c.MarkdownService, Args: args,
 	}
@@ -334,8 +341,7 @@ func (c *GlobalConfig) CreateForumConfig(forumId uint64, groupId uint64, args ..
 	c.loadForum()
 	return ForumConfig{
 		ServiceConfig: MakeServiceConfig[forumservice.ForumService](c, forumclient.New(
-			c.ForumServiceAddr, c.DialOptions, c.ServiceTimeOut, c.Logger,
-			forumId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.ForumServiceAddr, c.DialOptions, forumId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		)),
 		PageSize: c.PageSize, Args: args,
 	}
@@ -345,12 +351,10 @@ func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...s
 	c.loadBlog()
 	return BlogConfig{
 		ServiceConfig: MakeServiceConfig(c, blogclient.New(
-			c.BlogServiceAddr, c.DialOptions, c.ServiceTimeOut, c.Logger,
-			blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.BlogServiceAddr, c.DialOptions, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		)),
 		MarkdownService: c.MarkdownService, CommentService: forumclient.New(
-			c.ForumServiceAddr, c.DialOptions, c.ServiceTimeOut, c.Logger,
-			blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.ForumServiceAddr, c.DialOptions, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		),
 		PageSize: c.PageSize, ExtractSize: c.ExtractSize, Args: args,
 	}

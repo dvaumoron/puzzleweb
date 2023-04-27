@@ -17,7 +17,9 @@
  */
 package service
 
+import "github.com/uptrace/opentelemetry-go-extra/otelzap"
+
 type PasswordStrengthService interface {
-	Validate(password string) (bool, error)
-	GetRules(lang string) (string, error)
+	Validate(logger otelzap.LoggerWithCtx, password string) (bool, error)
+	GetRules(logger otelzap.LoggerWithCtx, lang string) (string, error)
 }

@@ -21,7 +21,11 @@ import (
 	"sync"
 
 	"github.com/dvaumoron/puzzleweb/wiki/service"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.uber.org/zap"
 )
+
+const wikiRefName = "wikiRef"
 
 type wikiCache struct {
 	mutex sync.RWMutex
@@ -32,21 +36,26 @@ func newCache() *wikiCache {
 	return &wikiCache{cache: map[string]*service.WikiContent{}}
 }
 
-func (wiki *wikiCache) load(wikiRef string) *service.WikiContent {
+func (wiki *wikiCache) load(logger otelzap.LoggerWithCtx, wikiRef string) *service.WikiContent {
 	wiki.mutex.RLock()
-	content := wiki.cache[wikiRef]
+	content, ok := wiki.cache[wikiRef]
 	wiki.mutex.RUnlock()
+	if !ok {
+		logger.Debug("wikiCache miss", zap.String(wikiRefName, wikiRef))
+	}
 	return content
 }
 
-func (wiki *wikiCache) store(wikiRef string, content *service.WikiContent) {
+func (wiki *wikiCache) store(logger otelzap.LoggerWithCtx, wikiRef string, content *service.WikiContent) {
 	wiki.mutex.Lock()
 	wiki.cache[wikiRef] = content
 	wiki.mutex.Unlock()
+	logger.Debug("wikiCache store", zap.String(wikiRefName, wikiRef))
 }
 
-func (wiki *wikiCache) delete(wikiRef string) {
+func (wiki *wikiCache) delete(logger otelzap.LoggerWithCtx, wikiRef string) {
 	wiki.mutex.Lock()
 	delete(wiki.cache, wikiRef)
 	wiki.mutex.Unlock()
+	logger.Debug("wikiCache delete", zap.String(wikiRefName, wikiRef))
 }

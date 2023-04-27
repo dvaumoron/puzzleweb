@@ -25,6 +25,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
 const errorMsgName = "ErrorMsg"
@@ -56,6 +57,10 @@ func buildAriane(messages map[string]string, splittedPath []string) []PageDesc {
 func getSite(c *gin.Context) *Site {
 	siteUntyped, _ := c.Get(siteName)
 	return siteUntyped.(*Site)
+}
+
+func GetLogger(c *gin.Context) otelzap.LoggerWithCtx {
+	return getSite(c).logger.Ctx(c.Request.Context())
 }
 
 func GetLocalesManager(c *gin.Context) locale.Manager {
@@ -111,6 +116,7 @@ func (p Page) extractSubPageNames(messages map[string]string, url string, c *gin
 
 func initData(c *gin.Context) gin.H {
 	site := getSite(c)
+	logger := site.logger.Ctx(c.Request.Context())
 	localesManager := site.localesManager
 	messages := localesManager.GetMessages(c)
 	currentUrl := common.GetCurrentUrl(c)
@@ -130,18 +136,18 @@ func initData(c *gin.Context) gin.H {
 		data["LangSelectorUrl"] = "/changeLang?Redirect=" + escapedUrl
 		data["AllLang"] = localesManager.GetAllLang()
 	}
-	session := GetSession(c)
+	session := GetSession(logger, c)
 	var currentUserId uint64
 	if login := session.Load(loginName); login == "" {
 		data[loginUrlName] = "/login?Redirect=" + escapedUrl
 	} else {
-		currentUserId = extractUserIdFromSession(site.logger, session)
+		currentUserId = extractUserIdFromSession(logger, session)
 		data[loginName] = login
 		data[common.IdName] = currentUserId
 		data[loginUrlName] = "/login/logout?Redirect=" + escapedUrl
 	}
 	data[viewAdminName] = site.authService.AuthQuery(
-		currentUserId, adminservice.AdminGroupId, adminservice.ActionAccess,
+		logger, currentUserId, adminservice.AdminGroupId, adminservice.ActionAccess,
 	) == nil
 	for _, adder := range site.adders {
 		adder(data, c)

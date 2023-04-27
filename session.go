@@ -40,24 +40,24 @@ func makeSessionManager(sessionConfig config.SessionConfig) sessionManager {
 	return sessionManager(sessionConfig)
 }
 
-func (m sessionManager) getSessionId(c *gin.Context) (uint64, error) {
+func (m sessionManager) getSessionId(logger otelzap.LoggerWithCtx, c *gin.Context) (uint64, error) {
 	cookie, err := c.Cookie(cookieName)
 	if err != nil {
-		m.Logger.Info("Failed to retrieve session cookie", zap.Error(err))
-		return m.generateSessionCookie(c)
+		logger.Info("Failed to retrieve session cookie", zap.Error(err))
+		return m.generateSessionCookie(logger, c)
 	}
 	sessionId, err := decodeFromBase64(cookie)
 	if err != nil {
-		m.Logger.Info("Failed to parse session cookie", zap.Error(err))
-		return m.generateSessionCookie(c)
+		logger.Info("Failed to parse session cookie", zap.Error(err))
+		return m.generateSessionCookie(logger, c)
 	}
 	// refreshing cookie
 	m.setSessionCookie(sessionId, c)
 	return sessionId, nil
 }
 
-func (m sessionManager) generateSessionCookie(c *gin.Context) (uint64, error) {
-	sessionId, err := m.Service.Generate()
+func (m sessionManager) generateSessionCookie(logger otelzap.LoggerWithCtx, c *gin.Context) (uint64, error) {
+	sessionId, err := m.Service.Generate(logger)
 	if err == nil {
 		m.setSessionCookie(sessionId, c)
 	}
@@ -133,14 +133,15 @@ func (s *Session) Delete(key string) {
 }
 
 func (m sessionManager) Manage(c *gin.Context) {
-	sessionId, err := m.getSessionId(c)
+	logger := GetLogger(c)
+	sessionId, err := m.getSessionId(logger, c)
 	if err != nil {
-		m.Logger.Error("Failed to generate sessionId")
+		logger.Error("Failed to generate sessionId")
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
-	session, err := m.Service.Get(sessionId)
+	session, err := m.Service.Get(logger, sessionId)
 	if err != nil {
 		logSessionError("Failed to retrieve session", sessionId, c)
 		return
@@ -153,36 +154,38 @@ func (m sessionManager) Manage(c *gin.Context) {
 	c.Set(sessionName, &Session{session: session}) // change is false (default bool)
 	c.Next()
 
-	if s := GetSession(c); s.change {
-		if m.Service.Update(sessionId, s.session) != nil {
+	if s := GetSession(logger, c); s.change {
+		if m.Service.Update(logger, sessionId, s.session) != nil {
 			logSessionError("Failed to save session", sessionId, c)
 		}
 	}
 }
 
 func logSessionError(msg string, sessionId uint64, c *gin.Context) {
-	getSite(c).logger.Error(msg, zap.Uint64("sessionId", sessionId))
+	GetLogger(c).Error(msg, zap.Uint64("sessionId", sessionId))
 	c.AbortWithStatus(http.StatusInternalServerError)
 }
 
-func GetSession(c *gin.Context) *Session {
+func GetSession(logger otelzap.LoggerWithCtx, c *gin.Context) *Session {
 	untyped, _ := c.Get(sessionName)
 	typed, ok := untyped.(*Session)
 	if !ok {
-		getSite(c).logger.Error("There is no session in context")
+		logger.Error("There is no session in context")
 		typed = &Session{session: map[string]string{}, change: true}
 		c.Set(sessionName, typed)
 	}
 	return typed
 }
 
-func GetSessionUserId(c *gin.Context) uint64 {
-	return extractUserIdFromSession(getSite(c).logger, GetSession(c))
+func GetSessionUserId(logger otelzap.LoggerWithCtx, c *gin.Context) uint64 {
+	return extractUserIdFromSession(logger, GetSession(logger, c))
 }
 
-func extractUserIdFromSession(logger *otelzap.Logger, session *Session) uint64 {
+func extractUserIdFromSession(logger otelzap.LoggerWithCtx, session *Session) uint64 {
 	userId, err := strconv.ParseUint(session.Load(userIdName), 10, 64)
-	if err != nil {
+	if err == nil {
+		logger.Debug("userId parsed from session", zap.Uint64(userIdName, userId))
+	} else {
 		logger.Info("Failed to parse userId from session", zap.Error(err))
 	}
 	return userId

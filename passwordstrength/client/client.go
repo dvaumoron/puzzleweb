@@ -18,8 +18,6 @@
 package client
 
 import (
-	"time"
-
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzlepassstrengthservice"
 	"github.com/dvaumoron/puzzleweb/common"
@@ -30,43 +28,36 @@ import (
 
 type strengthClient struct {
 	grpcclient.Client
-	logger *otelzap.Logger
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger) service.PasswordStrengthService {
-	return strengthClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger}
+func New(serviceAddr string, dialOptions []grpc.DialOption) service.PasswordStrengthService {
+	return strengthClient{Client: grpcclient.Make(serviceAddr, dialOptions...)}
 }
 
-func (client strengthClient) Validate(password string) (bool, error) {
+func (client strengthClient) Validate(logger otelzap.LoggerWithCtx, password string) (bool, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return false, common.LogOriginalError(client.logger, err, "StrengthClient1")
+		return false, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewPassstrengthClient(conn).Check(ctx, &pb.PasswordRequest{Password: password})
+	response, err := pb.NewPassstrengthClient(conn).Check(logger.Context(), &pb.PasswordRequest{Password: password})
 	if err != nil {
-		return false, common.LogOriginalError(client.logger, err, "StrengthClient2")
+		return false, common.LogOriginalError(logger, err)
 	}
 	return response.Success, nil
 }
 
-func (client strengthClient) GetRules(lang string) (string, error) {
+func (client strengthClient) GetRules(logger otelzap.LoggerWithCtx, lang string) (string, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return "", common.LogOriginalError(client.logger, err, "StrengthClient3")
+		return "", common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewPassstrengthClient(conn).GetRules(ctx, &pb.LangRequest{Lang: lang})
+	response, err := pb.NewPassstrengthClient(conn).GetRules(logger.Context(), &pb.LangRequest{Lang: lang})
 	if err != nil {
-		return "", common.LogOriginalError(client.logger, err, "StrengthClient4")
+		return "", common.LogOriginalError(logger, err)
 	}
 	return response.Description, nil
 }

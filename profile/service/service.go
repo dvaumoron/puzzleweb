@@ -17,7 +17,10 @@
  */
 package service
 
-import loginservice "github.com/dvaumoron/puzzleweb/login/service"
+import (
+	loginservice "github.com/dvaumoron/puzzleweb/login/service"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+)
 
 type UserProfile struct {
 	loginservice.User
@@ -26,14 +29,14 @@ type UserProfile struct {
 }
 
 type ProfileService interface {
-	GetProfiles([]uint64) (map[uint64]UserProfile, error)
+	GetProfiles(logger otelzap.LoggerWithCtx, userIds []uint64) (map[uint64]UserProfile, error)
 }
 
 type AdvancedProfileService interface {
 	ProfileService
-	GetPicture(userId uint64) []byte
-	UpdateProfile(userId uint64, desc string, info map[string]string) error
-	UpdatePicture(userId uint64, data []byte) error
-	Delete(userId uint64) error
-	ViewRight(userId uint64) error
+	GetPicture(logger otelzap.LoggerWithCtx, userId uint64) []byte
+	UpdateProfile(logger otelzap.LoggerWithCtx, userId uint64, desc string, info map[string]string) error
+	UpdatePicture(logger otelzap.LoggerWithCtx, userId uint64, data []byte) error
+	Delete(logger otelzap.LoggerWithCtx, userId uint64) error
+	ViewRight(logger otelzap.LoggerWithCtx, userId uint64) error
 }

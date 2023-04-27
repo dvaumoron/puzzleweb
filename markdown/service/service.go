@@ -17,8 +17,12 @@
  */
 package service
 
-import "html/template"
+import (
+	"html/template"
+
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+)
 
 type MarkdownService interface {
-	Apply(text string) (template.HTML, error)
+	Apply(logger otelzap.LoggerWithCtx, text string) (template.HTML, error)
 }

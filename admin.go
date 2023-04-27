@@ -118,7 +118,6 @@ func (w adminWidget) LoadInto(router gin.IRouter) {
 }
 
 func newAdminPage(adminConfig config.AdminConfig) Page {
-	logger := adminConfig.Logger
 	adminService := adminConfig.Service
 	userService := adminConfig.UserService
 	profileService := adminConfig.ProfileService
@@ -134,14 +133,14 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 
 	p := MakeHiddenPage("admin")
 	p.Widget = adminWidget{
-		displayHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		displayHandler: CreateTemplate("adminWidget/displayHandler", func(data gin.H, c *gin.Context) (string, string) {
 			viewAdmin, _ := data[viewAdminName].(bool)
 			if !viewAdmin {
 				return "", common.DefaultErrorRedirect(common.ErrNotAuthorized.Error())
 			}
 			return indexTmpl, ""
 		}),
-		listUserHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		listUserHandler: CreateTemplate("adminWidget/listUserHandler", func(data gin.H, c *gin.Context) (string, string) {
 			viewAdmin, _ := data[viewAdminName].(bool)
 			if !viewAdmin {
 				return "", common.DefaultErrorRedirect(common.ErrNotAuthorized.Error())
@@ -149,7 +148,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 
 			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
 
-			total, users, err := userService.ListUsers(start, end, filter)
+			total, users, err := userService.ListUsers(GetLogger(c), start, end, filter)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -159,24 +158,25 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			InitNoELementMsg(data, len(users), c)
 			return listUserTmpl, ""
 		}),
-		viewUserHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		viewUserHandler: CreateTemplate("adminWidget/viewUserHandler", func(data gin.H, c *gin.Context) (string, string) {
+			logger := GetLogger(c)
 			adminId, _ := data[common.IdName].(uint64)
 			userId := GetRequestedUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
-			roles, err := adminService.GetUserRoles(adminId, userId)
+			roles, err := adminService.GetUserRoles(logger, adminId, userId)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			users, err := userService.GetUsers([]uint64{userId})
+			users, err := userService.GetUsers(logger, []uint64{userId})
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			updateRight := adminService.AuthQuery(adminId, service.AdminGroupId, service.ActionUpdate) == nil
+			updateRight := adminService.AuthQuery(logger, adminId, service.AdminGroupId, service.ActionUpdate) == nil
 
 			user := users[userId]
 			data[common.ViewedUserName] = user
@@ -184,24 +184,25 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			data[groupsName] = DisplayGroups(roles, GetMessages(c))
 			return viewUserTmpl, ""
 		}),
-		editUserHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		editUserHandler: CreateTemplate("adminWidget/editUserHandler", func(data gin.H, c *gin.Context) (string, string) {
+			logger := GetLogger(c)
 			adminId, _ := data[common.IdName].(uint64)
 			userId := GetRequestedUserId(logger, c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
 			}
 
-			allRoles, err := adminService.GetAllRoles(adminId)
+			allRoles, err := adminService.GetAllRoles(logger, adminId)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			userRoles, err := adminService.GetUserRoles(adminId, userId)
+			userRoles, err := adminService.GetUserRoles(logger, adminId, userId)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			userIdToLogin, err := userService.GetUsers([]uint64{userId})
+			userIdToLogin, err := userService.GetUsers(logger, []uint64{userId})
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
@@ -211,6 +212,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			return editUserTmpl, ""
 		}),
 		saveUserHandler: common.CreateRedirect(func(c *gin.Context) string {
+			logger := GetLogger(c)
 			userId := GetRequestedUserId(logger, c)
 			err := common.ErrTechnical
 			if userId != 0 {
@@ -222,7 +224,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 						roles = append(roles, service.Role{Name: splitted[0], GroupName: splitted[1]})
 					}
 				}
-				err = adminService.UpdateUser(GetSessionUserId(c), userId, roles)
+				err = adminService.UpdateUser(logger, GetSessionUserId(logger, c), userId, roles)
 			}
 
 			targetBuilder := userListUrlBuilder()
@@ -232,16 +234,17 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			return targetBuilder.String()
 		}),
 		deleteUserHandler: common.CreateRedirect(func(c *gin.Context) string {
+			logger := GetLogger(c)
 			userId := GetRequestedUserId(logger, c)
 			err := common.ErrTechnical
 			if userId != 0 {
 				// an empty slice delete the user right
 				// only the first service call do a right check
-				err = adminService.UpdateUser(GetSessionUserId(c), userId, []service.Role{})
+				err = adminService.UpdateUser(logger, GetSessionUserId(logger, c), userId, []service.Role{})
 				if err == nil {
-					err = profileService.Delete(userId)
+					err = profileService.Delete(logger, userId)
 					if err == nil {
-						err = userService.Delete(userId)
+						err = userService.Delete(logger, userId)
 					}
 				}
 			}
@@ -252,18 +255,19 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			}
 			return targetBuilder.String()
 		}),
-		listRoleHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		listRoleHandler: CreateTemplate("adminWidget/listRoleHandler", func(data gin.H, c *gin.Context) (string, string) {
+			logger := GetLogger(c)
 			adminId, _ := data[common.IdName].(uint64)
-			allRoles, err := adminService.GetAllRoles(adminId)
+			allRoles, err := adminService.GetAllRoles(logger, adminId)
 			if err != nil {
 				return "", common.DefaultErrorRedirect(err.Error())
 			}
 
-			allGroups := adminService.GetAllGroups()
+			allGroups := adminService.GetAllGroups(logger)
 			data[groupsName] = displayAllGroups(allGroups, allRoles, GetMessages(c))
 			return listRoleTmpl, ""
 		}),
-		editRoleHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		editRoleHandler: CreateTemplate("adminWidget/editRoleHandler", func(data gin.H, c *gin.Context) (string, string) {
 			roleName := c.Param(roleNameName)
 			group := c.Param(groupName)
 
@@ -273,7 +277,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 
 			if roleName != "new" {
 				adminId, _ := data[common.IdName].(uint64)
-				actions, err := adminService.GetActions(adminId, roleName, group)
+				actions, err := adminService.GetActions(GetLogger(c), adminId, roleName, group)
 				if err != nil {
 					return "", common.DefaultErrorRedirect(err.Error())
 				}
@@ -293,7 +297,8 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			if roleName != "new" {
 				group := c.PostForm(groupName)
 				actions := c.PostFormArray("actions")
-				err = adminService.UpdateRole(GetSessionUserId(c), service.Role{
+				logger := GetLogger(c)
+				err = adminService.UpdateRole(logger, GetSessionUserId(logger, c), service.Role{
 					Name: roleName, GroupName: group, Actions: actions,
 				})
 			}

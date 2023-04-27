@@ -34,7 +34,6 @@ import (
 
 type blogClient struct {
 	grpcclient.Client
-	logger         *otelzap.Logger
 	blogId         uint64
 	groupId        uint64
 	dateFormat     string
@@ -42,9 +41,9 @@ type blogClient struct {
 	profileService profileservice.ProfileService
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger, blogId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.BlogService {
+func New(serviceAddr string, dialOptions []grpc.DialOption, blogId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.BlogService {
 	return blogClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, blogId: blogId, groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, dialOptions...), blogId: blogId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
 	}
 }
@@ -63,26 +62,23 @@ func (s sortableContents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (client blogClient) CreatePost(userId uint64, title string, content string) (uint64, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate)
+func (client blogClient) CreatePost(logger otelzap.LoggerWithCtx, userId uint64, title string, content string) (uint64, error) {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionCreate)
 	if err != nil {
 		return 0, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, common.LogOriginalError(client.logger, err, "BlogClient1")
+		return 0, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewBlogClient(conn).CreatePost(ctx, &pb.CreateRequest{
+	response, err := pb.NewBlogClient(conn).CreatePost(logger.Context(), &pb.CreateRequest{
 		BlogId: client.blogId, UserId: userId, Title: title, Text: content,
 	})
 	if err != nil {
-		return 0, common.LogOriginalError(client.logger, err, "BlogClient2")
+		return 0, common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return 0, common.ErrUpdate
@@ -90,56 +86,50 @@ func (client blogClient) CreatePost(userId uint64, title string, content string)
 	return response.Id, nil
 }
 
-func (client blogClient) GetPost(userId uint64, postId uint64) (service.BlogPost, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
+func (client blogClient) GetPost(logger otelzap.LoggerWithCtx, userId uint64, postId uint64) (service.BlogPost, error) {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return service.BlogPost{}, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return service.BlogPost{}, common.LogOriginalError(client.logger, err, "BlogClient3")
+		return service.BlogPost{}, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewBlogClient(conn).GetPost(ctx, &pb.IdRequest{
+	response, err := pb.NewBlogClient(conn).GetPost(logger.Context(), &pb.IdRequest{
 		BlogId: client.blogId, PostId: postId,
 	})
 	if err != nil {
-		return service.BlogPost{}, common.LogOriginalError(client.logger, err, "BlogClient4")
+		return service.BlogPost{}, common.LogOriginalError(logger, err)
 	}
 
 	creatorId := response.UserId
-	users, err := client.profileService.GetProfiles([]uint64{creatorId})
+	users, err := client.profileService.GetProfiles(logger, []uint64{creatorId})
 	if err != nil {
 		return service.BlogPost{}, err
 	}
 	return convertPost(response, users[creatorId], client.dateFormat), nil
 }
 
-func (client blogClient) GetPosts(userId uint64, start uint64, end uint64, filter string) (uint64, []service.BlogPost, error) {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
+func (client blogClient) GetPosts(logger otelzap.LoggerWithCtx, userId uint64, start uint64, end uint64, filter string) (uint64, []service.BlogPost, error) {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionAccess)
 	if err != nil {
 		return 0, nil, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err, "BlogClient5")
+		return 0, nil, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewBlogClient(conn).GetPosts(ctx, &pb.SearchRequest{
+	response, err := pb.NewBlogClient(conn).GetPosts(logger.Context(), &pb.SearchRequest{
 		BlogId: client.blogId, Start: start, End: end, Filter: filter,
 	})
 	if err != nil {
-		return 0, nil, common.LogOriginalError(client.logger, err, "BlogClient6")
+		return 0, nil, common.LogOriginalError(logger, err)
 	}
 
 	total := response.Total
@@ -148,33 +138,30 @@ func (client blogClient) GetPosts(userId uint64, start uint64, end uint64, filte
 		return total, nil, nil
 	}
 
-	posts, err := client.sortConvertPosts(list)
+	posts, err := client.sortConvertPosts(logger, list)
 	if err != nil {
 		return 0, nil, err
 	}
 	return total, posts, nil
 }
 
-func (client blogClient) DeletePost(userId uint64, postId uint64) error {
-	err := client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete)
+func (client blogClient) DeletePost(logger otelzap.LoggerWithCtx, userId uint64, postId uint64) error {
+	err := client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionDelete)
 	if err != nil {
 		return err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "BlogClient7")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewBlogClient(conn).DeletePost(ctx, &pb.IdRequest{
+	response, err := pb.NewBlogClient(conn).DeletePost(logger.Context(), &pb.IdRequest{
 		BlogId: client.blogId, PostId: postId,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "BlogClient8")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -182,15 +169,15 @@ func (client blogClient) DeletePost(userId uint64, postId uint64) error {
 	return nil
 }
 
-func (client blogClient) CreateRight(userId uint64) bool {
-	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionCreate) == nil
+func (client blogClient) CreateRight(logger otelzap.LoggerWithCtx, userId uint64) bool {
+	return client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionCreate) == nil
 }
 
-func (client blogClient) DeleteRight(userId uint64) bool {
-	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionDelete) == nil
+func (client blogClient) DeleteRight(logger otelzap.LoggerWithCtx, userId uint64) bool {
+	return client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionDelete) == nil
 }
 
-func (client blogClient) sortConvertPosts(list []*pb.Content) ([]service.BlogPost, error) {
+func (client blogClient) sortConvertPosts(logger otelzap.LoggerWithCtx, list []*pb.Content) ([]service.BlogPost, error) {
 	sort.Sort(sortableContents(list))
 
 	size := len(list)
@@ -200,7 +187,7 @@ func (client blogClient) sortConvertPosts(list []*pb.Content) ([]service.BlogPos
 		userIds = append(userIds, content.UserId)
 	}
 
-	users, err := client.profileService.GetProfiles(userIds)
+	users, err := client.profileService.GetProfiles(logger, userIds)
 	if err != nil {
 		return nil, err
 	}

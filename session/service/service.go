@@ -17,8 +17,10 @@
  */
 package service
 
+import "github.com/uptrace/opentelemetry-go-extra/otelzap"
+
 type SessionService interface {
-	Generate() (uint64, error)
-	Get(id uint64) (map[string]string, error)
-	Update(id uint64, info map[string]string) error
+	Generate(logger otelzap.LoggerWithCtx) (uint64, error)
+	Get(logger otelzap.LoggerWithCtx, id uint64) (map[string]string, error)
+	Update(logger otelzap.LoggerWithCtx, id uint64, info map[string]string) error
 }

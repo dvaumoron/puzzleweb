@@ -18,8 +18,6 @@
 package client
 
 import (
-	"time"
-
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzleprofileservice"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
@@ -32,35 +30,31 @@ import (
 
 type profileClient struct {
 	grpcclient.Client
-	logger         *otelzap.Logger
 	groupId        uint64
 	userService    loginservice.UserService
 	authService    adminservice.AuthService
 	defaultPicture []byte
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger, groupId uint64, userService loginservice.UserService, authService adminservice.AuthService, defaultPicture []byte) service.AdvancedProfileService {
+func New(serviceAddr string, dialOptions []grpc.DialOption, groupId uint64, userService loginservice.UserService, authService adminservice.AuthService, defaultPicture []byte) service.AdvancedProfileService {
 	return profileClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, dialOptions...), groupId: groupId,
 		userService: userService, authService: authService, defaultPicture: defaultPicture,
 	}
 }
 
-func (client profileClient) UpdateProfile(userId uint64, desc string, info map[string]string) error {
+func (client profileClient) UpdateProfile(logger otelzap.LoggerWithCtx, userId uint64, desc string, info map[string]string) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ProfileClient1")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewProfileClient(conn).UpdateProfile(ctx, &pb.UserProfile{
+	response, err := pb.NewProfileClient(conn).UpdateProfile(logger.Context(), &pb.UserProfile{
 		UserId: userId, Desc: desc, Info: info,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ProfileClient2")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -68,19 +62,16 @@ func (client profileClient) UpdateProfile(userId uint64, desc string, info map[s
 	return nil
 }
 
-func (client profileClient) UpdatePicture(userId uint64, data []byte) error {
+func (client profileClient) UpdatePicture(logger otelzap.LoggerWithCtx, userId uint64, data []byte) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ProfileClient3")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewProfileClient(conn).UpdatePicture(ctx, &pb.Picture{UserId: userId, Data: data})
+	response, err := pb.NewProfileClient(conn).UpdatePicture(logger.Context(), &pb.Picture{UserId: userId, Data: data})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ProfileClient4")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -88,46 +79,40 @@ func (client profileClient) UpdatePicture(userId uint64, data []byte) error {
 	return nil
 }
 
-func (client profileClient) GetPicture(userId uint64) []byte {
+func (client profileClient) GetPicture(logger otelzap.LoggerWithCtx, userId uint64) []byte {
 	conn, err := client.Dial()
 	if err != nil {
-		common.LogOriginalError(client.logger, err, "ProfileClient5")
+		common.LogOriginalError(logger, err)
 		return client.defaultPicture
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewProfileClient(conn).GetPicture(ctx, &pb.UserId{Id: userId})
+	response, err := pb.NewProfileClient(conn).GetPicture(logger.Context(), &pb.UserId{Id: userId})
 	if err != nil {
-		common.LogOriginalError(client.logger, err, "ProfileClient6")
+		common.LogOriginalError(logger, err)
 		return client.defaultPicture
 	}
 	return response.Data
 }
 
-func (client profileClient) GetProfiles(userIds []uint64) (map[uint64]service.UserProfile, error) {
+func (client profileClient) GetProfiles(logger otelzap.LoggerWithCtx, userIds []uint64) (map[uint64]service.UserProfile, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "ProfileClient7")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
 	// duplicate removal
 	userIds = common.MakeSet(userIds).Slice()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewProfileClient(conn).ListProfiles(ctx, &pb.UserIds{
+	response, err := pb.NewProfileClient(conn).ListProfiles(logger.Context(), &pb.UserIds{
 		Ids: userIds,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "ProfileClient8")
+		return nil, common.LogOriginalError(logger, err)
 	}
 
-	users, err := client.userService.GetUsers(userIds)
+	users, err := client.userService.GetUsers(logger, userIds)
 	if err != nil {
 		return nil, err
 	}
@@ -152,19 +137,16 @@ func (client profileClient) GetProfiles(userIds []uint64) (map[uint64]service.Us
 }
 
 // no right check
-func (client profileClient) Delete(userId uint64) error {
+func (client profileClient) Delete(logger otelzap.LoggerWithCtx, userId uint64) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ProfileClient9")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewProfileClient(conn).Delete(ctx, &pb.UserId{Id: userId})
+	response, err := pb.NewProfileClient(conn).Delete(logger.Context(), &pb.UserId{Id: userId})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "ProfileClient10")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -172,6 +154,6 @@ func (client profileClient) Delete(userId uint64) error {
 	return nil
 }
 
-func (client profileClient) ViewRight(userId uint64) error {
-	return client.authService.AuthQuery(userId, client.groupId, adminservice.ActionAccess)
+func (client profileClient) ViewRight(logger otelzap.LoggerWithCtx, userId uint64) error {
+	return client.authService.AuthQuery(logger, userId, client.groupId, adminservice.ActionAccess)
 }

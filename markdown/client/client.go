@@ -19,7 +19,6 @@ package client
 
 import (
 	"html/template"
-	"time"
 
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzlemarkdownservice"
@@ -31,26 +30,22 @@ import (
 
 type markdownClient struct {
 	grpcclient.Client
-	logger *otelzap.Logger
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger) service.MarkdownService {
-	return markdownClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger}
+func New(serviceAddr string, dialOptions []grpc.DialOption) service.MarkdownService {
+	return markdownClient{Client: grpcclient.Make(serviceAddr, dialOptions...)}
 }
 
-func (client markdownClient) Apply(text string) (template.HTML, error) {
+func (client markdownClient) Apply(logger otelzap.LoggerWithCtx, text string) (template.HTML, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return "", common.LogOriginalError(client.logger, err, "MarkdownClient1")
+		return "", common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	markdownHtml, err := pb.NewMarkdownClient(conn).Apply(ctx, &pb.MarkdownText{Text: text})
+	markdownHtml, err := pb.NewMarkdownClient(conn).Apply(logger.Context(), &pb.MarkdownText{Text: text})
 	if err != nil {
-		return "", common.LogOriginalError(client.logger, err, "MarkdownClient2")
+		return "", common.LogOriginalError(logger, err)
 	}
 	return template.HTML(markdownHtml.Html), nil
 }

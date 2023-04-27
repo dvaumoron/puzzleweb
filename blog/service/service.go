@@ -21,6 +21,7 @@ import (
 	"html/template"
 
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
 type BlogPost struct {
@@ -32,10 +33,10 @@ type BlogPost struct {
 }
 
 type BlogService interface {
-	CreatePost(userId uint64, title string, content string) (uint64, error)
-	GetPost(userId uint64, postId uint64) (BlogPost, error)
-	GetPosts(userId uint64, start uint64, end uint64, filter string) (uint64, []BlogPost, error)
-	DeletePost(userId uint64, postId uint64) error
-	CreateRight(userId uint64) bool
-	DeleteRight(userId uint64) bool
+	CreatePost(logger otelzap.LoggerWithCtx, userId uint64, title string, content string) (uint64, error)
+	GetPost(logger otelzap.LoggerWithCtx, userId uint64, postId uint64) (BlogPost, error)
+	GetPosts(logger otelzap.LoggerWithCtx, userId uint64, start uint64, end uint64, filter string) (uint64, []BlogPost, error)
+	DeletePost(logger otelzap.LoggerWithCtx, userId uint64, postId uint64) error
+	CreateRight(logger otelzap.LoggerWithCtx, userId uint64) bool
+	DeleteRight(logger otelzap.LoggerWithCtx, userId uint64) bool
 }

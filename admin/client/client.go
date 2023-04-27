@@ -18,9 +18,6 @@
 package client
 
 import (
-	"context"
-	"time"
-
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzlerightservice"
 	"github.com/dvaumoron/puzzleweb/admin/service"
@@ -39,7 +36,7 @@ type RightClient struct {
 	nameToGroupId map[string]uint64
 }
 
-func Make(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger) RightClient {
+func Make(serviceAddr string, dialOptions []grpc.DialOption) RightClient {
 	groupIdToName := map[uint64]string{
 		service.PublicGroupId: service.PublicName, service.AdminGroupId: service.AdminName,
 	}
@@ -47,8 +44,7 @@ func Make(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration
 		service.PublicName: service.PublicGroupId, service.AdminName: service.AdminGroupId,
 	}
 	return RightClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger,
-		groupIdToName: groupIdToName, nameToGroupId: nameToGroupId,
+		Client: grpcclient.Make(serviceAddr, dialOptions...), groupIdToName: groupIdToName, nameToGroupId: nameToGroupId,
 	}
 }
 
@@ -70,7 +66,7 @@ func (client RightClient) GetGroupName(groupId uint64) string {
 	return client.groupIdToName[groupId]
 }
 
-func (client RightClient) GetAllGroups() []service.Group {
+func (client RightClient) GetAllGroups(logger otelzap.LoggerWithCtx) []service.Group {
 	groups := make([]service.Group, 0, len(client.groupIdToName))
 	for id, name := range client.groupIdToName {
 		groups = append(groups, service.Group{Id: id, Name: name})
@@ -78,21 +74,18 @@ func (client RightClient) GetAllGroups() []service.Group {
 	return groups
 }
 
-func (client RightClient) AuthQuery(userId uint64, groupId uint64, action string) error {
+func (client RightClient) AuthQuery(logger otelzap.LoggerWithCtx, userId uint64, groupId uint64, action string) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "RightClient1")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
-	response, err := pb.NewRightClient(conn).AuthQuery(ctx, &pb.RightRequest{
+	response, err := pb.NewRightClient(conn).AuthQuery(logger.Context(), &pb.RightRequest{
 		UserId: userId, ObjectId: groupId, Action: convertActionForRequest(action),
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "RightClient2")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -100,30 +93,28 @@ func (client RightClient) AuthQuery(userId uint64, groupId uint64, action string
 	return nil
 }
 
-func (client RightClient) GetAllRoles(adminId uint64) ([]service.Role, error) {
+func (client RightClient) GetAllRoles(logger otelzap.LoggerWithCtx, adminId uint64) ([]service.Role, error) {
 	groupIds := make([]uint64, 0, len(client.groupIdToName))
 	for groupId := range client.groupIdToName {
 		groupIds = append(groupIds, groupId)
 	}
-	return client.getGroupRoles(adminId, groupIds)
+	return client.getGroupRoles(logger, adminId, groupIds)
 }
 
-func (client RightClient) GetActions(adminId uint64, roleName string, groupName string) ([]string, error) {
+func (client RightClient) GetActions(logger otelzap.LoggerWithCtx, adminId uint64, roleName string, groupName string) ([]string, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "RightClient3")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
+	ctx := logger.Context()
 	rightClient := pb.NewRightClient(conn)
 	response, err := rightClient.AuthQuery(ctx, &pb.RightRequest{
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "RightClient4")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
@@ -133,27 +124,25 @@ func (client RightClient) GetActions(adminId uint64, roleName string, groupName 
 		Name: roleName, ObjectId: client.nameToGroupId[groupName],
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "RightClient5")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	return convertActionsFromRequest(actions.List), nil
 }
 
-func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []service.Role) error {
+func (client RightClient) UpdateUser(logger otelzap.LoggerWithCtx, adminId uint64, userId uint64, roles []service.Role) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "RightClient6")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
+	ctx := logger.Context()
 	rightClient := pb.NewRightClient(conn)
 	response, err := rightClient.AuthQuery(ctx, &pb.RightRequest{
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_UPDATE,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "RightClient7")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -168,7 +157,7 @@ func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []serv
 
 	response, err = rightClient.UpdateUser(ctx, &pb.UserRight{UserId: userId, List: converted})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "RightClient8")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -176,22 +165,20 @@ func (client RightClient) UpdateUser(adminId uint64, userId uint64, roles []serv
 	return nil
 }
 
-func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
+func (client RightClient) UpdateRole(logger otelzap.LoggerWithCtx, adminId uint64, role service.Role) error {
 	conn, err := client.Dial()
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "RightClient9")
+		return common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
+	ctx := logger.Context()
 	rightClient := pb.NewRightClient(conn)
 	response, err := rightClient.AuthQuery(ctx, &pb.RightRequest{
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_UPDATE,
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "RightClient10")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrNotAuthorized
@@ -202,7 +189,7 @@ func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 		List: convertActionsForRequest(role.Actions),
 	})
 	if err != nil {
-		return common.LogOriginalError(client.logger, err, "RightClient11")
+		return common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return common.ErrUpdate
@@ -210,49 +197,44 @@ func (client RightClient) UpdateRole(adminId uint64, role service.Role) error {
 	return nil
 }
 
-func (client RightClient) GetUserRoles(adminId uint64, userId uint64) ([]service.Role, error) {
+func (client RightClient) GetUserRoles(logger otelzap.LoggerWithCtx, adminId uint64, userId uint64) ([]service.Role, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "RightClient12")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
 	rightClient := pb.NewRightClient(conn)
 	if adminId == userId {
-		return client.getUserRoles(rightClient, ctx, userId)
+		return client.getUserRoles(rightClient, logger, userId)
 	}
 
-	response, err := rightClient.AuthQuery(ctx, &pb.RightRequest{
+	response, err := rightClient.AuthQuery(logger.Context(), &pb.RightRequest{
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "RightClient13")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
 	}
-	return client.getUserRoles(rightClient, ctx, userId)
+	return client.getUserRoles(rightClient, logger, userId)
 }
 
-func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]service.Role, error) {
+func (client RightClient) getGroupRoles(logger otelzap.LoggerWithCtx, adminId uint64, groupIds []uint64) ([]service.Role, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "RightClient14")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	defer conn.Close()
 
-	ctx, cancel := client.InitContext()
-	defer cancel()
-
+	ctx := logger.Context()
 	rightClient := pb.NewRightClient(conn)
 	response, err := rightClient.AuthQuery(ctx, &pb.RightRequest{
 		UserId: adminId, ObjectId: service.AdminGroupId, Action: pb.RightAction_ACCESS,
 	})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "RightClient15")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	if !response.Success {
 		return nil, common.ErrNotAuthorized
@@ -260,15 +242,15 @@ func (client RightClient) getGroupRoles(adminId uint64, groupIds []uint64) ([]se
 
 	roles, err := rightClient.ListRoles(ctx, &pb.ObjectIds{Ids: groupIds})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "RightClient16")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	return convertRolesFromRequest(roles.List, client.groupIdToName), nil
 }
 
-func (client RightClient) getUserRoles(rightClient pb.RightClient, ctx context.Context, userId uint64) ([]service.Role, error) {
-	roles, err := rightClient.ListUserRoles(ctx, &pb.UserId{Id: userId})
+func (client RightClient) getUserRoles(rightClient pb.RightClient, logger otelzap.LoggerWithCtx, userId uint64) ([]service.Role, error) {
+	roles, err := rightClient.ListUserRoles(logger.Context(), &pb.UserId{Id: userId})
 	if err != nil {
-		return nil, common.LogOriginalError(client.logger, err, "RightClient17")
+		return nil, common.LogOriginalError(logger, err)
 	}
 	return convertRolesFromRequest(roles.List, client.groupIdToName), nil
 }

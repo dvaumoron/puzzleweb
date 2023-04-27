@@ -36,8 +36,8 @@ var ErrNotAuthorized = errors.New("ErrorNotAuthorized")
 var ErrTechnical = errors.New("ErrorTechnicalProblem")
 var ErrUpdate = errors.New("ErrorUpdate")
 
-func LogOriginalError(logger *otelzap.Logger, err error, place string) error {
-	logger.Warn("Original error", zap.Error(err), zap.String(ReportingPlaceName, place))
+func LogOriginalError(logger otelzap.LoggerWithCtx, err error) error {
+	logger.WithOptions(zap.AddCallerSkip(1)).Warn("Original error", zap.Error(err))
 	return ErrTechnical
 }
 

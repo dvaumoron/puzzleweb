@@ -17,7 +17,10 @@
  */
 package service
 
-import profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+import (
+	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+)
 
 type ForumContent struct {
 	Id      uint64
@@ -27,25 +30,25 @@ type ForumContent struct {
 }
 
 type ForumService interface {
-	CreateThread(userId uint64, title string, message string) (uint64, error)
-	CreateMessage(userId uint64, threadId uint64, message string) error
-	GetThread(userId uint64, threadId uint64, start uint64, end uint64, filter string) (uint64, ForumContent, []ForumContent, error)
-	GetThreads(userId uint64, start uint64, end uint64, filter string) (uint64, []ForumContent, error)
-	DeleteThread(userId uint64, threadId uint64) error
-	DeleteMessage(userId uint64, threadId uint64, messageId uint64) error
-	CreateThreadRight(userId uint64) bool
-	CreateMessageRight(userId uint64) bool
-	DeleteRight(userId uint64) bool
+	CreateThread(logger otelzap.LoggerWithCtx, userId uint64, title string, message string) (uint64, error)
+	CreateMessage(logger otelzap.LoggerWithCtx, userId uint64, threadId uint64, message string) error
+	GetThread(logger otelzap.LoggerWithCtx, userId uint64, threadId uint64, start uint64, end uint64, filter string) (uint64, ForumContent, []ForumContent, error)
+	GetThreads(logger otelzap.LoggerWithCtx, userId uint64, start uint64, end uint64, filter string) (uint64, []ForumContent, error)
+	DeleteThread(logger otelzap.LoggerWithCtx, userId uint64, threadId uint64) error
+	DeleteMessage(logger otelzap.LoggerWithCtx, userId uint64, threadId uint64, messageId uint64) error
+	CreateThreadRight(logger otelzap.LoggerWithCtx, userId uint64) bool
+	CreateMessageRight(logger otelzap.LoggerWithCtx, userId uint64) bool
+	DeleteRight(logger otelzap.LoggerWithCtx, userId uint64) bool
 }
 
 type CommentService interface {
-	CreateCommentThread(userId uint64, elemTitle string) error
-	CreateComment(userId uint64, elemTitle string, message string) error
-	GetCommentThread(userId uint64, elemTitle string, start uint64, end uint64) (uint64, []ForumContent, error)
-	DeleteCommentThread(userId uint64, elemTitle string) error
-	DeleteComment(userId uint64, elemTitle string, commentId uint64) error
-	CreateMessageRight(userId uint64) bool
-	DeleteRight(userId uint64) bool
+	CreateCommentThread(logger otelzap.LoggerWithCtx, userId uint64, elemTitle string) error
+	CreateComment(logger otelzap.LoggerWithCtx, userId uint64, elemTitle string, message string) error
+	GetCommentThread(logger otelzap.LoggerWithCtx, userId uint64, elemTitle string, start uint64, end uint64) (uint64, []ForumContent, error)
+	DeleteCommentThread(logger otelzap.LoggerWithCtx, userId uint64, elemTitle string) error
+	DeleteComment(logger otelzap.LoggerWithCtx, userId uint64, elemTitle string, commentId uint64) error
+	CreateMessageRight(logger otelzap.LoggerWithCtx, userId uint64) bool
+	DeleteRight(logger otelzap.LoggerWithCtx, userId uint64) bool
 }
 
 type FullForumService interface {

@@ -45,7 +45,7 @@ type profileWidget struct {
 	pictureHandler        gin.HandlerFunc
 }
 
-var defaultHandler = common.CreateRedirect(func(c *gin.Context) string {
+var defaultHandler = common.CreateRedirect("profileWidget/defaultHandler", func(c *gin.Context) string {
 	userId := GetSessionUserId(GetLogger(c), c)
 	if userId == 0 {
 		return common.DefaultErrorRedirect(unknownUserKey)
@@ -123,7 +123,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			data[common.ViewedUserName] = userProfile
 			return editTmpl, ""
 		}),
-		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
+		saveHandler: common.CreateRedirect("profileWidget/saveHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			userId := GetSessionUserId(logger, c)
 			if userId == 0 {
@@ -168,7 +168,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			}
 			return targetBuilder.String()
 		}),
-		changeLoginHandler: common.CreateRedirect(func(c *gin.Context) string {
+		changeLoginHandler: common.CreateRedirect("profileWidget/changeLoginHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			session := GetSession(logger, c)
 			userId := extractUserIdFromSession(logger, session)
@@ -193,7 +193,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			}
 			return targetBuilder.String()
 		}),
-		changePasswordHandler: common.CreateRedirect(func(c *gin.Context) string {
+		changePasswordHandler: common.CreateRedirect("profileWidget/changePasswordHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			session := GetSession(logger, c)
 			userId := extractUserIdFromSession(logger, session)

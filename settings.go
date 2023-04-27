@@ -111,7 +111,7 @@ func newSettingsPage(settingsConfig config.ServiceConfig[*SettingsManager]) Page
 			data["Settings"] = settingsManager.Get(logger, userId, c)
 			return editTmpl, ""
 		}),
-		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
+		saveHandler: common.CreateRedirect("settingsWidget/saveHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			userId := GetSessionUserId(logger, c)
 			if userId == 0 {

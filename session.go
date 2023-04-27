@@ -132,7 +132,7 @@ func (s *Session) Delete(key string) {
 	}
 }
 
-func (m sessionManager) Manage(c *gin.Context) {
+func (m sessionManager) manage(c *gin.Context) {
 	logger := GetLogger(c)
 	sessionId, err := m.getSessionId(logger, c)
 	if err != nil {

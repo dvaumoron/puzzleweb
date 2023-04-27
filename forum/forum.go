@@ -110,7 +110,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 			return createTmpl, ""
 		}),
-		saveThreadHandler: common.CreateRedirect(func(c *gin.Context) string {
+		saveThreadHandler: common.CreateRedirect("forumWidget/saveThreadHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			title := c.PostForm("title")
 			message := c.PostForm("message")
@@ -128,7 +128,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			}
 			return threadUrlBuilder(common.GetBaseUrl(1, c), threadId).String()
 		}),
-		deleteThreadHandler: common.CreateRedirect(func(c *gin.Context) string {
+		deleteThreadHandler: common.CreateRedirect("forumWidget/deleteThreadHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err == nil {
@@ -170,7 +170,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			puzzleweb.InitNoELementMsg(data, len(messages), c)
 			return viewTmpl, ""
 		}),
-		saveMessageHandler: common.CreateRedirect(func(c *gin.Context) string {
+		saveMessageHandler: common.CreateRedirect("forumWidget/saveMessageHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err != nil {
@@ -190,7 +190,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			}
 			return targetBuilder.String()
 		}),
-		deleteMessageHandler: common.CreateRedirect(func(c *gin.Context) string {
+		deleteMessageHandler: common.CreateRedirect("forumWidget/deleteMessageHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err != nil {

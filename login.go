@@ -74,7 +74,7 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 
 			return tmpl, ""
 		}),
-		submitHandler: common.CreateRedirect(func(c *gin.Context) string {
+		submitHandler: common.CreateRedirect("loginWidget/submitHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			login := c.PostForm(loginName)
 			password := c.PostForm(passwordName)
@@ -123,7 +123,7 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 
 			return c.PostForm(common.RedirectName)
 		}),
-		logoutHandler: common.CreateRedirect(func(c *gin.Context) string {
+		logoutHandler: common.CreateRedirect("loginWidget/logoutHandler", func(c *gin.Context) string {
 			s := GetSession(GetLogger(c), c)
 			s.Delete(loginName)
 			s.Delete(userIdName)

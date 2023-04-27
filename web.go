@@ -18,10 +18,12 @@
 package puzzleweb
 
 import (
+	"context"
 	"io/fs"
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
@@ -43,6 +45,7 @@ type Site struct {
 	logger         *otelzap.Logger
 	localesManager locale.Manager
 	authService    adminservice.AuthService
+	timeOut        time.Duration
 	root           Page
 	adders         []common.DataAdder
 	HTMLRender     render.HTMLRender
@@ -57,7 +60,8 @@ func NewSite(configExtracter config.BaseConfigExtracter, localesManager locale.M
 	root.AddSubPage(newProfilePage(configExtracter.ExtractProfileConfig()))
 
 	return &Site{
-		logger: configExtracter.GetLogger(), localesManager: localesManager, authService: adminConfig.Service, root: root,
+		logger: configExtracter.GetLogger(), localesManager: localesManager, authService: adminConfig.Service,
+		timeOut: configExtracter.GetServiceTimeOut(), root: root,
 	}
 }
 
@@ -77,9 +81,17 @@ func (site *Site) AddDefaultData(adder common.DataAdder) {
 	site.adders = append(site.adders, adder)
 }
 
+func (site *Site) manageTimeOut(c *gin.Context) {
+	newCtx, cancel := context.WithTimeout(c.Request.Context(), site.timeOut)
+	defer cancel()
+
+	c.Request = c.Request.WithContext(newCtx)
+	c.Next()
+}
+
 func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	engine := gin.New()
-	engine.Use(otelgin.Middleware(puzzlewebotel.WebKey), gin.Recovery())
+	engine.Use(site.manageTimeOut, otelgin.Middleware(puzzlewebotel.WebKey), gin.Recovery())
 
 	if memorySize := siteConfig.MaxMultipartMemory; memorySize != 0 {
 		engine.MaxMultipartMemory = memorySize
@@ -94,7 +106,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	engine.Static("/static", siteConfig.StaticPath)
 	engine.StaticFile(config.DefaultFavicon, siteConfig.FaviconPath)
 
-	engine.Use(makeSessionManager(siteConfig.ExtractSessionConfig()).Manage, func(c *gin.Context) {
+	engine.Use(makeSessionManager(siteConfig.ExtractSessionConfig()).manage, func(c *gin.Context) {
 		c.Set(siteName, site)
 	})
 
@@ -111,7 +123,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	}
 
 	site.root.Widget.LoadInto(engine)
-	engine.NoRoute(common.CreateRedirectString(siteConfig.Page404Url))
+	engine.NoRoute(common.CreateRedirectString("noRouteHandler", siteConfig.Page404Url))
 	return engine
 }
 
@@ -137,7 +149,7 @@ func Run(ginLogger *zap.Logger, sites ...SiteAndConfig) error {
 	return g.Wait()
 }
 
-var changeLangHandler = common.CreateRedirect(func(c *gin.Context) string {
+var changeLangHandler = common.CreateRedirect("changeLangHandler", func(c *gin.Context) string {
 	getSite(c).localesManager.SetLangCookie(c.Query(locale.LangName), c)
 	return c.Query(common.RedirectName)
 })

@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"unicode"
 
+	"github.com/dvaumoron/puzzleweb/otel"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/exp/slices"
 )
@@ -69,15 +70,19 @@ func checkTarget(target string) string {
 	return target
 }
 
-func CreateRedirect(redirecter Redirecter) gin.HandlerFunc {
+func CreateRedirect(spanName string, redirecter Redirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		_, span := otel.Tracer.Start(c.Request.Context(), spanName)
+		defer span.End()
 		c.Redirect(http.StatusFound, checkTarget(redirecter(c)))
 	}
 }
 
-func CreateRedirectString(target string) gin.HandlerFunc {
+func CreateRedirectString(spanName string, target string) gin.HandlerFunc {
 	target = checkTarget(target)
 	return func(c *gin.Context) {
+		_, span := otel.Tracer.Start(c.Request.Context(), spanName)
+		defer span.End()
 		c.Redirect(http.StatusFound, target)
 	}
 }

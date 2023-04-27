@@ -60,6 +60,7 @@ type SettingsConfig = ServiceConfig[sessionservice.SessionService]
 
 type BaseConfigExtracter interface {
 	BaseConfig
+	GetServiceTimeOut() time.Duration
 	ExtractLoginConfig() LoginConfig
 	ExtractAdminConfig() AdminConfig
 	ExtractProfileConfig() ProfileConfig
@@ -284,6 +285,10 @@ func (c *GlobalConfig) GetLogger() *otelzap.Logger {
 
 func (c *GlobalConfig) GetTemplatesExt() string {
 	return c.TemplatesExt
+}
+
+func (c *GlobalConfig) GetServiceTimeOut() time.Duration {
+	return c.ServiceTimeOut
 }
 
 func (c *GlobalConfig) ExtractAuthConfig() AuthConfig {

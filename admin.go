@@ -211,7 +211,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			data[groupsName] = displayEditGroups(userRoles, allRoles, GetMessages(c))
 			return editUserTmpl, ""
 		}),
-		saveUserHandler: common.CreateRedirect(func(c *gin.Context) string {
+		saveUserHandler: common.CreateRedirect("adminWidget/saveUserHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			userId := GetRequestedUserId(logger, c)
 			err := common.ErrTechnical
@@ -233,7 +233,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			}
 			return targetBuilder.String()
 		}),
-		deleteUserHandler: common.CreateRedirect(func(c *gin.Context) string {
+		deleteUserHandler: common.CreateRedirect("adminWidget/deleteUserHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			userId := GetRequestedUserId(logger, c)
 			err := common.ErrTechnical
@@ -291,7 +291,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 
 			return editRoleTmpl, ""
 		}),
-		saveRoleHandler: common.CreateRedirect(func(c *gin.Context) string {
+		saveRoleHandler: common.CreateRedirect("adminWidget/saveRoleHandler", func(c *gin.Context) string {
 			roleName := c.PostForm(roleNameName)
 			err := errBadName
 			if roleName != "new" {

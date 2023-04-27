@@ -91,7 +91,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 
 	p := puzzleweb.MakePage(wikiName)
 	p.Widget = wikiWidget{
-		defaultHandler: common.CreateRedirect(func(c *gin.Context) string {
+		defaultHandler: common.CreateRedirect("wikiWidget/defaultHandler", func(c *gin.Context) string {
 			lang := puzzleweb.GetLocalesManager(c).GetLang(c)
 			return wikiUrlBuilder(common.GetCurrentUrl(c), lang, viewMode, defaultPage).String()
 		}),
@@ -163,7 +163,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			}
 			return editTmpl, ""
 		}),
-		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
+		saveHandler: common.CreateRedirect("wikiWidget/saveHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
@@ -215,7 +215,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			puzzleweb.InitNoELementMsg(data, len(versions), c)
 			return listTmpl, ""
 		}),
-		deleteHandler: common.CreateRedirect(func(c *gin.Context) string {
+		deleteHandler: common.CreateRedirect("wikiWidget/deleteHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)

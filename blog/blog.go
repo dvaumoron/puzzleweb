@@ -154,7 +154,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			}
 			return viewTmpl, ""
 		}),
-		saveCommentHandler: common.CreateRedirect(func(c *gin.Context) string {
+		saveCommentHandler: common.CreateRedirect("blogWidget/saveCommentHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			userId := puzzleweb.GetSessionUserId(logger, c)
 
@@ -185,7 +185,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			}
 			return targetBuilder.String()
 		}),
-		deleteCommentHandler: common.CreateRedirect(func(c *gin.Context) string {
+		deleteCommentHandler: common.CreateRedirect("blogWidget/deleteCommentHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			userId := puzzleweb.GetSessionUserId(logger, c)
 
@@ -242,7 +242,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			data["PreviewHTML"] = html
 			return previewTmpl, ""
 		}),
-		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
+		saveHandler: common.CreateRedirect("blogWidget/saveHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			title := c.PostForm("title")
 			userId := puzzleweb.GetSessionUserId(logger, c)
@@ -271,7 +271,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			}
 			return postUrlBuilder(common.GetBaseUrl(1, c), postId).String()
 		}),
-		deleteHandler: common.CreateRedirect(func(c *gin.Context) string {
+		deleteHandler: common.CreateRedirect("blogWidget/deleteHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			var targetBuilder strings.Builder
 			targetBuilder.WriteString(common.GetBaseUrl(2, c))

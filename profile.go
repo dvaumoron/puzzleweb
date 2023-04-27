@@ -28,6 +28,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -231,7 +232,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 	return p
 }
 
-func GetRequestedUserId(logger *zap.Logger, c *gin.Context) uint64 {
+func GetRequestedUserId(logger *otelzap.Logger, c *gin.Context) uint64 {
 	userId, err := strconv.ParseUint(c.Param(userIdName), 10, 64)
 	if err != nil {
 		logger.Warn("Failed to parse userId from request", zap.Error(err))

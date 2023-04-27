@@ -26,16 +26,16 @@ import (
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
 type BaseConfig interface {
-	GetLogger() *zap.Logger
+	GetLogger() *otelzap.Logger
 	GetTemplatesExt() string
 }
 
 type LocalesConfig struct {
-	Logger         *zap.Logger
+	Logger         *otelzap.Logger
 	Domain         string
 	SessionTimeOut int
 	Path           string
@@ -43,7 +43,7 @@ type LocalesConfig struct {
 }
 
 type ServiceConfig[ServiceType any] struct {
-	Logger  *zap.Logger
+	Logger  *otelzap.Logger
 	Service ServiceType
 	Ext     string
 }
@@ -52,7 +52,7 @@ func MakeServiceConfig[ServiceType any](c BaseConfig, service ServiceType) Servi
 	return ServiceConfig[ServiceType]{Logger: c.GetLogger(), Service: service, Ext: c.GetTemplatesExt()}
 }
 
-func (c *ServiceConfig[ServiceType]) GetLogger() *zap.Logger {
+func (c *ServiceConfig[ServiceType]) GetLogger() *otelzap.Logger {
 	return c.Logger
 }
 

@@ -27,7 +27,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/login/service"
 	strengthservice "github.com/dvaumoron/puzzleweb/passwordstrength/service"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"google.golang.org/grpc"
 )
 
@@ -35,13 +35,13 @@ var errWeakPassword = errors.New("WeakPassword")
 
 type loginClient struct {
 	grpcclient.Client
-	logger          *zap.Logger
+	logger          *otelzap.Logger
 	dateFormat      string
 	saltService     service.SaltService
 	strengthService strengthservice.PasswordStrengthService
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, dateFormat string, saltService service.SaltService, strengthService strengthservice.PasswordStrengthService) service.FullLoginService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger, dateFormat string, saltService service.SaltService, strengthService strengthservice.PasswordStrengthService) service.FullLoginService {
 	return loginClient{
 		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, dateFormat: dateFormat,
 		saltService: saltService, strengthService: strengthService,

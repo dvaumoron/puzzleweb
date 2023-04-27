@@ -23,9 +23,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dvaumoron/puzzlelogger"
-	"github.com/dvaumoron/puzzlelogger/grpclogger"
 	"github.com/dvaumoron/puzzlesaltclient"
+	puzzlelogger "github.com/dvaumoron/puzzletelemetry/logger"
 	adminclient "github.com/dvaumoron/puzzleweb/admin/client"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogclient "github.com/dvaumoron/puzzleweb/blog/client"
@@ -41,10 +40,10 @@ import (
 	sessionclient "github.com/dvaumoron/puzzleweb/session/client"
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/grpclog"
 )
 
 const defaultName = "default"
@@ -83,7 +82,7 @@ type GlobalConfig struct {
 	TemplatesExt  string
 	Page404Url    string
 
-	Logger           *zap.Logger
+	Logger           *otelzap.Logger
 	LangPicturePaths map[string]string
 
 	DialOptions     grpc.DialOption
@@ -105,7 +104,6 @@ type GlobalConfig struct {
 
 func LoadDefault() *GlobalConfig {
 	logger := puzzlelogger.New()
-	grpclog.SetLoggerV2(grpclogger.New(logger))
 
 	var sessionTimeOut int
 	var serviceTimeOut time.Duration
@@ -272,7 +270,7 @@ func (c *GlobalConfig) loadBlog() {
 	}
 }
 
-func (c *GlobalConfig) GetLogger() *zap.Logger {
+func (c *GlobalConfig) GetLogger() *otelzap.Logger {
 	return c.Logger
 }
 
@@ -358,7 +356,7 @@ func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...s
 	}
 }
 
-func retrieveWithDefault(logger *zap.Logger, name string, defaultValue string) string {
+func retrieveWithDefault(logger *otelzap.Logger, name string, defaultValue string) string {
 	if value := os.Getenv(name); value != "" {
 		return value
 	}
@@ -366,7 +364,7 @@ func retrieveWithDefault(logger *zap.Logger, name string, defaultValue string) s
 	return defaultValue
 }
 
-func retrieveUintWithDefault(logger *zap.Logger, name string, defaultValue uint64) uint64 {
+func retrieveUintWithDefault(logger *otelzap.Logger, name string, defaultValue uint64) uint64 {
 	valueStr := os.Getenv(name)
 	if valueStr == "" {
 		logger.Info(name+" not found, using default", zap.Uint64(defaultName, defaultValue))
@@ -384,7 +382,7 @@ func retrieveUintWithDefault(logger *zap.Logger, name string, defaultValue uint6
 	return value
 }
 
-func retrievePath(logger *zap.Logger, name string, defaultPath string) string {
+func retrievePath(logger *otelzap.Logger, name string, defaultPath string) string {
 	if path := os.Getenv(name); path != "" {
 		if last := len(path) - 1; path[last] == '/' {
 			path = path[:last]
@@ -395,7 +393,7 @@ func retrievePath(logger *zap.Logger, name string, defaultPath string) string {
 	return defaultPath
 }
 
-func requiredFromEnv(logger *zap.Logger, name string) string {
+func requiredFromEnv(logger *otelzap.Logger, name string) string {
 	value := os.Getenv(name)
 	if value == "" {
 		logger.Fatal(name + " not found in env")

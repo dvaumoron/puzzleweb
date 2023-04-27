@@ -28,13 +28,14 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/forum/service"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 type forumClient struct {
 	grpcclient.Client
-	logger         *zap.Logger
+	logger         *otelzap.Logger
 	forumId        uint64
 	groupId        uint64
 	dateFormat     string
@@ -42,7 +43,7 @@ type forumClient struct {
 	profileService profileservice.ProfileService
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, forumId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.FullForumService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger, forumId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.FullForumService {
 	return forumClient{
 		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, forumId: forumId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,
@@ -484,7 +485,7 @@ func convertContent(content *pb.Content, creator profileservice.UserProfile, dat
 	}
 }
 
-func logCommentThreadNotFound(logger *zap.Logger, objectId uint64, elemTitle string) error {
+func logCommentThreadNotFound(logger *otelzap.Logger, objectId uint64, elemTitle string) error {
 	logger.Warn(
 		"comment thread not found", zap.Uint64("objectId", objectId), zap.String("elemTitle", elemTitle),
 		zap.String(common.ReportingPlaceName, "ForumClient27"),

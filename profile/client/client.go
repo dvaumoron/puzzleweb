@@ -26,20 +26,20 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
 	"github.com/dvaumoron/puzzleweb/profile/service"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"google.golang.org/grpc"
 )
 
 type profileClient struct {
 	grpcclient.Client
-	logger         *zap.Logger
+	logger         *otelzap.Logger
 	groupId        uint64
 	userService    loginservice.UserService
 	authService    adminservice.AuthService
 	defaultPicture []byte
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, groupId uint64, userService loginservice.UserService, authService adminservice.AuthService, defaultPicture []byte) service.AdvancedProfileService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger, groupId uint64, userService loginservice.UserService, authService adminservice.AuthService, defaultPicture []byte) service.AdvancedProfileService {
 	return profileClient{
 		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, groupId: groupId,
 		userService: userService, authService: authService, defaultPicture: defaultPicture,

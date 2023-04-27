@@ -25,6 +25,7 @@ import (
 
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -179,7 +180,7 @@ func GetSessionUserId(c *gin.Context) uint64 {
 	return extractUserIdFromSession(getSite(c).logger, GetSession(c))
 }
 
-func extractUserIdFromSession(logger *zap.Logger, session *Session) uint64 {
+func extractUserIdFromSession(logger *otelzap.Logger, session *Session) uint64 {
 	userId, err := strconv.ParseUint(session.Load(userIdName), 10, 64)
 	if err != nil {
 		logger.Info("Failed to parse userId from session", zap.Error(err))

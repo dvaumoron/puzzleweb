@@ -24,16 +24,16 @@ import (
 	pb "github.com/dvaumoron/puzzlepassstrengthservice"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/passwordstrength/service"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"google.golang.org/grpc"
 )
 
 type strengthClient struct {
 	grpcclient.Client
-	logger *zap.Logger
+	logger *otelzap.Logger
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger) service.PasswordStrengthService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger) service.PasswordStrengthService {
 	return strengthClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger}
 }
 

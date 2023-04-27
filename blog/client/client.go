@@ -28,13 +28,13 @@ import (
 	"github.com/dvaumoron/puzzleweb/blog/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"google.golang.org/grpc"
 )
 
 type blogClient struct {
 	grpcclient.Client
-	logger         *zap.Logger
+	logger         *otelzap.Logger
 	blogId         uint64
 	groupId        uint64
 	dateFormat     string
@@ -42,7 +42,7 @@ type blogClient struct {
 	profileService profileservice.ProfileService
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, blogId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.BlogService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger, blogId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.BlogService {
 	return blogClient{
 		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, blogId: blogId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService,

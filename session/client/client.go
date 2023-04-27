@@ -24,16 +24,16 @@ import (
 	pb "github.com/dvaumoron/puzzlesessionservice"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/session/service"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"google.golang.org/grpc"
 )
 
 type sessionClient struct {
 	grpcclient.Client
-	logger *zap.Logger
+	logger *otelzap.Logger
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger) service.SessionService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger) service.SessionService {
 	return sessionClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger}
 }
 

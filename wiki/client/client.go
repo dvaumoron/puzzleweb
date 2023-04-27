@@ -29,13 +29,14 @@ import (
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"github.com/dvaumoron/puzzleweb/wiki/service"
 	pb "github.com/dvaumoron/puzzlewikiservice"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 type wikiClient struct {
 	grpcclient.Client
-	logger         *zap.Logger
+	logger         *otelzap.Logger
 	cache          *wikiCache
 	wikiId         uint64
 	groupId        uint64
@@ -44,7 +45,7 @@ type wikiClient struct {
 	profileService profileservice.ProfileService
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger, wikiId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.WikiService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger, wikiId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService) service.WikiService {
 	return wikiClient{
 		Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger, cache: newCache(), wikiId: wikiId,
 		groupId: groupId, dateFormat: dateFormat, authService: authService, profileService: profileService,

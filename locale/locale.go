@@ -25,6 +25,7 @@ import (
 
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
 )
@@ -43,7 +44,7 @@ type Manager interface {
 }
 
 type localesManager struct {
-	logger         *zap.Logger
+	logger         *otelzap.Logger
 	AllLang        []string
 	DefaultLang    string
 	MultipleLang   bool

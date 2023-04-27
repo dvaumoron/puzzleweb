@@ -25,16 +25,16 @@ import (
 	pb "github.com/dvaumoron/puzzlemarkdownservice"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/markdown/service"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"google.golang.org/grpc"
 )
 
 type markdownClient struct {
 	grpcclient.Client
-	logger *zap.Logger
+	logger *otelzap.Logger
 }
 
-func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *zap.Logger) service.MarkdownService {
+func New(serviceAddr string, dialOptions grpc.DialOption, timeOut time.Duration, logger *otelzap.Logger) service.MarkdownService {
 	return markdownClient{Client: grpcclient.Make(serviceAddr, dialOptions, timeOut), logger: logger}
 }
 

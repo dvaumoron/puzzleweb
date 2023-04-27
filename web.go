@@ -30,6 +30,7 @@ import (
 	puzzlewebotel "github.com/dvaumoron/puzzleweb/otel"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -39,7 +40,7 @@ const siteName = "Site"
 const unknownUserKey = "ErrorUnknownUser"
 
 type Site struct {
-	logger         *zap.Logger
+	logger         *otelzap.Logger
 	localesManager locale.Manager
 	authService    adminservice.AuthService
 	root           Page
@@ -158,7 +159,7 @@ func BuildDefaultSite() (*Site, *config.GlobalConfig) {
 	return site, globalConfig
 }
 
-func (p Page) AddStaticPagesFromFolder(logger *zap.Logger, groupId uint64, folderName string, templatesPath string, templateExt string) {
+func (p Page) AddStaticPagesFromFolder(logger *otelzap.Logger, groupId uint64, folderName string, templatesPath string, templateExt string) {
 	templatesPath, err := filepath.Abs(templatesPath)
 	if err != nil {
 		logger.Fatal("Wrong templatesPath", zap.Error(err))

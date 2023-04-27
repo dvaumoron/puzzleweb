@@ -21,6 +21,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +36,7 @@ var ErrNotAuthorized = errors.New("ErrorNotAuthorized")
 var ErrTechnical = errors.New("ErrorTechnicalProblem")
 var ErrUpdate = errors.New("ErrorUpdate")
 
-func LogOriginalError(logger *zap.Logger, err error, place string) error {
+func LogOriginalError(logger *otelzap.Logger, err error, place string) error {
 	logger.Warn("Original error", zap.Error(err), zap.String(ReportingPlaceName, place))
 	return ErrTechnical
 }

@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 
 	"github.com/gin-gonic/gin/render"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -40,7 +41,7 @@ func (r puzzleHTMLRender) Instance(name string, data any) render.Render {
 	}
 }
 
-func Load(logger *zap.Logger, templatesPath string) render.HTMLRender {
+func Load(logger *otelzap.Logger, templatesPath string) render.HTMLRender {
 	templatesPath, err := filepath.Abs(templatesPath)
 	if err != nil {
 		logger.Fatal("Wrong templatesPath", zap.Error(err))

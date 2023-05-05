@@ -13,7 +13,7 @@ require (
 	github.com/dvaumoron/puzzlerightservice v1.3.0
 	github.com/dvaumoron/puzzlesaltclient v1.2.0
 	github.com/dvaumoron/puzzlesessionservice v1.2.0
-	github.com/dvaumoron/puzzletelemetry v1.0.0
+	github.com/dvaumoron/puzzletelemetry v1.0.1
 	github.com/dvaumoron/puzzlewikiservice v1.3.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/uptrace/opentelemetry-go-extra/otelzap v0.1.21

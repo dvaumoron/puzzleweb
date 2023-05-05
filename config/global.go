@@ -43,7 +43,8 @@ import (
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/sdk/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -89,8 +90,8 @@ type GlobalConfig struct {
 	Page404Url    string
 
 	CtxLogger        otelzap.LoggerWithCtx
-	TracerProvider   trace.TracerProvider
-	Tracer           trace.Tracer
+	TracerProvider   *trace.TracerProvider
+	Tracer           oteltrace.Tracer
 	LangPicturePaths map[string]string
 
 	DialOptions     []grpc.DialOption
@@ -110,7 +111,7 @@ type GlobalConfig struct {
 	BlogServiceAddr  string
 }
 
-func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span) {
+func LoadDefault(serviceName string, version string) (*GlobalConfig, oteltrace.Span) {
 	logger, tp := puzzletelemetry.Init(serviceName, version)
 	tracer := tp.Tracer(WebKey)
 
@@ -303,7 +304,7 @@ func (c *GlobalConfig) GetTemplatesExt() string {
 	return c.TemplatesExt
 }
 
-func (c *GlobalConfig) GetTracer() trace.Tracer {
+func (c *GlobalConfig) GetTracer() oteltrace.Tracer {
 	return c.Tracer
 }
 

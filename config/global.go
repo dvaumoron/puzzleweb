@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/dvaumoron/puzzlesaltclient"
-	puzzlelogger "github.com/dvaumoron/puzzletelemetry/logger"
+	"github.com/dvaumoron/puzzletelemetry"
 	adminclient "github.com/dvaumoron/puzzleweb/admin/client"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogclient "github.com/dvaumoron/puzzleweb/blog/client"
@@ -35,7 +35,6 @@ import (
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
 	markdownclient "github.com/dvaumoron/puzzleweb/markdown/client"
 	markdownservice "github.com/dvaumoron/puzzleweb/markdown/service"
-	"github.com/dvaumoron/puzzleweb/otel"
 	strengthclient "github.com/dvaumoron/puzzleweb/passwordstrength/client"
 	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
@@ -44,10 +43,13 @@ import (
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+const WebKey = "puzzleWeb"
 
 const defaultName = "default"
 const defaultSessionTimeOut = 1200
@@ -86,7 +88,9 @@ type GlobalConfig struct {
 	TemplatesExt  string
 	Page404Url    string
 
-	ctxLogger        otelzap.LoggerWithCtx
+	CtxLogger        otelzap.LoggerWithCtx
+	TracerProvider   trace.TracerProvider
+	Tracer           trace.Tracer
 	LangPicturePaths map[string]string
 
 	DialOptions     []grpc.DialOption
@@ -106,11 +110,11 @@ type GlobalConfig struct {
 	BlogServiceAddr  string
 }
 
-func LoadDefault() *GlobalConfig {
-	logger := puzzlelogger.New()
+func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span) {
+	logger, tp := puzzletelemetry.Init(serviceName, version)
+	tracer := tp.Tracer(WebKey)
 
-	ctx, span := otel.Tracer.Start(context.Background(), "puzzleWeb/initialization")
-	defer span.End()
+	ctx, span := tracer.Start(context.Background(), "initialization")
 
 	ctxLogger := logger.Ctx(ctx)
 
@@ -235,7 +239,7 @@ func LoadDefault() *GlobalConfig {
 		profileGroupId, loginService, rightClient, defaultPicture,
 	)
 
-	return &GlobalConfig{
+	globalConfig := &GlobalConfig{
 		Domain: domain, Port: port, PasswordRules: passwordRules, SessionTimeOut: sessionTimeOut,
 		ServiceTimeOut: serviceTimeOut, MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat,
 		PageSize: pageSize, ExtractSize: extractSize,
@@ -247,7 +251,10 @@ func LoadDefault() *GlobalConfig {
 		TemplatesExt:  retrieveWithDefault(ctxLogger, "TEMPLATES_EXT", ".html"),
 		Page404Url:    os.Getenv("PAGE_404_URL"),
 
-		ctxLogger:        ctxLogger,
+		CtxLogger:      ctxLogger,
+		TracerProvider: tp,
+		Tracer:         tracer,
+
 		LangPicturePaths: langPicturePaths,
 		DialOptions:      dialOptions,
 		SessionService:   sessionService,
@@ -257,24 +264,26 @@ func LoadDefault() *GlobalConfig {
 		RightClient:      rightClient,
 		ProfileService:   profileService,
 	}
+
+	return globalConfig, span
 }
 
 func (c *GlobalConfig) loadMarkdown() {
 	if c.MarkdownService == nil {
-		c.MarkdownService = markdownclient.New(requiredFromEnv(c.ctxLogger, "MARKDOWN_SERVICE_ADDR"), c.DialOptions)
+		c.MarkdownService = markdownclient.New(requiredFromEnv(c.CtxLogger, "MARKDOWN_SERVICE_ADDR"), c.DialOptions)
 	}
 }
 
 func (c *GlobalConfig) loadWiki() {
 	if c.WikiServiceAddr == "" {
 		c.loadMarkdown()
-		c.WikiServiceAddr = requiredFromEnv(c.ctxLogger, "WIKI_SERVICE_ADDR")
+		c.WikiServiceAddr = requiredFromEnv(c.CtxLogger, "WIKI_SERVICE_ADDR")
 	}
 }
 
 func (c *GlobalConfig) loadForum() {
 	if c.ForumServiceAddr == "" {
-		c.ForumServiceAddr = requiredFromEnv(c.ctxLogger, "FORUM_SERVICE_ADDR")
+		c.ForumServiceAddr = requiredFromEnv(c.CtxLogger, "FORUM_SERVICE_ADDR")
 	}
 }
 
@@ -282,16 +291,20 @@ func (c *GlobalConfig) loadBlog() {
 	if c.BlogServiceAddr == "" {
 		c.loadForum()
 		c.loadMarkdown()
-		c.BlogServiceAddr = requiredFromEnv(c.ctxLogger, "BLOG_SERVICE_ADDR")
+		c.BlogServiceAddr = requiredFromEnv(c.CtxLogger, "BLOG_SERVICE_ADDR")
 	}
 }
 
 func (c *GlobalConfig) GetLogger() *otelzap.Logger {
-	return c.ctxLogger.Logger()
+	return c.CtxLogger.Logger()
 }
 
 func (c *GlobalConfig) GetTemplatesExt() string {
 	return c.TemplatesExt
+}
+
+func (c *GlobalConfig) GetTracer() trace.Tracer {
+	return c.Tracer
 }
 
 func (c *GlobalConfig) GetServiceTimeOut() time.Duration {

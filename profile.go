@@ -37,6 +37,7 @@ var errEmptyPassword = errors.New(emptyPasswordKey)
 var errWrongConfirm = errors.New(wrongConfirmPasswordKey)
 
 type profileWidget struct {
+	defaultHandler        gin.HandlerFunc
 	viewHandler           gin.HandlerFunc
 	editHandler           gin.HandlerFunc
 	saveHandler           gin.HandlerFunc
@@ -45,16 +46,16 @@ type profileWidget struct {
 	pictureHandler        gin.HandlerFunc
 }
 
-var defaultHandler = common.CreateRedirect("profileWidget/defaultHandler", func(c *gin.Context) string {
+func defaultRedirecter(c *gin.Context) string {
 	userId := GetSessionUserId(GetLogger(c), c)
 	if userId == 0 {
 		return common.DefaultErrorRedirect(unknownUserKey)
 	}
 	return profileUrlBuilder(userId).String()
-})
+}
 
 func (w profileWidget) LoadInto(router gin.IRouter) {
-	router.GET("/", defaultHandler)
+	router.GET("/", w.defaultHandler)
 	router.GET("/view/:UserId", w.viewHandler)
 	router.GET("/edit", w.editHandler)
 	router.POST("/save", w.saveHandler)
@@ -64,6 +65,7 @@ func (w profileWidget) LoadInto(router gin.IRouter) {
 }
 
 func newProfilePage(profileConfig config.ProfileConfig) Page {
+	tracer := profileConfig.Tracer
 	profileService := profileConfig.Service
 	adminService := profileConfig.AdminService
 	loginService := profileConfig.LoginService
@@ -74,7 +76,8 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 
 	p := MakeHiddenPage("profile")
 	p.Widget = profileWidget{
-		viewHandler: CreateTemplate("profileWidget/viewHandler", func(data gin.H, c *gin.Context) (string, string) {
+		defaultHandler: common.CreateRedirect(tracer, "profileWidget/defaultHandler", defaultRedirecter),
+		viewHandler: CreateTemplate(tracer, "profileWidget/viewHandler", func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)
 			viewedUserId := GetRequestedUserId(logger, c)
 			if viewedUserId == 0 {
@@ -108,7 +111,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			data[common.ViewedUserName] = userProfile
 			return viewTmpl, ""
 		}),
-		editHandler: CreateTemplate("profileWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
+		editHandler: CreateTemplate(tracer, "profileWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
 			userId, _ := data[common.IdName].(uint64)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(unknownUserKey)
@@ -123,7 +126,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			data[common.ViewedUserName] = userProfile
 			return editTmpl, ""
 		}),
-		saveHandler: common.CreateRedirect("profileWidget/saveHandler", func(c *gin.Context) string {
+		saveHandler: common.CreateRedirect(tracer, "profileWidget/saveHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			userId := GetSessionUserId(logger, c)
 			if userId == 0 {
@@ -168,7 +171,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			}
 			return targetBuilder.String()
 		}),
-		changeLoginHandler: common.CreateRedirect("profileWidget/changeLoginHandler", func(c *gin.Context) string {
+		changeLoginHandler: common.CreateRedirect(tracer, "profileWidget/changeLoginHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			session := GetSession(logger, c)
 			userId := extractUserIdFromSession(logger, session)
@@ -193,7 +196,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			}
 			return targetBuilder.String()
 		}),
-		changePasswordHandler: common.CreateRedirect("profileWidget/changePasswordHandler", func(c *gin.Context) string {
+		changePasswordHandler: common.CreateRedirect(tracer, "profileWidget/changePasswordHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			session := GetSession(logger, c)
 			userId := extractUserIdFromSession(logger, session)

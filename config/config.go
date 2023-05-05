@@ -27,10 +27,12 @@ import (
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type BaseConfig interface {
 	GetLogger() *otelzap.Logger
+	GetTracer() trace.Tracer
 	GetTemplatesExt() string
 }
 
@@ -44,16 +46,23 @@ type LocalesConfig struct {
 
 type ServiceConfig[ServiceType any] struct {
 	Logger  *otelzap.Logger
+	Tracer  trace.Tracer
 	Service ServiceType
 	Ext     string
 }
 
 func MakeServiceConfig[ServiceType any](c BaseConfig, service ServiceType) ServiceConfig[ServiceType] {
-	return ServiceConfig[ServiceType]{Logger: c.GetLogger(), Service: service, Ext: c.GetTemplatesExt()}
+	return ServiceConfig[ServiceType]{
+		Logger: c.GetLogger(), Tracer: c.GetTracer(), Service: service, Ext: c.GetTemplatesExt(),
+	}
 }
 
 func (c *ServiceConfig[ServiceType]) GetLogger() *otelzap.Logger {
 	return c.Logger
+}
+
+func (c *ServiceConfig[ServiceType]) GetTracer() trace.Tracer {
+	return c.Tracer
 }
 
 func (c *ServiceConfig[ServiceType]) GetTemplatesExt() string {

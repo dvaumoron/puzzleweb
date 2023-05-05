@@ -56,6 +56,7 @@ func (w wikiWidget) LoadInto(router gin.IRouter) {
 }
 
 func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page {
+	tracer := wikiConfig.Tracer
 	wikiService := wikiConfig.Service
 	markdownService := wikiConfig.MarkdownService
 
@@ -91,11 +92,11 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 
 	p := puzzleweb.MakePage(wikiName)
 	p.Widget = wikiWidget{
-		defaultHandler: common.CreateRedirect("wikiWidget/defaultHandler", func(c *gin.Context) string {
+		defaultHandler: common.CreateRedirect(tracer, "wikiWidget/defaultHandler", func(c *gin.Context) string {
 			lang := puzzleweb.GetLocalesManager(c).GetLang(c)
 			return wikiUrlBuilder(common.GetCurrentUrl(c), lang, viewMode, defaultPage).String()
 		}),
-		viewHandler: puzzleweb.CreateTemplate("wikiWidget/viewHandler", func(data gin.H, c *gin.Context) (string, string) {
+		viewHandler: puzzleweb.CreateTemplate(tracer, "wikiWidget/viewHandler", func(data gin.H, c *gin.Context) (string, string) {
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			title := c.Param(titleName)
@@ -135,7 +136,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			data[wikiContentName] = body
 			return viewTmpl, ""
 		}),
-		editHandler: puzzleweb.CreateTemplate("wikiWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
+		editHandler: puzzleweb.CreateTemplate(tracer, "wikiWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			title := c.Param(titleName)
@@ -163,7 +164,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			}
 			return editTmpl, ""
 		}),
-		saveHandler: common.CreateRedirect("wikiWidget/saveHandler", func(c *gin.Context) string {
+		saveHandler: common.CreateRedirect(tracer, "wikiWidget/saveHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
@@ -189,7 +190,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			}
 			return targetBuilder.String()
 		}),
-		listHandler: puzzleweb.CreateTemplate("wikiWidget/listHandler", func(data gin.H, c *gin.Context) (string, string) {
+		listHandler: puzzleweb.CreateTemplate(tracer, "wikiWidget/listHandler", func(data gin.H, c *gin.Context) (string, string) {
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
@@ -215,7 +216,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			puzzleweb.InitNoELementMsg(data, len(versions), c)
 			return listTmpl, ""
 		}),
-		deleteHandler: common.CreateRedirect("wikiWidget/deleteHandler", func(c *gin.Context) string {
+		deleteHandler: common.CreateRedirect(tracer, "wikiWidget/deleteHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)

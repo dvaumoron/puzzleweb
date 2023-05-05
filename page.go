@@ -24,9 +24,9 @@ import (
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/dvaumoron/puzzleweb/otel"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -86,19 +86,19 @@ func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 	}
 }
 
-func newStaticWidget(groupId uint64, tmpl string) *staticWidget {
-	return &staticWidget{displayHandler: CreateTemplate("staticWidget", localizedTmpl(groupId, tmpl))}
+func newStaticWidget(tracer trace.Tracer, groupId uint64, tmpl string) *staticWidget {
+	return &staticWidget{displayHandler: CreateTemplate(tracer, "staticWidget/displayHandler", localizedTmpl(groupId, tmpl))}
 }
 
-func MakeStaticPage(name string, groupId uint64, tmpl string) Page {
+func MakeStaticPage(tracer trace.Tracer, name string, groupId uint64, tmpl string) Page {
 	p := MakePage(name)
-	p.Widget = newStaticWidget(groupId, tmpl)
+	p.Widget = newStaticWidget(tracer, groupId, tmpl)
 	return p
 }
 
-func MakeHiddenStaticPage(name string, groupId uint64, tmpl string) Page {
+func MakeHiddenStaticPage(tracer trace.Tracer, name string, groupId uint64, tmpl string) Page {
 	p := MakeHiddenPage(name)
-	p.Widget = newStaticWidget(groupId, tmpl)
+	p.Widget = newStaticWidget(tracer, groupId, tmpl)
 	return p
 }
 
@@ -137,9 +137,9 @@ func (current Page) extractSubPageFromPath(path string) (Page, string) {
 	return current, splitted[last]
 }
 
-func CreateTemplate(spanName string, redirecter common.TemplateRedirecter) gin.HandlerFunc {
+func CreateTemplate(tracer trace.Tracer, spanName string, redirecter common.TemplateRedirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		_, span := otel.Tracer.Start(c.Request.Context(), spanName)
+		_, span := tracer.Start(c.Request.Context(), spanName)
 		defer span.End()
 		data := initData(c)
 		tmpl, redirect := redirecter(data, c)

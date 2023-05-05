@@ -22,8 +22,8 @@ import (
 	"strconv"
 	"unicode"
 
-	"github.com/dvaumoron/puzzleweb/otel"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/exp/slices"
 )
 
@@ -70,18 +70,18 @@ func checkTarget(target string) string {
 	return target
 }
 
-func CreateRedirect(spanName string, redirecter Redirecter) gin.HandlerFunc {
+func CreateRedirect(tracer trace.Tracer, spanName string, redirecter Redirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		_, span := otel.Tracer.Start(c.Request.Context(), spanName)
+		_, span := tracer.Start(c.Request.Context(), spanName)
 		defer span.End()
 		c.Redirect(http.StatusFound, checkTarget(redirecter(c)))
 	}
 }
 
-func CreateRedirectString(spanName string, target string) gin.HandlerFunc {
+func CreateRedirectString(tracer trace.Tracer, spanName string, target string) gin.HandlerFunc {
 	target = checkTarget(target)
 	return func(c *gin.Context) {
-		_, span := otel.Tracer.Start(c.Request.Context(), spanName)
+		_, span := tracer.Start(c.Request.Context(), spanName)
 		defer span.End()
 		c.Redirect(http.StatusFound, target)
 	}

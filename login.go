@@ -51,13 +51,14 @@ func (w loginWidget) LoadInto(router gin.IRouter) {
 }
 
 func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManager) Page {
+	tracer := loginConfig.Tracer
 	loginService := loginConfig.Service
 
 	tmpl := "login" + loginConfig.Ext
 
 	p := MakeHiddenPage("login")
 	p.Widget = loginWidget{
-		displayHandler: CreateTemplate("loginWidget/displayHandler", func(data gin.H, c *gin.Context) (string, string) {
+		displayHandler: CreateTemplate(tracer, "loginWidget/displayHandler", func(data gin.H, c *gin.Context) (string, string) {
 			data[common.RedirectName] = c.Query(common.RedirectName)
 
 			currentUrl := c.Request.URL
@@ -74,7 +75,7 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 
 			return tmpl, ""
 		}),
-		submitHandler: common.CreateRedirect("loginWidget/submitHandler", func(c *gin.Context) string {
+		submitHandler: common.CreateRedirect(tracer, "loginWidget/submitHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			login := c.PostForm(loginName)
 			password := c.PostForm(passwordName)
@@ -123,7 +124,7 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 
 			return c.PostForm(common.RedirectName)
 		}),
-		logoutHandler: common.CreateRedirect("loginWidget/logoutHandler", func(c *gin.Context) string {
+		logoutHandler: common.CreateRedirect(tracer, "loginWidget/logoutHandler", func(c *gin.Context) string {
 			s := GetSession(GetLogger(c), c)
 			s.Delete(loginName)
 			s.Delete(userIdName)

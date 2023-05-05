@@ -29,11 +29,11 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	puzzlewebotel "github.com/dvaumoron/puzzleweb/otel"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -43,6 +43,7 @@ const unknownUserKey = "ErrorUnknownUser"
 
 type Site struct {
 	logger         *otelzap.Logger
+	tracer         trace.Tracer
 	localesManager locale.Manager
 	authService    adminservice.AuthService
 	timeOut        time.Duration
@@ -53,7 +54,7 @@ type Site struct {
 
 func NewSite(configExtracter config.BaseConfigExtracter, localesManager locale.Manager, settingsManager *SettingsManager) *Site {
 	adminConfig := configExtracter.ExtractAdminConfig()
-	root := MakeStaticPage("root", adminservice.PublicGroupId, "index"+configExtracter.GetTemplatesExt())
+	root := MakeStaticPage(configExtracter.GetTracer(), "root", adminservice.PublicGroupId, "index"+configExtracter.GetTemplatesExt())
 	root.AddSubPage(newLoginPage(configExtracter.ExtractLoginConfig(), settingsManager))
 	root.AddSubPage(newAdminPage(adminConfig))
 	root.AddSubPage(newSettingsPage(config.MakeServiceConfig(configExtracter, settingsManager)))
@@ -69,8 +70,8 @@ func (site *Site) AddPage(page Page) {
 	site.root.AddSubPage(page)
 }
 
-func (site *Site) AddStaticPagesFromFolder(groupId uint64, folderName string, templatesPath string, templateExt string) {
-	site.root.AddStaticPagesFromFolder(site.logger, groupId, folderName, templatesPath, templateExt)
+func (site *Site) AddStaticPagesFromFolder(logger otelzap.LoggerWithCtx, groupId uint64, folderName string, templatesPath string, templateExt string) {
+	site.root.AddStaticPagesFromFolder(logger, site.tracer, groupId, folderName, templatesPath, templateExt)
 }
 
 func (site *Site) GetPage(name string) (Page, bool) {
@@ -90,8 +91,10 @@ func (site *Site) manageTimeOut(c *gin.Context) {
 }
 
 func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
+	tracer := siteConfig.Tracer
+
 	engine := gin.New()
-	engine.Use(site.manageTimeOut, otelgin.Middleware(puzzlewebotel.WebKey), gin.Recovery())
+	engine.Use(site.manageTimeOut, otelgin.Middleware(config.WebKey), gin.Recovery())
 
 	if memorySize := siteConfig.MaxMultipartMemory; memorySize != 0 {
 		engine.MaxMultipartMemory = memorySize
@@ -111,7 +114,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	})
 
 	if localesManager := site.localesManager; localesManager.GetMultipleLang() {
-		engine.GET("/changeLang", changeLangHandler)
+		engine.GET("/changeLang", common.CreateRedirect(tracer, "changeLangHandler", changeLangRedirecter))
 
 		langPicturePaths := siteConfig.LangPicturePaths
 		for _, lang := range localesManager.GetAllLang() {
@@ -123,7 +126,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	}
 
 	site.root.Widget.LoadInto(engine)
-	engine.NoRoute(common.CreateRedirectString("noRouteHandler", siteConfig.Page404Url))
+	engine.NoRoute(common.CreateRedirectString(tracer, "noRouteHandler", siteConfig.Page404Url))
 	return engine
 }
 
@@ -149,10 +152,10 @@ func Run(ginLogger *zap.Logger, sites ...SiteAndConfig) error {
 	return g.Wait()
 }
 
-var changeLangHandler = common.CreateRedirect("changeLangHandler", func(c *gin.Context) string {
+func changeLangRedirecter(c *gin.Context) string {
 	getSite(c).localesManager.SetLangCookie(c.Query(locale.LangName), c)
 	return c.Query(common.RedirectName)
-})
+}
 
 func checkPort(port string) string {
 	if port[0] != ':' {
@@ -161,17 +164,17 @@ func checkPort(port string) string {
 	return port
 }
 
-func BuildDefaultSite() (*Site, *config.GlobalConfig) {
-	globalConfig := config.LoadDefault()
+func BuildDefaultSite(serviceName string, version string) (*Site, *config.GlobalConfig, trace.Span) {
+	globalConfig, span := config.LoadDefault(serviceName, version)
 	localesManager := locale.NewManager(globalConfig.ExtractLocalesConfig())
 	settingsManager := NewSettingsManager(globalConfig.ExtractSettingsConfig())
 
 	site := NewSite(globalConfig, localesManager, settingsManager)
 
-	return site, globalConfig
+	return site, globalConfig, span
 }
 
-func (p Page) AddStaticPagesFromFolder(logger *otelzap.Logger, groupId uint64, folderName string, templatesPath string, templateExt string) {
+func (p Page) AddStaticPagesFromFolder(logger otelzap.LoggerWithCtx, tracer trace.Tracer, groupId uint64, folderName string, templatesPath string, templateExt string) {
 	templatesPath, err := filepath.Abs(templatesPath)
 	if err != nil {
 		logger.Fatal("Wrong templatesPath", zap.Error(err))
@@ -194,11 +197,11 @@ func (p Page) AddStaticPagesFromFolder(logger *otelzap.Logger, groupId uint64, f
 			if innerPath := path[inSize:]; d.IsDir() {
 				if len(innerPath) > folderSize {
 					currentPage, name := p.extractSubPageFromPath(innerPath[folderSize:])
-					currentPage.AddSubPage(MakeStaticPage(name, groupId, innerPath+slashIndexName))
+					currentPage.AddSubPage(MakeStaticPage(tracer, name, groupId, innerPath+slashIndexName))
 				}
 			} else if cut := len(innerPath) - extSize; innerPath[cut:] == templateExt {
 				if currentPage, name := p.extractSubPageFromPath(innerPath[folderSize:cut]); name != "index" {
-					currentPage.AddSubPage(MakeStaticPage(name, groupId, innerPath))
+					currentPage.AddSubPage(MakeStaticPage(tracer, name, groupId, innerPath))
 				}
 			}
 		}

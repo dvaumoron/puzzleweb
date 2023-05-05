@@ -95,13 +95,14 @@ func (w settingsWidget) LoadInto(router gin.IRouter) {
 }
 
 func newSettingsPage(settingsConfig config.ServiceConfig[*SettingsManager]) Page {
+	tracer := settingsConfig.Tracer
 	settingsManager := settingsConfig.Service
 
 	editTmpl := "settings/edit" + settingsConfig.Ext
 
 	p := MakeHiddenPage("settings")
 	p.Widget = settingsWidget{
-		editHandler: CreateTemplate("settingsWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
+		editHandler: CreateTemplate(tracer, "settingsWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)
 			userId, _ := data[common.IdName].(uint64)
 			if userId == 0 {
@@ -111,7 +112,7 @@ func newSettingsPage(settingsConfig config.ServiceConfig[*SettingsManager]) Page
 			data["Settings"] = settingsManager.Get(logger, userId, c)
 			return editTmpl, ""
 		}),
-		saveHandler: common.CreateRedirect("settingsWidget/saveHandler", func(c *gin.Context) string {
+		saveHandler: common.CreateRedirect(tracer, "settingsWidget/saveHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
 			userId := GetSessionUserId(logger, c)
 			if userId == 0 {

@@ -165,13 +165,13 @@ func checkPort(port string) string {
 }
 
 func BuildDefaultSite(serviceName string, version string) (*Site, *config.GlobalConfig, trace.Span) {
-	globalConfig, span := config.LoadDefault(serviceName, version)
+	globalConfig, initSpan := config.LoadDefault(serviceName, version)
 	localesManager := locale.NewManager(globalConfig.ExtractLocalesConfig())
 	settingsManager := NewSettingsManager(globalConfig.ExtractSettingsConfig())
 
 	site := NewSite(globalConfig, localesManager, settingsManager)
 
-	return site, globalConfig, span
+	return site, globalConfig, initSpan
 }
 
 func (p Page) AddStaticPagesFromFolder(logger otelzap.LoggerWithCtx, tracer trace.Tracer, groupId uint64, folderName string, templatesPath string, templateExt string) {

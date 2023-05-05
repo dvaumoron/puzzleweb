@@ -114,7 +114,7 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 	logger, tp := puzzletelemetry.Init(serviceName, version)
 	tracer := tp.Tracer(WebKey)
 
-	ctx, span := tracer.Start(context.Background(), "initialization")
+	ctx, initSpan := tracer.Start(context.Background(), "initialization")
 
 	ctxLogger := logger.Ctx(ctx)
 
@@ -265,7 +265,7 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 		ProfileService:   profileService,
 	}
 
-	return globalConfig, span
+	return globalConfig, initSpan
 }
 
 func (c *GlobalConfig) loadMarkdown() {

@@ -130,7 +130,19 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	return engine
 }
 
+// Launch the site server, when finished shutdown the TracerProvider
 func (site *Site) Run(siteConfig config.SiteConfig) error {
+	tracerProvider := siteConfig.TracerProvider
+	tracer := siteConfig.Tracer
+	logger := siteConfig.Logger
+	defer func() {
+		ctx := context.Background()
+		if err := tracerProvider.Shutdown(ctx); err != nil {
+			ctx, stopSpan := tracer.Start(ctx, "shutdown")
+			logger.WarnContext(ctx, "Failed to shutdown trace provider", zap.Error(err))
+			stopSpan.End()
+		}
+	}()
 	return site.initEngine(siteConfig).Run(checkPort(siteConfig.Port))
 }
 

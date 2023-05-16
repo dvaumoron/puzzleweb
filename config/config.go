@@ -27,6 +27,7 @@ import (
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -77,6 +78,7 @@ type SessionConfig struct {
 
 type SiteConfig struct {
 	ServiceConfig[sessionservice.SessionService]
+	TracerProvider     *sdktrace.TracerProvider
 	Domain             string
 	Port               string
 	SessionTimeOut     int

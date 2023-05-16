@@ -43,8 +43,8 @@ import (
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/otel/sdk/trace"
-	oteltrace "go.opentelemetry.io/otel/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -90,8 +90,8 @@ type GlobalConfig struct {
 	Page404Url    string
 
 	CtxLogger        otelzap.LoggerWithCtx
-	TracerProvider   *trace.TracerProvider
-	Tracer           oteltrace.Tracer
+	TracerProvider   *sdktrace.TracerProvider
+	Tracer           trace.Tracer
 	LangPicturePaths map[string]string
 
 	DialOptions     []grpc.DialOption
@@ -111,7 +111,7 @@ type GlobalConfig struct {
 	BlogServiceAddr  string
 }
 
-func LoadDefault(serviceName string, version string) (*GlobalConfig, oteltrace.Span) {
+func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span) {
 	logger, tp := puzzletelemetry.Init(serviceName, version)
 	tracer := tp.Tracer(WebKey)
 
@@ -304,7 +304,7 @@ func (c *GlobalConfig) GetTemplatesExt() string {
 	return c.TemplatesExt
 }
 
-func (c *GlobalConfig) GetTracer() oteltrace.Tracer {
+func (c *GlobalConfig) GetTracer() trace.Tracer {
 	return c.Tracer
 }
 
@@ -325,9 +325,10 @@ func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
 
 func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {
 	return SiteConfig{
-		ServiceConfig: MakeServiceConfig(c, c.SessionService),
-		Domain:        c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut, MaxMultipartMemory: c.MaxMultipartMemory,
-		StaticPath: c.StaticPath, FaviconPath: c.FaviconPath, LangPicturePaths: c.LangPicturePaths, Page404Url: c.Page404Url,
+		ServiceConfig:  MakeServiceConfig(c, c.SessionService),
+		TracerProvider: c.TracerProvider, Domain: c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut,
+		MaxMultipartMemory: c.MaxMultipartMemory, StaticPath: c.StaticPath, FaviconPath: c.FaviconPath,
+		LangPicturePaths: c.LangPicturePaths, Page404Url: c.Page404Url,
 	}
 }
 

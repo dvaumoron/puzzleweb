@@ -109,9 +109,9 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	engine.Static("/static", siteConfig.StaticPath)
 	engine.StaticFile(config.DefaultFavicon, siteConfig.FaviconPath)
 
-	engine.Use(makeSessionManager(siteConfig.ExtractSessionConfig()).manage, func(c *gin.Context) {
+	engine.Use(func(c *gin.Context) {
 		c.Set(siteName, site)
-	})
+	}, makeSessionManager(siteConfig.ExtractSessionConfig()).manage)
 
 	if localesManager := site.localesManager; localesManager.GetMultipleLang() {
 		engine.GET("/changeLang", common.CreateRedirect(tracer, "changeLangHandler", changeLangRedirecter))

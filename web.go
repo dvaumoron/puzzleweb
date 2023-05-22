@@ -19,10 +19,7 @@ package puzzleweb
 
 import (
 	"context"
-	"io/fs"
 	"net/http"
-	"path/filepath"
-	"strings"
 	"time"
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
@@ -53,16 +50,17 @@ type Site struct {
 }
 
 func NewSite(configExtracter config.BaseConfigExtracter, localesManager locale.Manager, settingsManager *SettingsManager) *Site {
+	tracer := configExtracter.GetTracer()
 	adminConfig := configExtracter.ExtractAdminConfig()
-	root := MakeStaticPage(configExtracter.GetTracer(), "root", adminservice.PublicGroupId, "index"+configExtracter.GetTemplatesExt())
+	root := MakeStaticPage(tracer, "root", adminservice.PublicGroupId, "index"+configExtracter.GetTemplatesExt())
 	root.AddSubPage(newLoginPage(configExtracter.ExtractLoginConfig(), settingsManager))
 	root.AddSubPage(newAdminPage(adminConfig))
 	root.AddSubPage(newSettingsPage(config.MakeServiceConfig(configExtracter, settingsManager)))
 	root.AddSubPage(newProfilePage(configExtracter.ExtractProfileConfig()))
 
 	return &Site{
-		logger: configExtracter.GetLogger(), localesManager: localesManager, authService: adminConfig.Service,
-		timeOut: configExtracter.GetServiceTimeOut(), root: root,
+		logger: configExtracter.GetLogger(), tracer: tracer, localesManager: localesManager,
+		authService: adminConfig.Service, timeOut: configExtracter.GetServiceTimeOut(), root: root,
 	}
 }
 
@@ -184,43 +182,4 @@ func BuildDefaultSite(serviceName string, version string) (*Site, *config.Global
 	site := NewSite(globalConfig, localesManager, settingsManager)
 
 	return site, globalConfig, initSpan
-}
-
-func (p Page) AddStaticPagesFromFolder(logger otelzap.LoggerWithCtx, tracer trace.Tracer, groupId uint64, folderName string, templatesPath string, templateExt string) {
-	templatesPath, err := filepath.Abs(templatesPath)
-	if err != nil {
-		logger.Fatal("Wrong templatesPath", zap.Error(err))
-	}
-
-	inSize := len(templatesPath)
-	var folderPathBuilder strings.Builder
-	folderPathBuilder.WriteString(templatesPath)
-	if last := inSize - 1; templatesPath[last] != '/' {
-		folderPathBuilder.WriteByte('/')
-		inSize++
-	}
-	folderPathBuilder.WriteString(folderName)
-	folderSize := len(folderName) + 1
-
-	extSize := len(templateExt)
-	slashIndexName := "/index" + templateExt
-	err = filepath.WalkDir(folderPathBuilder.String(), func(path string, d fs.DirEntry, err error) error {
-		if err == nil {
-			if innerPath := path[inSize:]; d.IsDir() {
-				if len(innerPath) > folderSize {
-					currentPage, name := p.extractSubPageFromPath(innerPath[folderSize:])
-					currentPage.AddSubPage(MakeStaticPage(tracer, name, groupId, innerPath+slashIndexName))
-				}
-			} else if cut := len(innerPath) - extSize; innerPath[cut:] == templateExt {
-				if currentPage, name := p.extractSubPageFromPath(innerPath[folderSize:cut]); name != "index" {
-					currentPage.AddSubPage(MakeStaticPage(tracer, name, groupId, innerPath))
-				}
-			}
-		}
-		return err
-	})
-
-	if err != nil {
-		logger.Fatal("Failed to load static pages", zap.Error(err))
-	}
 }

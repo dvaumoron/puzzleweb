@@ -25,6 +25,7 @@ import (
 	markdownservice "github.com/dvaumoron/puzzleweb/markdown/service"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
+	templateservice "github.com/dvaumoron/puzzleweb/templates/service"
 	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -34,7 +35,6 @@ import (
 type BaseConfig interface {
 	GetLogger() *otelzap.Logger
 	GetTracer() trace.Tracer
-	GetTemplatesExt() string
 }
 
 type LocalesConfig struct {
@@ -49,13 +49,10 @@ type ServiceConfig[ServiceType any] struct {
 	Logger  *otelzap.Logger
 	Tracer  trace.Tracer
 	Service ServiceType
-	Ext     string
 }
 
 func MakeServiceConfig[ServiceType any](c BaseConfig, service ServiceType) ServiceConfig[ServiceType] {
-	return ServiceConfig[ServiceType]{
-		Logger: c.GetLogger(), Tracer: c.GetTracer(), Service: service, Ext: c.GetTemplatesExt(),
-	}
+	return ServiceConfig[ServiceType]{Logger: c.GetLogger(), Tracer: c.GetTracer(), Service: service}
 }
 
 func (c *ServiceConfig[ServiceType]) GetLogger() *otelzap.Logger {
@@ -66,10 +63,6 @@ func (c *ServiceConfig[ServiceType]) GetTracer() trace.Tracer {
 	return c.Tracer
 }
 
-func (c *ServiceConfig[ServiceType]) GetTemplatesExt() string {
-	return c.Ext
-}
-
 type SessionConfig struct {
 	ServiceConfig[sessionservice.SessionService]
 	Domain  string
@@ -78,6 +71,7 @@ type SessionConfig struct {
 
 type SiteConfig struct {
 	ServiceConfig[sessionservice.SessionService]
+	TemplateService    templateservice.TemplateService
 	TracerProvider     *sdktrace.TracerProvider
 	Domain             string
 	Port               string
@@ -93,6 +87,10 @@ func (sc *SiteConfig) ExtractSessionConfig() SessionConfig {
 	return SessionConfig{
 		ServiceConfig: sc.ServiceConfig, Domain: sc.Domain, TimeOut: sc.SessionTimeOut,
 	}
+}
+
+func (sc *SiteConfig) ExtractTemplateConfig() TemplateConfig {
+	return TemplateConfig{Logger: sc.Logger, Tracer: sc.Tracer, Service: sc.TemplateService}
 }
 
 type AdminConfig struct {

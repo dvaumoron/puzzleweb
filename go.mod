@@ -14,6 +14,7 @@ require (
 	github.com/dvaumoron/puzzlesaltclient v1.2.0
 	github.com/dvaumoron/puzzlesessionservice v1.2.0
 	github.com/dvaumoron/puzzletelemetry v1.1.0
+	github.com/dvaumoron/puzzletemplateservice v1.0.0
 	github.com/dvaumoron/puzzlewikiservice v1.3.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/uptrace/opentelemetry-go-extra/otelzap v0.1.21
@@ -25,7 +26,7 @@ require (
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.9.0
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.55.0
 )
 
 require (
@@ -40,7 +41,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.11.2 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -65,7 +66,7 @@ require (
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
-	google.golang.org/genproto v0.0.0-20230127162408-596548ed4efa // indirect
+	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

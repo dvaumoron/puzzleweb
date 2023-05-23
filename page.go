@@ -26,6 +26,7 @@ import (
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/locale"
+	"github.com/dvaumoron/puzzleweb/templates"
 	"github.com/gin-gonic/gin"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -181,12 +182,13 @@ func (current Page) extractSubPageFromPath(path string) (Page, string) {
 
 func CreateTemplate(tracer trace.Tracer, spanName string, redirecter common.TemplateRedirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		_, span := tracer.Start(c.Request.Context(), spanName)
+		ctx := c.Request.Context()
+		_, span := tracer.Start(ctx, spanName)
 		defer span.End()
 		data := initData(c)
 		tmpl, redirect := redirecter(data, c)
 		if redirect == "" {
-			otelgin.HTML(c, http.StatusOK, tmpl, data)
+			otelgin.HTML(c, http.StatusOK, tmpl, templates.ContextAndData{Ctx: ctx, Data: data})
 		} else {
 			c.Redirect(http.StatusFound, redirect)
 		}

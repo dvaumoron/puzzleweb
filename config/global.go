@@ -40,6 +40,8 @@ import (
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	sessionclient "github.com/dvaumoron/puzzleweb/session/client"
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
+	templateclient "github.com/dvaumoron/puzzleweb/templates/client"
+	templateservice "github.com/dvaumoron/puzzleweb/templates/service"
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -61,6 +63,7 @@ const DefaultFavicon = "/favicon.ico"
 type AuthConfig = ServiceConfig[adminservice.AuthService]
 type LoginConfig = ServiceConfig[loginservice.LoginService]
 type SettingsConfig = ServiceConfig[sessionservice.SessionService]
+type TemplateConfig = ServiceConfig[templateservice.TemplateService]
 
 type BaseConfigExtracter interface {
 	BaseConfig
@@ -82,12 +85,10 @@ type GlobalConfig struct {
 	PageSize           uint64
 	ExtractSize        uint64
 
-	StaticPath    string
-	FaviconPath   string
-	LocalesPath   string
-	TemplatesPath string
-	TemplatesExt  string
-	Page404Url    string
+	StaticPath  string
+	FaviconPath string
+	LocalesPath string
+	Page404Url  string
 
 	CtxLogger        otelzap.LoggerWithCtx
 	TracerProvider   *sdktrace.TracerProvider
@@ -96,6 +97,7 @@ type GlobalConfig struct {
 
 	DialOptions     []grpc.DialOption
 	SessionService  sessionservice.SessionService
+	TemplateService templateservice.TemplateService
 	SaltService     loginservice.SaltService
 	SettingsService sessionservice.SessionService
 	LoginService    loginservice.FullLoginService
@@ -166,6 +168,7 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 	}
 
 	sessionService := sessionclient.New(requiredFromEnv(ctxLogger, "SESSION_SERVICE_ADDR"), dialOptions)
+	templateService := templateclient.New(requiredFromEnv(ctxLogger, "TEMPLATE_SERVICE_ADDR"), dialOptions)
 	settingsService := sessionclient.New(requiredFromEnv(ctxLogger, "SETTINGS_SERVICE_ADDR"), dialOptions)
 	strengthService := strengthclient.New(requiredFromEnv(ctxLogger, "PASSSTRENGTH_SERVICE_ADDR"), dialOptions)
 	saltService := puzzlesaltclient.Make(requiredFromEnv(ctxLogger, "SALT_SERVICE_ADDR"), dialOptions)
@@ -245,12 +248,10 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 		ServiceTimeOut: serviceTimeOut, MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat,
 		PageSize: pageSize, ExtractSize: extractSize,
 
-		StaticPath:    staticPath,
-		FaviconPath:   faviconPath,
-		LocalesPath:   retrievePath(ctxLogger, "LOCALES_PATH", "locales"),
-		TemplatesPath: retrievePath(ctxLogger, "TEMPLATES_PATH", "templates"),
-		TemplatesExt:  retrieveWithDefault(ctxLogger, "TEMPLATES_EXT", ".html"),
-		Page404Url:    os.Getenv("PAGE_404_URL"),
+		StaticPath:  staticPath,
+		FaviconPath: faviconPath,
+		LocalesPath: retrievePath(ctxLogger, "LOCALES_PATH", "locales"),
+		Page404Url:  os.Getenv("PAGE_404_URL"),
 
 		CtxLogger:      ctxLogger,
 		TracerProvider: tp,
@@ -259,6 +260,7 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 		LangPicturePaths: langPicturePaths,
 		DialOptions:      dialOptions,
 		SessionService:   sessionService,
+		TemplateService:  templateService,
 		SaltService:      saltService,
 		SettingsService:  settingsService,
 		LoginService:     loginService,
@@ -300,10 +302,6 @@ func (c *GlobalConfig) GetLogger() *otelzap.Logger {
 	return c.CtxLogger.Logger()
 }
 
-func (c *GlobalConfig) GetTemplatesExt() string {
-	return c.TemplatesExt
-}
-
 func (c *GlobalConfig) GetTracer() trace.Tracer {
 	return c.Tracer
 }
@@ -325,7 +323,7 @@ func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
 
 func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {
 	return SiteConfig{
-		ServiceConfig:  MakeServiceConfig(c, c.SessionService),
+		ServiceConfig: MakeServiceConfig(c, c.SessionService), TemplateService: c.TemplateService,
 		TracerProvider: c.TracerProvider, Domain: c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut,
 		MaxMultipartMemory: c.MaxMultipartMemory, StaticPath: c.StaticPath, FaviconPath: c.FaviconPath,
 		LangPicturePaths: c.LangPicturePaths, Page404Url: c.Page404Url,

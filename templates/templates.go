@@ -18,56 +18,60 @@
 package templates
 
 import (
-	"html/template"
-	"io/fs"
-	"os"
-	"path/filepath"
+	"context"
+	"net/http"
 
+	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin/render"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
-	"go.uber.org/zap"
 )
 
-// As HTMLProduction from gin, but without the unused Delims.
-type puzzleHTMLRender struct {
-	templates *template.Template
+type ContextAndData struct {
+	Ctx  context.Context
+	Data any
 }
 
-func (r puzzleHTMLRender) Instance(name string, data any) render.Render {
-	return render.HTML{
-		Template: r.templates,
-		Name:     name,
-		Data:     data,
-	}
+// match Render interface from gin.
+type remoteHTML struct {
+	config.TemplateConfig
+	ctx          context.Context
+	templateName string
+	data         any
 }
 
-func Load(logger *otelzap.Logger, templatesPath string) render.HTMLRender {
-	templatesPath, err := filepath.Abs(templatesPath)
+func (r remoteHTML) Render(w http.ResponseWriter) error {
+	r.WriteContentType(w)
+	templateConfig := r.TemplateConfig
+	logger := templateConfig.Logger.Ctx(context.Background())
+	content, err := templateConfig.Service.Render(logger, r.templateName, r.data)
 	if err != nil {
-		logger.Fatal("Wrong templatesPath", zap.Error(err))
-	}
-	if last := len(templatesPath) - 1; templatesPath[last] != '/' {
-		templatesPath += "/"
-	}
-
-	tmpl := template.New("")
-	inSize := len(templatesPath)
-	err = filepath.WalkDir(templatesPath, func(path string, d fs.DirEntry, err error) error {
-		if err == nil && !d.IsDir() {
-			name := path[inSize:]
-			if name[len(name)-5:] == ".html" {
-				var data []byte
-				data, err = os.ReadFile(path)
-				if err == nil {
-					_, err = tmpl.New(name).Parse(string(data))
-				}
-			}
-		}
 		return err
-	})
-
-	if err != nil {
-		logger.Fatal("Failed to load templates", zap.Error(err))
 	}
-	return puzzleHTMLRender{templates: tmpl}
+	_, err = w.Write(content)
+	return err
+}
+
+const contentTypeName = "Content-Type"
+
+var htmlContentType = []string{"text/html; charset=utf-8"}
+
+// Writes HTML ContentType.
+func (r remoteHTML) WriteContentType(w http.ResponseWriter) {
+	header := w.Header()
+	if val := header[contentTypeName]; len(val) == 0 {
+		header[contentTypeName] = htmlContentType
+	}
+}
+
+// match HTMLRender interface from gin.
+type remoteHTMLRender struct {
+	config.TemplateConfig
+}
+
+func (r remoteHTMLRender) Instance(name string, dataWithCtx any) render.Render {
+	ctxData := dataWithCtx.(ContextAndData)
+	return remoteHTML{TemplateConfig: r.TemplateConfig, ctx: ctxData.Ctx, templateName: name, data: ctxData.Data}
+}
+
+func NewServiceRender(templateConfig config.TemplateConfig) render.HTMLRender {
+	return remoteHTMLRender{TemplateConfig: templateConfig}
 }

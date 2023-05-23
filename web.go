@@ -26,8 +26,8 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
+	"github.com/dvaumoron/puzzleweb/templates"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/render"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel/trace"
@@ -46,13 +46,12 @@ type Site struct {
 	timeOut        time.Duration
 	root           Page
 	adders         []common.DataAdder
-	HTMLRender     render.HTMLRender
 }
 
 func NewSite(configExtracter config.BaseConfigExtracter, localesManager locale.Manager, settingsManager *SettingsManager) *Site {
 	tracer := configExtracter.GetTracer()
 	adminConfig := configExtracter.ExtractAdminConfig()
-	root := MakeStaticPage(tracer, "root", adminservice.PublicGroupId, "index"+configExtracter.GetTemplatesExt())
+	root := MakeStaticPage(tracer, "root", adminservice.PublicGroupId, "index")
 	root.AddSubPage(newLoginPage(configExtracter.ExtractLoginConfig(), settingsManager))
 	root.AddSubPage(newAdminPage(adminConfig))
 	root.AddSubPage(newSettingsPage(config.MakeServiceConfig(configExtracter, settingsManager)))
@@ -98,11 +97,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 		engine.MaxMultipartMemory = memorySize
 	}
 
-	if htmlRender := site.HTMLRender; htmlRender == nil {
-		site.logger.Fatal("no HTMLRender initialized")
-	} else {
-		engine.HTMLRender = htmlRender
-	}
+	engine.HTMLRender = templates.NewServiceRender(siteConfig.ExtractTemplateConfig())
 
 	engine.Static("/static", siteConfig.StaticPath)
 	engine.StaticFile(config.DefaultFavicon, siteConfig.FaviconPath)

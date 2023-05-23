@@ -70,10 +70,6 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 	adminService := profileConfig.AdminService
 	loginService := profileConfig.LoginService
 
-	ext := profileConfig.Ext
-	viewTmpl := "profile/view" + ext
-	editTmpl := "profile/edit" + ext
-
 	p := MakeHiddenPage("profile")
 	p.Widget = profileWidget{
 		defaultHandler: common.CreateRedirect(tracer, "profileWidget/defaultHandler", defaultRedirecter),
@@ -109,7 +105,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			userProfile := profiles[viewedUserId]
 			data[common.AllowedToUpdateName] = updateRight
 			data[common.ViewedUserName] = userProfile
-			return viewTmpl, ""
+			return "profile/view", ""
 		}),
 		editHandler: CreateTemplate(tracer, "profileWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
 			userId, _ := data[common.IdName].(uint64)
@@ -124,7 +120,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 
 			userProfile := profiles[userId]
 			data[common.ViewedUserName] = userProfile
-			return editTmpl, ""
+			return "profile/edit", ""
 		}),
 		saveHandler: common.CreateRedirect(tracer, "profileWidget/saveHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)

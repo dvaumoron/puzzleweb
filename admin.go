@@ -124,14 +124,6 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 	profileService := adminConfig.ProfileService
 	defaultPageSize := adminConfig.PageSize
 
-	ext := adminConfig.Ext
-	indexTmpl := "admin/index" + ext
-	listUserTmpl := "admin/user/list" + ext
-	viewUserTmpl := "admin/user/view" + ext
-	editUserTmpl := "admin/user/edit" + ext
-	listRoleTmpl := "admin/role/list" + ext
-	editRoleTmpl := "admin/role/edit" + ext
-
 	p := MakeHiddenPage("admin")
 	p.Widget = adminWidget{
 		displayHandler: CreateTemplate(tracer, "adminWidget/displayHandler", func(data gin.H, c *gin.Context) (string, string) {
@@ -139,7 +131,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			if !viewAdmin {
 				return "", common.DefaultErrorRedirect(common.ErrNotAuthorized.Error())
 			}
-			return indexTmpl, ""
+			return "admin/index", ""
 		}),
 		listUserHandler: CreateTemplate(tracer, "adminWidget/listUserHandler", func(data gin.H, c *gin.Context) (string, string) {
 			viewAdmin, _ := data[viewAdminName].(bool)
@@ -157,7 +149,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			common.InitPagination(data, filter, pageNumber, end, total)
 			data["Users"] = users
 			InitNoELementMsg(data, len(users), c)
-			return listUserTmpl, ""
+			return "admin/user/list", ""
 		}),
 		viewUserHandler: CreateTemplate(tracer, "adminWidget/viewUserHandler", func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)
@@ -183,7 +175,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			data[common.ViewedUserName] = user
 			data[common.AllowedToUpdateName] = updateRight
 			data[groupsName] = DisplayGroups(roles, GetMessages(c))
-			return viewUserTmpl, ""
+			return "admin/user/view", ""
 		}),
 		editUserHandler: CreateTemplate(tracer, "adminWidget/editUserHandler", func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)
@@ -210,7 +202,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 
 			data[common.ViewedUserName] = userIdToLogin[userId]
 			data[groupsName] = displayEditGroups(userRoles, allRoles, GetMessages(c))
-			return editUserTmpl, ""
+			return "admin/user/edit", ""
 		}),
 		saveUserHandler: common.CreateRedirect(tracer, "adminWidget/saveUserHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
@@ -266,7 +258,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 
 			allGroups := adminService.GetAllGroups(logger)
 			data[groupsName] = displayAllGroups(allGroups, allRoles, GetMessages(c))
-			return listRoleTmpl, ""
+			return "admin/role/list", ""
 		}),
 		editRoleHandler: CreateTemplate(tracer, "adminWidget/editRoleHandler", func(data gin.H, c *gin.Context) (string, string) {
 			roleName := c.Param(roleNameName)
@@ -290,7 +282,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 				setActionChecked(data, actionSet, service.ActionDelete, "Delete")
 			}
 
-			return editRoleTmpl, ""
+			return "admin/role/edit", ""
 		}),
 		saveRoleHandler: common.CreateRedirect(tracer, "adminWidget/saveRoleHandler", func(c *gin.Context) string {
 			roleName := c.PostForm(roleNameName)

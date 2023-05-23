@@ -98,8 +98,6 @@ func newSettingsPage(settingsConfig config.ServiceConfig[*SettingsManager]) Page
 	tracer := settingsConfig.Tracer
 	settingsManager := settingsConfig.Service
 
-	editTmpl := "settings/edit" + settingsConfig.Ext
-
 	p := MakeHiddenPage("settings")
 	p.Widget = settingsWidget{
 		editHandler: CreateTemplate(tracer, "settingsWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
@@ -110,7 +108,7 @@ func newSettingsPage(settingsConfig config.ServiceConfig[*SettingsManager]) Page
 			}
 
 			data["Settings"] = settingsManager.Get(logger, userId, c)
-			return editTmpl, ""
+			return "settings/edit", ""
 		}),
 		saveHandler: common.CreateRedirect(tracer, "settingsWidget/saveHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)

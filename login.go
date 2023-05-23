@@ -54,8 +54,6 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 	tracer := loginConfig.Tracer
 	loginService := loginConfig.Service
 
-	tmpl := "login" + loginConfig.Ext
-
 	p := MakeHiddenPage("login")
 	p.Widget = loginWidget{
 		displayHandler: CreateTemplate(tracer, "loginWidget/displayHandler", func(data gin.H, c *gin.Context) (string, string) {
@@ -73,7 +71,7 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 			// To hide the connection link
 			delete(data, loginUrlName)
 
-			return tmpl, ""
+			return "login", ""
 		}),
 		submitHandler: common.CreateRedirect(tracer, "loginWidget/submitHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)

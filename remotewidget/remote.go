@@ -105,20 +105,21 @@ func NewRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName 
 	return p
 }
 
-func extractKeysFromPath(path string) []string {
+func extractKeysFromPath(path string) [][2]string {
 	splitted := strings.Split(path, "/")
-	keys := make([]string, 0, len(splitted))
+	keys := make([][2]string, 0, len(splitted))
 	for _, part := range splitted {
 		if part[0] == ':' {
-			keys = append(keys, part[1:])
+			key := part[1:]
+			keys = append(keys, [2]string{pathKeySlash + key, key})
 		}
 	}
 	return keys
 }
 
-func extractPathData(keys []string, data gin.H, c *gin.Context) {
+func extractPathData(keys [][2]string, data gin.H, c *gin.Context) {
 	for _, key := range keys {
-		data[pathKeySlash+key] = c.Param(key)
+		data[key[0]] = c.Param(key[1])
 	}
 }
 

@@ -70,10 +70,10 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 	defaultPageSize := blogConfig.PageSize
 	extractSize := blogConfig.ExtractSize
 
-	listTmpl := "blog/list.html"
-	viewTmpl := "blog/view.html"
-	createTmpl := "blog/create.html"
-	previewTmpl := "blog/preview.html"
+	listTmpl := "blog/list"
+	viewTmpl := "blog/view"
+	createTmpl := "blog/create"
+	previewTmpl := "blog/preview"
 	switch args := blogConfig.Args; len(args) {
 	default:
 		blogConfig.Logger.Info("MakeBlogPage should be called with 0 to 4 optional arguments.")

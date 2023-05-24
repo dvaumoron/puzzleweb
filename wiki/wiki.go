@@ -61,9 +61,9 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 	markdownService := wikiConfig.MarkdownService
 
 	defaultPage := "Welcome"
-	viewTmpl := "wiki/view.html"
-	editTmpl := "wiki/edit.html"
-	listTmpl := "wiki/list.html"
+	viewTmpl := "wiki/view"
+	editTmpl := "wiki/edit"
+	listTmpl := "wiki/list"
 	switch args := wikiConfig.Args; len(args) {
 	default:
 		wikiConfig.Logger.Info("MakeWikiPage should be called with 0 to 4 optional arguments.")

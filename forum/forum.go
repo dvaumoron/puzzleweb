@@ -62,9 +62,9 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 	forumService := forumConfig.Service
 	defaultPageSize := forumConfig.PageSize
 
-	listTmpl := "forum/list.html"
-	viewTmpl := "forum/view.html"
-	createTmpl := "forum/create.html"
+	listTmpl := "forum/list"
+	viewTmpl := "forum/view"
+	createTmpl := "forum/create"
 	switch args := forumConfig.Args; len(args) {
 	default:
 		forumConfig.Logger.Info("MakeForumPage should be called with 0 to 3 optional arguments")

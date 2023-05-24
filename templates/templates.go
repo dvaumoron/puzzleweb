@@ -41,7 +41,7 @@ type remoteHTML struct {
 func (r remoteHTML) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
 	templateConfig := r.TemplateConfig
-	logger := templateConfig.Logger.Ctx(context.Background())
+	logger := templateConfig.Logger.Ctx(r.ctx)
 	content, err := templateConfig.Service.Render(logger, r.templateName, r.data)
 	if err != nil {
 		return err

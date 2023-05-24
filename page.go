@@ -80,7 +80,7 @@ func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 			logger.Info("Using alternative static page", zap.String(locale.LangName, lang))
 			var builder strings.Builder
 			builder.WriteString(lang)
-			builder.WriteString("/")
+			builder.WriteByte('/')
 			builder.WriteString(tmpl)
 			return builder.String(), ""
 		}

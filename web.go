@@ -67,8 +67,8 @@ func (site *Site) AddPage(page Page) {
 	site.root.AddSubPage(page)
 }
 
-func (site *Site) AddStaticPagesFromFolder(logger otelzap.LoggerWithCtx, groupId uint64, folderName string, templatesPath string, templateExt string) {
-	site.root.AddStaticPagesFromFolder(logger, site.tracer, groupId, folderName, templatesPath, templateExt)
+func (site *Site) AddStaticPages(logger otelzap.LoggerWithCtx, groupId uint64, pagePaths []string) {
+	site.root.AddStaticPages(logger, site.tracer, groupId, pagePaths)
 }
 
 func (site *Site) GetPage(name string) (Page, bool) {

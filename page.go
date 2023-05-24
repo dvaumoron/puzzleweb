@@ -18,9 +18,7 @@
 package puzzleweb
 
 import (
-	"io/fs"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
@@ -113,42 +111,15 @@ func (p Page) AddSubPage(page Page) {
 	}
 }
 
-func (p Page) AddStaticPagesFromFolder(logger otelzap.LoggerWithCtx, tracer trace.Tracer, groupId uint64, folderName string, templatesPath string, templateExt string) {
-	templatesPath, err := filepath.Abs(templatesPath)
-	if err != nil {
-		logger.Fatal("Wrong templatesPath", zap.Error(err))
-	}
-
-	inSize := len(templatesPath)
-	var folderPathBuilder strings.Builder
-	folderPathBuilder.WriteString(templatesPath)
-	if last := inSize - 1; templatesPath[last] != '/' {
-		folderPathBuilder.WriteByte('/')
-		inSize++
-	}
-	folderPathBuilder.WriteString(folderName)
-	folderSize := len(folderName) + 1
-
-	extSize := len(templateExt)
-	slashIndexName := "/index" + templateExt
-	err = filepath.WalkDir(folderPathBuilder.String(), func(path string, d fs.DirEntry, err error) error {
-		if err == nil {
-			if innerPath := path[inSize:]; d.IsDir() {
-				if len(innerPath) > folderSize {
-					currentPage, name := p.extractSubPageFromPath(innerPath[folderSize:])
-					currentPage.AddSubPage(MakeStaticPage(tracer, name, groupId, innerPath+slashIndexName))
-				}
-			} else if cut := len(innerPath) - extSize; innerPath[cut:] == templateExt {
-				if currentPage, name := p.extractSubPageFromPath(innerPath[folderSize:cut]); name != "index" {
-					currentPage.AddSubPage(MakeStaticPage(tracer, name, groupId, innerPath))
-				}
-			}
+func (p Page) AddStaticPages(logger otelzap.LoggerWithCtx, tracer trace.Tracer, groupId uint64, pagePaths []string) {
+	for _, pagePath := range pagePaths {
+		if last := len(pagePath) - 1; pagePath[last] == '/' {
+			currentPage, name := p.extractSubPageFromPath(pagePath[:last])
+			currentPage.AddSubPage(MakeStaticPage(tracer, name, groupId, pagePath+"index"))
+		} else {
+			currentPage, name := p.extractSubPageFromPath(pagePath)
+			currentPage.AddSubPage(MakeStaticPage(tracer, name, groupId, pagePath))
 		}
-		return err
-	})
-
-	if err != nil {
-		logger.Fatal("Failed to load static pages", zap.Error(err))
 	}
 }
 

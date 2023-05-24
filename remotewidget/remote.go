@@ -18,12 +18,21 @@
 package remotewidget
 
 import (
+	"encoding/json"
+	"net/http"
+	"strings"
+
 	"github.com/dvaumoron/puzzleweb"
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/remotewidget/service"
 	"github.com/gin-gonic/gin"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
+
+const formKey = "formData"
 
 type handlerDesc struct {
 	kind    string
@@ -52,19 +61,92 @@ func NewRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName 
 	widgetNameSlash := widgetName + "/"
 	handlers := make([]handlerDesc, 0, len(actions))
 	for _, action := range actions {
+		actionKind := action.Kind
 		actionName := action.Name
-		handlers = append(handlers, handlerDesc{kind: action.Kind, path: action.Path, handler: puzzleweb.CreateTemplate(
-			tracer, widgetNameSlash+actionName, func(data gin.H, c *gin.Context) (string, string) {
+		actionPath := action.Path
+		var handler gin.HandlerFunc
+		switch actionKind {
+		case http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace:
+			keys := extractKeysFromPath(actionPath)
+			dataAdder := func(data gin.H, c *gin.Context) {
+				extractPathData(keys, data, c)
+			}
+			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
+		case http.MethodPost:
+			keys := extractKeysFromPath(actionPath)
+			dataAdder := func(data gin.H, c *gin.Context) {
+				data[formKey] = c.PostFormMap(formKey)
+				extractPathData(keys, data, c)
+			}
+			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
+		case service.RawResult:
+			keys := extractKeysFromPath(actionPath)
+			handler = func(c *gin.Context) {
 				ctxLogger := puzzleweb.GetLogger(c)
-				// TODO init data
-				widgetService.Process(ctxLogger, widgetName, actionName, data)
-				// TODO
-				return "", ""
-			},
-		)})
+				data := gin.H{}
+				extractPathData(keys, data, c)
+				_, _, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data)
+				if err != nil {
+					c.AbortWithStatus(http.StatusInternalServerError)
+					return
+				}
+				c.Data(http.StatusOK, http.DetectContentType(resData), resData)
+			}
+		default:
+			ctxLogger.Fatal("Failed to init remote widget", zap.String("unknownActionKind", actionKind))
+		}
+		handlers = append(handlers, handlerDesc{kind: actionKind, path: actionPath, handler: handler})
 	}
 
 	p := puzzleweb.MakePage(pageName)
 	p.Widget = remoteWidget{handlers: handlers}
 	return p
+}
+
+func extractKeysFromPath(path string) []string {
+	splitted := strings.Split(path, "/")
+	keys := make([]string, 0, len(splitted))
+	for _, part := range splitted {
+		if part[0] == ':' {
+			keys = append(keys, part[1:])
+		}
+	}
+	return keys
+}
+
+func extractPathData(keys []string, data gin.H, c *gin.Context) {
+	for _, key := range keys {
+		data[key] = c.Param(key)
+	}
+}
+
+func createHandler(tracer trace.Tracer, spanName string, widgetName string, actionName string, dataAdder common.DataAdder, widgetService service.WidgetService) gin.HandlerFunc {
+	return puzzleweb.CreateTemplate(tracer, spanName, func(data gin.H, c *gin.Context) (string, string) {
+		ctxLogger := puzzleweb.GetLogger(c)
+		dataAdder(data, c)
+		redirect, templateName, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data)
+		if err != nil {
+			return "", common.DefaultErrorRedirect(err.Error())
+		}
+		if redirect != "" {
+			return "", redirect
+		}
+
+		if updateData(ctxLogger, data, resData) {
+			return templateName, ""
+		}
+		return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
+	})
+}
+
+func updateData(ctxLogger otelzap.LoggerWithCtx, data gin.H, resData []byte) bool {
+	var newData gin.H
+	if err := json.Unmarshal(resData, &newData); err != nil {
+		ctxLogger.Error("Failed to unmarshal json from remote widget", zap.Error(err))
+		return false
+	}
+	for key, value := range newData {
+		data[key] = value
+	}
+	return true
 }

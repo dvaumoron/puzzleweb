@@ -22,7 +22,7 @@ import (
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
-const RawResult = "raw"
+const RawResult = "RAW"
 
 type Action struct {
 	Kind string

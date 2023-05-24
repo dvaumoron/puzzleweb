@@ -18,12 +18,16 @@
 package client
 
 import (
+	"encoding/json"
+	"net/http"
+
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/remotewidget/service"
 	pb "github.com/dvaumoron/puzzlewidgetservice"
 	"github.com/gin-gonic/gin"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -52,11 +56,55 @@ func (client widgetClient) GetDesc(logger otelzap.LoggerWithCtx, name string) ([
 }
 
 func (client widgetClient) Process(logger otelzap.LoggerWithCtx, widgetName string, actionName string, data gin.H) (string, string, []byte, error) {
-	// TODO
-	return "", "", nil, nil
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		logger.Error("Failed to marshal data", zap.Error(err))
+		return "", "", nil, common.ErrTechnical
+	}
+
+	conn, err := client.Dial()
+	if err != nil {
+		return "", "", nil, common.LogOriginalError(logger, err)
+	}
+	defer conn.Close()
+
+	response, err := pb.NewWidgetClient(conn).Process(logger.Context(), &pb.ProcessRequest{
+		WidgetName: widgetName, ActionName: actionName, Data: dataBytes,
+	})
+	if err != nil {
+		return "", "", nil, common.LogOriginalError(logger, err)
+	}
+	return response.Redirect, response.TemplateName, response.Data, nil
 }
 
 func convertActions(actions []*pb.Action) []service.Action {
-	// TODO
-	return nil
+	res := make([]service.Action, 0, len(actions))
+	for _, action := range actions {
+		res = append(res, service.Action{Kind: converKind(action.Kind), Name: action.Name, Path: action.Path})
+	}
+	return res
+}
+
+func converKind(kind pb.MethodKind) string {
+	switch kind {
+	case pb.MethodKind_HEAD:
+		return http.MethodHead
+	case pb.MethodKind_POST:
+		return http.MethodPost
+	case pb.MethodKind_PUT:
+		return http.MethodPut
+	case pb.MethodKind_PATCH:
+		return http.MethodPatch
+	case pb.MethodKind_DELETE:
+		return http.MethodDelete
+	case pb.MethodKind_CONNECT:
+		return http.MethodConnect
+	case pb.MethodKind_OPTIONS:
+		return http.MethodOptions
+	case pb.MethodKind_TRACE:
+		return http.MethodTrace
+	case pb.MethodKind_RAW:
+		return service.RawResult
+	}
+	return http.MethodGet
 }

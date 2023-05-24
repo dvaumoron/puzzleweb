@@ -38,6 +38,8 @@ import (
 	strengthclient "github.com/dvaumoron/puzzleweb/passwordstrength/client"
 	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+	widgetclient "github.com/dvaumoron/puzzleweb/remotewidget/client"
+	widgetservice "github.com/dvaumoron/puzzleweb/remotewidget/service"
 	sessionclient "github.com/dvaumoron/puzzleweb/session/client"
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	templateclient "github.com/dvaumoron/puzzleweb/templates/client"
@@ -64,6 +66,7 @@ type AuthConfig = ServiceConfig[adminservice.AuthService]
 type LoginConfig = ServiceConfig[loginservice.LoginService]
 type SettingsConfig = ServiceConfig[sessionservice.SessionService]
 type TemplateConfig = ServiceConfig[templateservice.TemplateService]
+type WidgetConfig = ServiceConfig[widgetservice.WidgetService]
 
 type BaseConfigExtracter interface {
 	BaseConfig
@@ -383,6 +386,10 @@ func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...s
 		),
 		PageSize: c.PageSize, ExtractSize: c.ExtractSize, Args: args,
 	}
+}
+
+func (c *GlobalConfig) CreateWidgetConfig(serviceAddr string, objectId uint64, groupId uint64) WidgetConfig {
+	return MakeServiceConfig(c, widgetclient.New(serviceAddr, c.DialOptions, objectId, groupId))
 }
 
 func retrieveWithDefault(logger otelzap.LoggerWithCtx, name string, defaultValue string) string {

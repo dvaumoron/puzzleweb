@@ -33,11 +33,12 @@ import (
 )
 
 const formKey = "formData"
+const pathKeySlash = "pathData/"
 
 type handlerDesc struct {
-	kind    string
-	path    string
-	handler gin.HandlerFunc
+	httpMethod string
+	path       string
+	handler    gin.HandlerFunc
 }
 
 type remoteWidget struct {
@@ -46,7 +47,7 @@ type remoteWidget struct {
 
 func (w remoteWidget) LoadInto(router gin.IRouter) {
 	for _, desc := range w.handlers {
-		router.Handle(desc.kind, desc.path, desc.handler)
+		router.Handle(desc.httpMethod, desc.path, desc.handler)
 	}
 }
 
@@ -61,11 +62,11 @@ func NewRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName 
 	widgetNameSlash := widgetName + "/"
 	handlers := make([]handlerDesc, 0, len(actions))
 	for _, action := range actions {
-		actionKind := action.Kind
+		httpMethod := action.Kind
 		actionName := action.Name
 		actionPath := action.Path
 		var handler gin.HandlerFunc
-		switch actionKind {
+		switch httpMethod {
 		case http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace:
 			keys := extractKeysFromPath(actionPath)
 			dataAdder := func(data gin.H, c *gin.Context) {
@@ -80,7 +81,7 @@ func NewRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName 
 			}
 			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
 		case service.RawResult:
-			actionKind = http.MethodGet
+			httpMethod = http.MethodGet
 			keys := extractKeysFromPath(actionPath)
 			handler = func(c *gin.Context) {
 				ctxLogger := puzzleweb.GetLogger(c)
@@ -94,9 +95,9 @@ func NewRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName 
 				c.Data(http.StatusOK, http.DetectContentType(resData), resData)
 			}
 		default:
-			ctxLogger.Fatal("Failed to init remote widget", zap.String("unknownActionKind", actionKind))
+			ctxLogger.Fatal("Failed to init remote widget", zap.String("unknownActionKind", httpMethod))
 		}
-		handlers = append(handlers, handlerDesc{kind: actionKind, path: actionPath, handler: handler})
+		handlers = append(handlers, handlerDesc{httpMethod: httpMethod, path: actionPath, handler: handler})
 	}
 
 	p := puzzleweb.MakePage(pageName)
@@ -117,7 +118,7 @@ func extractKeysFromPath(path string) []string {
 
 func extractPathData(keys []string, data gin.H, c *gin.Context) {
 	for _, key := range keys {
-		data[key] = c.Param(key)
+		data[pathKeySlash+key] = c.Param(key)
 	}
 }
 

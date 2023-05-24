@@ -80,6 +80,7 @@ func NewRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName 
 			}
 			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
 		case service.RawResult:
+			actionKind = http.MethodGet
 			keys := extractKeysFromPath(actionPath)
 			handler = func(c *gin.Context) {
 				ctxLogger := puzzleweb.GetLogger(c)

@@ -12,9 +12,12 @@ Backed by microservices called with [gRPC](https://grpc.io/), those services def
 - [puzzleloginservice](https://github.com/dvaumoron/puzzleloginservice)
 - [puzzlerightservice](https://github.com/dvaumoron/puzzlerightservice)
 - [puzzleprofileservice](https://github.com/dvaumoron/puzzleprofileservice)
+
+And optionnally (with some kind of page added) :
 - [puzzleforumservice](https://github.com/dvaumoron/puzzleforumservice)
 - [puzzlemarkdownservice](https://github.com/dvaumoron/puzzlemarkdownservice)
 - [puzzleblogservice](https://github.com/dvaumoron/puzzleblogservice)
 - [puzzlewikiservice](https://github.com/dvaumoron/puzzlewikiservice)
+- [puzzlewidgetservice](https://github.com/dvaumoron/puzzlewidgetservice)
 
 The [PuzzleTest](https://github.com/dvaumoron/puzzletest) project show how to use PuzzleWeb.

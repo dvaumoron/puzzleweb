@@ -34,6 +34,7 @@ import (
 
 const formKey = "formData"
 const pathKeySlash = "pathData/"
+const initMsg = "Failed to init remote widget"
 
 type handlerDesc struct {
 	httpMethod string
@@ -51,11 +52,11 @@ func (w remoteWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func NewRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName string, remoteConfig config.WidgetConfig) puzzleweb.Page {
+func MakeRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName string, remoteConfig config.WidgetConfig) puzzleweb.Page {
 	widgetService := remoteConfig.Service
 	actions, err := widgetService.GetDesc(ctxLogger, widgetName)
 	if err != nil {
-		ctxLogger.Fatal("Failed to init remote widget", zap.Error(err))
+		ctxLogger.Fatal(initMsg, zap.Error(err))
 	}
 
 	tracer := remoteConfig.Tracer
@@ -95,7 +96,7 @@ func NewRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName 
 				c.Data(http.StatusOK, http.DetectContentType(resData), resData)
 			}
 		default:
-			ctxLogger.Fatal("Failed to init remote widget", zap.String("unknownActionKind", httpMethod))
+			ctxLogger.Fatal(initMsg, zap.String("unknownActionKind", httpMethod))
 		}
 		handlers = append(handlers, handlerDesc{httpMethod: httpMethod, path: actionPath, handler: handler})
 	}

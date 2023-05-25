@@ -75,6 +75,10 @@ func (site *Site) GetPage(name string) (Page, bool) {
 	return site.root.GetSubPage(name)
 }
 
+func (site *Site) GetPageWithPath(path string) (Page, bool) {
+	return site.root.GetSubPageWithPath(path)
+}
+
 func (site *Site) AddDefaultData(adder common.DataAdder) {
 	site.adders = append(site.adders, adder)
 }

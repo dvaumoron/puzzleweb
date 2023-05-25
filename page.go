@@ -66,7 +66,7 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
+func localizedTmpl(groupId uint64, templateName string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
 		site := getSite(c)
 		logger := site.logger.Ctx(c.Request.Context())
@@ -81,26 +81,26 @@ func localizedTmpl(groupId uint64, tmpl string) common.TemplateRedirecter {
 			var builder strings.Builder
 			builder.WriteString(lang)
 			builder.WriteByte('/')
-			builder.WriteString(tmpl)
+			builder.WriteString(templateName)
 			return builder.String(), ""
 		}
-		return tmpl, ""
+		return templateName, ""
 	}
 }
 
-func newStaticWidget(tracer trace.Tracer, groupId uint64, tmpl string) *staticWidget {
-	return &staticWidget{displayHandler: CreateTemplate(tracer, "staticWidget/displayHandler", localizedTmpl(groupId, tmpl))}
+func newStaticWidget(tracer trace.Tracer, groupId uint64, templateName string) *staticWidget {
+	return &staticWidget{displayHandler: CreateTemplate(tracer, "staticWidget/displayHandler", localizedTmpl(groupId, templateName))}
 }
 
-func MakeStaticPage(tracer trace.Tracer, name string, groupId uint64, tmpl string) Page {
+func MakeStaticPage(tracer trace.Tracer, name string, groupId uint64, templateName string) Page {
 	p := MakePage(name)
-	p.Widget = newStaticWidget(tracer, groupId, tmpl)
+	p.Widget = newStaticWidget(tracer, groupId, templateName)
 	return p
 }
 
-func MakeHiddenStaticPage(tracer trace.Tracer, name string, groupId uint64, tmpl string) Page {
+func MakeHiddenStaticPage(tracer trace.Tracer, name string, groupId uint64, templateName string) Page {
 	p := MakeHiddenPage(name)
-	p.Widget = newStaticWidget(tracer, groupId, tmpl)
+	p.Widget = newStaticWidget(tracer, groupId, templateName)
 	return p
 }
 
@@ -114,11 +114,11 @@ func (p Page) AddSubPage(page Page) {
 func (p Page) AddStaticPages(logger otelzap.LoggerWithCtx, tracer trace.Tracer, groupId uint64, pagePaths []string) {
 	for _, pagePath := range pagePaths {
 		if last := len(pagePath) - 1; pagePath[last] == '/' {
-			currentPage, name := p.extractSubPageFromPath(pagePath[:last])
-			currentPage.AddSubPage(MakeStaticPage(tracer, name, groupId, pagePath+"index"))
+			subPage, name := p.extractSubPageAndNameFromPath(pagePath[:last])
+			subPage.AddSubPage(MakeStaticPage(tracer, name, groupId, pagePath+"index"))
 		} else {
-			currentPage, name := p.extractSubPageFromPath(pagePath)
-			currentPage.AddSubPage(MakeStaticPage(tracer, name, groupId, pagePath))
+			subPage, name := p.extractSubPageAndNameFromPath(pagePath)
+			subPage.AddSubPage(MakeStaticPage(tracer, name, groupId, pagePath))
 		}
 	}
 }
@@ -138,17 +138,26 @@ func (p Page) GetSubPage(name string) (Page, bool) {
 	return Page{}, false
 }
 
-func (current Page) extractSubPageFromPath(path string) (Page, string) {
-	splitted := strings.Split(path, "/")
-	last := len(splitted) - 1
-	for _, name := range splitted[:last] {
+func (p Page) GetSubPageWithPath(path string) (Page, bool) {
+	return p.getPageWithSplittedPath(strings.Split(path, "/"))
+}
+
+func (current Page) getPageWithSplittedPath(splittedPath []string) (Page, bool) {
+	for _, name := range splittedPath {
 		subPage, ok := current.GetSubPage(name)
 		if !ok {
-			break
+			return current, false
 		}
 		current = subPage
 	}
-	return current, splitted[last]
+	return current, true
+}
+
+func (p Page) extractSubPageAndNameFromPath(path string) (Page, string) {
+	splitted := strings.Split(path, "/")
+	last := len(splitted) - 1
+	resPage, _ := p.getPageWithSplittedPath(splitted[:last])
+	return resPage, splitted[last]
 }
 
 func CreateTemplate(tracer trace.Tracer, spanName string, redirecter common.TemplateRedirecter) gin.HandlerFunc {

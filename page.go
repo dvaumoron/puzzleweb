@@ -66,7 +66,7 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func localizedTmpl(groupId uint64, templateName string) common.TemplateRedirecter {
+func localizedTemplate(groupId uint64, templateName string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
 		site := getSite(c)
 		logger := site.logger.Ctx(c.Request.Context())
@@ -89,7 +89,7 @@ func localizedTmpl(groupId uint64, templateName string) common.TemplateRedirecte
 }
 
 func newStaticWidget(tracer trace.Tracer, groupId uint64, templateName string) *staticWidget {
-	return &staticWidget{displayHandler: CreateTemplate(tracer, "staticWidget/displayHandler", localizedTmpl(groupId, templateName))}
+	return &staticWidget{displayHandler: CreateTemplate(tracer, "staticWidget/displayHandler", localizedTemplate(groupId, templateName))}
 }
 
 func MakeStaticPage(tracer trace.Tracer, name string, groupId uint64, templateName string) Page {

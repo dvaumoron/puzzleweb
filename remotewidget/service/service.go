@@ -32,5 +32,5 @@ type Action struct {
 
 type WidgetService interface {
 	GetDesc(logger otelzap.LoggerWithCtx, widgetName string) ([]Action, error)
-	Process(logger otelzap.LoggerWithCtx, widgetName string, actionName string, data gin.H) (string, string, []byte, error)
+	Process(logger otelzap.LoggerWithCtx, widgetName string, actionName string, data gin.H, files map[string][]byte) (string, string, []byte, error)
 }

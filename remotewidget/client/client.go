@@ -55,7 +55,7 @@ func (client widgetClient) GetDesc(logger otelzap.LoggerWithCtx, name string) ([
 	return convertActions(response.Actions), nil
 }
 
-func (client widgetClient) Process(logger otelzap.LoggerWithCtx, widgetName string, actionName string, data gin.H) (string, string, []byte, error) {
+func (client widgetClient) Process(logger otelzap.LoggerWithCtx, widgetName string, actionName string, data gin.H, files map[string][]byte) (string, string, []byte, error) {
 	data["objectId"] = client.objectId
 	data["groupId"] = client.groupId
 	dataBytes, err := json.Marshal(data)
@@ -64,6 +64,8 @@ func (client widgetClient) Process(logger otelzap.LoggerWithCtx, widgetName stri
 		return "", "", nil, common.ErrTechnical
 	}
 
+	files["data.json"] = dataBytes
+
 	conn, err := client.Dial()
 	if err != nil {
 		return "", "", nil, common.LogOriginalError(logger, err)
@@ -71,7 +73,7 @@ func (client widgetClient) Process(logger otelzap.LoggerWithCtx, widgetName stri
 	defer conn.Close()
 
 	response, err := pb.NewWidgetClient(conn).Process(logger.Context(), &pb.ProcessRequest{
-		WidgetName: widgetName, ActionName: actionName, Data: dataBytes,
+		WidgetName: widgetName, ActionName: actionName, Files: files,
 	})
 	if err != nil {
 		return "", "", nil, common.LogOriginalError(logger, err)

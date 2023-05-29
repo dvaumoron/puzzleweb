@@ -71,14 +71,14 @@ func MakeRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName
 		case http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace:
 			keys := extractKeysFromPath(actionPath)
 			dataAdder := func(data gin.H, c *gin.Context) {
-				extractPathData(keys, data, c)
+				retrievePathData(keys, data, c)
 			}
 			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
 		case http.MethodPost:
 			keys := extractKeysFromPath(actionPath)
 			dataAdder := func(data gin.H, c *gin.Context) {
 				data[formKey] = c.PostFormMap(formKey)
-				extractPathData(keys, data, c)
+				retrievePathData(keys, data, c)
 			}
 			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
 		case service.RawResult:
@@ -87,8 +87,9 @@ func MakeRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName
 			handler = func(c *gin.Context) {
 				ctxLogger := puzzleweb.GetLogger(c)
 				data := gin.H{}
-				extractPathData(keys, data, c)
-				_, _, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data)
+				retrievePathData(keys, data, c)
+				files := readFiles(c)
+				_, _, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data, files)
 				if err != nil {
 					c.AbortWithStatus(http.StatusInternalServerError)
 					return
@@ -118,17 +119,31 @@ func extractKeysFromPath(path string) [][2]string {
 	return keys
 }
 
-func extractPathData(keys [][2]string, data gin.H, c *gin.Context) {
+func retrievePathData(keys [][2]string, data gin.H, c *gin.Context) {
 	for _, key := range keys {
 		data[key[0]] = c.Param(key[1])
 	}
+}
+
+func readFiles(c *gin.Context) map[string][]byte {
+	fileList := strings.Split(c.Param("fileList"), ",")
+	files := map[string][]byte{}
+	for _, name := range fileList {
+		readFile(name, files, c)
+	}
+	return files
+}
+
+func readFile(name string, files map[string][]byte, c *gin.Context) {
+	// TODO
 }
 
 func createHandler(tracer trace.Tracer, spanName string, widgetName string, actionName string, dataAdder common.DataAdder, widgetService service.WidgetService) gin.HandlerFunc {
 	return puzzleweb.CreateTemplate(tracer, spanName, func(data gin.H, c *gin.Context) (string, string) {
 		ctxLogger := puzzleweb.GetLogger(c)
 		dataAdder(data, c)
-		redirect, templateName, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data)
+		files := readFiles(c)
+		redirect, templateName, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data, files)
 		if err != nil {
 			return "", common.DefaultErrorRedirect(err.Error())
 		}

@@ -56,6 +56,8 @@ func (client widgetClient) GetDesc(logger otelzap.LoggerWithCtx, name string) ([
 }
 
 func (client widgetClient) Process(logger otelzap.LoggerWithCtx, widgetName string, actionName string, data gin.H) (string, string, []byte, error) {
+	data["objectId"] = client.objectId
+	data["groupId"] = client.groupId
 	dataBytes, err := json.Marshal(data)
 	if err != nil {
 		logger.Error("Failed to marshal data", zap.Error(err))

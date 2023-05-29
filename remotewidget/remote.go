@@ -110,7 +110,7 @@ func extractKeysFromPath(path string) [][2]string {
 	splitted := strings.Split(path, "/")
 	keys := make([][2]string, 0, len(splitted))
 	for _, part := range splitted {
-		if part[0] == ':' {
+		if len(part) != 0 && part[0] == ':' {
 			key := part[1:]
 			keys = append(keys, [2]string{pathKeySlash + key, key})
 		}

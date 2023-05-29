@@ -129,14 +129,14 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 		displayHandler: CreateTemplate(tracer, "adminWidget/displayHandler", func(data gin.H, c *gin.Context) (string, string) {
 			viewAdmin, _ := data[viewAdminName].(bool)
 			if !viewAdmin {
-				return "", common.DefaultErrorRedirect(common.ErrNotAuthorized.Error())
+				return "", common.DefaultErrorRedirect(common.ErrorNotAuthorizedKey)
 			}
 			return "admin/index", ""
 		}),
 		listUserHandler: CreateTemplate(tracer, "adminWidget/listUserHandler", func(data gin.H, c *gin.Context) (string, string) {
 			viewAdmin, _ := data[viewAdminName].(bool)
 			if !viewAdmin {
-				return "", common.DefaultErrorRedirect(common.ErrNotAuthorized.Error())
+				return "", common.DefaultErrorRedirect(common.ErrorNotAuthorizedKey)
 			}
 
 			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
@@ -156,7 +156,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			adminId, _ := data[common.IdName].(uint64)
 			userId := GetRequestedUserId(logger, c)
 			if userId == 0 {
-				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 
 			roles, err := adminService.GetUserRoles(logger, adminId, userId)
@@ -182,7 +182,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			adminId, _ := data[common.IdName].(uint64)
 			userId := GetRequestedUserId(logger, c)
 			if userId == 0 {
-				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 
 			allRoles, err := adminService.GetAllRoles(logger, adminId)

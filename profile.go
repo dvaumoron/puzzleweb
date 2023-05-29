@@ -77,7 +77,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			logger := GetLogger(c)
 			viewedUserId := GetRequestedUserId(logger, c)
 			if viewedUserId == 0 {
-				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 
 			currentUserId, _ := data[common.IdName].(uint64)
@@ -96,7 +96,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			roles, err := adminService.GetUserRoles(logger, currentUserId, viewedUserId)
 			// ignore ErrNotAuthorized
 			if err == common.ErrTechnical {
-				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 			if err == nil {
 				data["UserRight"] = DisplayGroups(roles, GetMessages(c))
@@ -135,7 +135,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			picture, err := c.FormFile("picture")
 			if err != nil {
 				common.LogOriginalError(logger, err)
-				return common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 
 			if picture != nil {
@@ -143,7 +143,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 				pictureFile, err = picture.Open()
 				if err != nil {
 					common.LogOriginalError(logger, err)
-					return common.DefaultErrorRedirect(common.ErrTechnical.Error())
+					return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 				}
 				defer pictureFile.Close()
 
@@ -151,7 +151,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 				pictureData, err = io.ReadAll(pictureFile)
 				if err != nil {
 					common.LogOriginalError(logger, err)
-					return common.DefaultErrorRedirect(common.ErrTechnical.Error())
+					return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 				}
 
 				err = profileService.UpdatePicture(logger, userId, pictureData)

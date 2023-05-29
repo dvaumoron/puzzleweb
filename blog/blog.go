@@ -131,7 +131,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingPostIdErrorMsg, zap.Error(err))
-				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 
 			post, err := blogService.GetPost(logger, userId, postId)
@@ -162,7 +162,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingPostIdErrorMsg, zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 			comment := c.PostForm("comment")
 
@@ -193,12 +193,12 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingPostIdErrorMsg, zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 			commentId, err := strconv.ParseUint(c.Param("commentId"), 10, 64)
 			if err != nil {
 				logger.Warn("Failed to parse commentId", zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 
 			post, err := blogService.GetPost(logger, userId, postId)
@@ -280,7 +280,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingPostIdErrorMsg, zap.Error(err))
-				common.WriteError(&targetBuilder, common.ErrTechnical.Error())
+				common.WriteError(&targetBuilder, common.ErrorTechnicalKey)
 				return targetBuilder.String()
 			}
 			userId := puzzleweb.GetSessionUserId(logger, c)

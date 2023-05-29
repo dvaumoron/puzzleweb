@@ -139,7 +139,7 @@ func createHandler(tracer trace.Tracer, spanName string, widgetName string, acti
 		if updateData(ctxLogger, data, resData) {
 			return templateName, ""
 		}
-		return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
+		return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 	})
 }
 

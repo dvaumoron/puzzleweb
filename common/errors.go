@@ -32,9 +32,13 @@ const WrongLangKey = "WrongLang"
 const ReportingPlaceName = "reporting_place"
 
 // error displayed to user
-var ErrNotAuthorized = errors.New("ErrorNotAuthorized")
-var ErrTechnical = errors.New("ErrorTechnicalProblem")
-var ErrUpdate = errors.New("ErrorUpdate")
+const ErrorNotAuthorizedKey = "ErrorNotAuthorized"
+const ErrorTechnicalKey = "ErrorTechnicalProblem"
+const ErrorUpdateKey = "ErrorUpdate"
+
+var ErrNotAuthorized = errors.New(ErrorNotAuthorizedKey)
+var ErrTechnical = errors.New(ErrorTechnicalKey)
+var ErrUpdate = errors.New(ErrorUpdateKey)
 
 func LogOriginalError(logger otelzap.LoggerWithCtx, err error) error {
 	logger.WithOptions(zap.AddCallerSkip(1)).Warn("Original error", zap.Error(err))

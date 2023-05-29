@@ -151,7 +151,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingThreadIdErrorMsg, zap.Error(err))
-				return "", common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 
 			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
@@ -176,7 +176,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingThreadIdErrorMsg, zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 			message := c.PostForm("message")
 
@@ -196,12 +196,12 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingThreadIdErrorMsg, zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 			messageId, err := strconv.ParseUint(c.Param("messageId"), 10, 64)
 			if err != nil {
 				logger.Warn("Failed to parse messageId", zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrTechnical.Error())
+				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 
 			err = forumService.DeleteMessage(logger, puzzleweb.GetSessionUserId(logger, c), threadId, messageId)

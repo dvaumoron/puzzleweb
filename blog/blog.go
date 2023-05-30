@@ -35,6 +35,7 @@ const emptyTitle = "EmptyPostTitle"
 const emptyContent = "EmptyPostContent"
 
 const postIdName = "postId"
+const commentMsgName = "CommentMsg"
 
 const parsingPostIdErrorMsg = "Failed to parse postId"
 
@@ -151,7 +152,11 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			data[common.AllowedToCreateName] = commentService.CreateMessageRight(logger, userId)
 			data[common.AllowedToDeleteName] = commentService.DeleteRight(logger, userId)
 			if len(comments) == 0 {
-				data["CommentMsg"] = puzzleweb.GetMessages(c)["NoComment"]
+				if err == nil {
+					data[commentMsgName] = puzzleweb.GetMessages(c)["NoComment"]
+				} else {
+					data[commentMsgName] = puzzleweb.GetMessages(c)["CommentDisplayError"]
+				}
 			}
 			return viewTmpl, ""
 		}),
@@ -175,9 +180,6 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 				}
 
 				err = commentService.CreateComment(logger, userId, post.Title, comment)
-				if err != nil {
-					return common.DefaultErrorRedirect(err.Error())
-				}
 			}
 
 			targetBuilder := postUrlBuilder(common.GetBaseUrl(3, c), postId)
@@ -207,10 +209,6 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			}
 
 			err = commentService.DeleteComment(logger, userId, post.Title, commentId)
-			if err != nil {
-				return common.DefaultErrorRedirect(err.Error())
-			}
-
 			targetBuilder := postUrlBuilder(common.GetBaseUrl(4, c), postId)
 			if err != nil {
 				common.WriteError(targetBuilder, err.Error())

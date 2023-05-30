@@ -64,7 +64,7 @@ func (client widgetClient) Process(logger otelzap.LoggerWithCtx, widgetName stri
 		return "", "", nil, common.ErrTechnical
 	}
 
-	files["data.json"] = dataBytes
+	files["puzzledata.json"] = dataBytes
 
 	conn, err := client.Dial()
 	if err != nil {

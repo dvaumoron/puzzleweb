@@ -28,7 +28,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -47,7 +46,7 @@ type profileWidget struct {
 }
 
 func defaultRedirecter(c *gin.Context) string {
-	userId := GetSessionUserId(GetLogger(c), c)
+	userId := GetSessionUserId(c)
 	if userId == 0 {
 		return common.DefaultErrorRedirect(unknownUserKey)
 	}
@@ -75,7 +74,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 		defaultHandler: common.CreateRedirect(tracer, "profileWidget/defaultHandler", defaultRedirecter),
 		viewHandler: CreateTemplate(tracer, "profileWidget/viewHandler", func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)
-			viewedUserId := GetRequestedUserId(logger, c)
+			viewedUserId := GetRequestedUserId(c)
 			if viewedUserId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
@@ -124,7 +123,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 		}),
 		saveHandler: common.CreateRedirect(tracer, "profileWidget/saveHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
-			userId := GetSessionUserId(logger, c)
+			userId := GetSessionUserId(c)
 			if userId == 0 {
 				return common.DefaultErrorRedirect(unknownUserKey)
 			}
@@ -169,8 +168,8 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 		}),
 		changeLoginHandler: common.CreateRedirect(tracer, "profileWidget/changeLoginHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
-			session := GetSession(logger, c)
-			userId := extractUserIdFromSession(logger, session)
+			session := GetSession(c)
+			userId := GetSessionUserId(c)
 			if userId == 0 {
 				return common.DefaultErrorRedirect(unknownUserKey)
 			}
@@ -194,8 +193,8 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 		}),
 		changePasswordHandler: common.CreateRedirect(tracer, "profileWidget/changePasswordHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
-			session := GetSession(logger, c)
-			userId := extractUserIdFromSession(logger, session)
+			session := GetSession(c)
+			userId := GetSessionUserId(c)
 			if userId == 0 {
 				return common.DefaultErrorRedirect(unknownUserKey)
 			}
@@ -221,7 +220,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 		}),
 		pictureHandler: func(c *gin.Context) {
 			logger := GetLogger(c)
-			userId := GetRequestedUserId(logger, c)
+			userId := GetRequestedUserId(c)
 			if userId == 0 {
 				c.AbortWithStatus(http.StatusNotFound)
 				return
@@ -235,10 +234,10 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 	return p
 }
 
-func GetRequestedUserId(logger otelzap.LoggerWithCtx, c *gin.Context) uint64 {
+func GetRequestedUserId(c *gin.Context) uint64 {
 	userId, err := strconv.ParseUint(c.Param(userIdName), 10, 64)
 	if err != nil {
-		logger.Warn("Failed to parse userId from request", zap.Error(err))
+		GetLogger(c).Warn("Failed to parse userId from request", zap.Error(err))
 	}
 	return userId
 }

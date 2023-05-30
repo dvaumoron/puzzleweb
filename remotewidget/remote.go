@@ -69,25 +69,25 @@ func MakeRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName
 		var handler gin.HandlerFunc
 		switch httpMethod {
 		case http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace:
-			keys := extractKeysFromPath(actionPath)
+			pathKeys := extractKeysFromPath(actionPath)
 			dataAdder := func(data gin.H, c *gin.Context) {
-				retrievePathData(keys, data, c)
+				retrievePathAndSessionData(pathKeys, data, c)
 			}
 			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
 		case http.MethodPost:
-			keys := extractKeysFromPath(actionPath)
+			pathKeys := extractKeysFromPath(actionPath)
 			dataAdder := func(data gin.H, c *gin.Context) {
 				data[formKey] = c.PostFormMap(formKey)
-				retrievePathData(keys, data, c)
+				retrievePathAndSessionData(pathKeys, data, c)
 			}
 			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
 		case service.RawResult:
 			httpMethod = http.MethodGet
-			keys := extractKeysFromPath(actionPath)
+			pathKeys := extractKeysFromPath(actionPath)
 			handler = func(c *gin.Context) {
 				ctxLogger := puzzleweb.GetLogger(c)
 				data := gin.H{}
-				retrievePathData(keys, data, c)
+				retrievePathAndSessionData(pathKeys, data, c)
 				files := readFiles(c)
 				_, _, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data, files)
 				if err != nil {
@@ -119,10 +119,11 @@ func extractKeysFromPath(path string) [][2]string {
 	return keys
 }
 
-func retrievePathData(keys [][2]string, data gin.H, c *gin.Context) {
-	for _, key := range keys {
+func retrievePathAndSessionData(pathKeys [][2]string, data gin.H, c *gin.Context) {
+	for _, key := range pathKeys {
 		data[key[0]] = c.Param(key[1])
 	}
+	data[puzzleweb.SessionName] = puzzleweb.GetSession(c).AsMap()
 }
 
 func readFiles(c *gin.Context) map[string][]byte {
@@ -151,14 +152,14 @@ func createHandler(tracer trace.Tracer, spanName string, widgetName string, acti
 			return "", redirect
 		}
 
-		if updateData(ctxLogger, data, resData) {
+		if updateData(ctxLogger, data, resData, c) {
 			return templateName, ""
 		}
 		return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 	})
 }
 
-func updateData(ctxLogger otelzap.LoggerWithCtx, data gin.H, resData []byte) bool {
+func updateData(ctxLogger otelzap.LoggerWithCtx, data gin.H, resData []byte, c *gin.Context) bool {
 	var newData gin.H
 	if err := json.Unmarshal(resData, &newData); err != nil {
 		ctxLogger.Error("Failed to unmarshal json from remote widget", zap.Error(err))
@@ -166,6 +167,16 @@ func updateData(ctxLogger otelzap.LoggerWithCtx, data gin.H, resData []byte) boo
 	}
 	for key, value := range newData {
 		data[key] = value
+	}
+	sessionMap, sessionUpdate := newData[puzzleweb.SessionName]
+	if sessionUpdate {
+		casted, ok := sessionMap.(map[string]string)
+		if ok {
+			session := puzzleweb.GetSession(c)
+			for key, value := range casted {
+				session.Store(key, value)
+			}
+		}
 	}
 	return true
 }

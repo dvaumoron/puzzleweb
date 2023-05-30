@@ -176,7 +176,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 				return targetBuilder.String()
 			}
 
-			userId := puzzleweb.GetSessionUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			last := c.PostForm(versionName)
 			content := c.PostForm("content")
 
@@ -228,7 +228,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 				return targetBuilder.String()
 			}
 
-			userId := puzzleweb.GetSessionUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			version := c.Query(versionName)
 			err := wikiService.DeleteContent(logger, userId, lang, title, version)
 			if err != nil {

@@ -162,7 +162,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 		}),
 		saveCommentHandler: common.CreateRedirect(tracer, "blogWidget/saveCommentHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
-			userId := puzzleweb.GetSessionUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {
@@ -190,7 +190,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 		}),
 		deleteCommentHandler: common.CreateRedirect(tracer, "blogWidget/deleteCommentHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
-			userId := puzzleweb.GetSessionUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {
@@ -244,7 +244,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 		saveHandler: common.CreateRedirect(tracer, "blogWidget/saveHandler", func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			title := c.PostForm("title")
-			userId := puzzleweb.GetSessionUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 			markdown := c.PostForm("markdown")
 
 			if title == "" {
@@ -281,7 +281,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 				common.WriteError(&targetBuilder, common.ErrorTechnicalKey)
 				return targetBuilder.String()
 			}
-			userId := puzzleweb.GetSessionUserId(logger, c)
+			userId := puzzleweb.GetSessionUserId(c)
 
 			post, err := blogService.GetPost(logger, userId, postId)
 			if err != nil {

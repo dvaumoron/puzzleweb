@@ -114,7 +114,7 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 				return c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
 			}
 
-			s := GetSession(logger, c)
+			s := GetSession(c)
 			s.Store(loginName, login)
 			s.Store(userIdName, strconv.FormatUint(userId, 10))
 
@@ -123,7 +123,7 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 			return c.PostForm(common.RedirectName)
 		}),
 		logoutHandler: common.CreateRedirect(tracer, "loginWidget/logoutHandler", func(c *gin.Context) string {
-			s := GetSession(GetLogger(c), c)
+			s := GetSession(c)
 			s.Delete(loginName)
 			s.Delete(userIdName)
 			return c.Query(common.RedirectName)

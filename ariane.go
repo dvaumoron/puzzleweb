@@ -136,12 +136,12 @@ func initData(c *gin.Context) gin.H {
 		data["LangSelectorUrl"] = "/changeLang?Redirect=" + escapedUrl
 		data["AllLang"] = localesManager.GetAllLang()
 	}
-	session := GetSession(logger, c)
+	session := GetSession(c)
 	var currentUserId uint64
 	if login := session.Load(loginName); login == "" {
 		data[loginUrlName] = "/login?Redirect=" + escapedUrl
 	} else {
-		currentUserId = extractUserIdFromSession(logger, session)
+		currentUserId = GetSessionUserId(c)
 		data[loginName] = login
 		data[common.IdName] = currentUserId
 		data[loginUrlName] = "/login/logout?Redirect=" + escapedUrl

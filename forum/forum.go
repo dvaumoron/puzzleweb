@@ -123,7 +123,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 				return common.DefaultErrorRedirect(emptyMessage)
 			}
 
-			threadId, err := forumService.CreateThread(logger, puzzleweb.GetSessionUserId(logger, c), title, message)
+			threadId, err := forumService.CreateThread(logger, puzzleweb.GetSessionUserId(c), title, message)
 			if err != nil {
 				return common.DefaultErrorRedirect(err.Error())
 			}
@@ -133,7 +133,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			logger := puzzleweb.GetLogger(c)
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err == nil {
-				err = forumService.DeleteThread(logger, puzzleweb.GetSessionUserId(logger, c), threadId)
+				err = forumService.DeleteThread(logger, puzzleweb.GetSessionUserId(c), threadId)
 			} else {
 				logger.Warn(parsingThreadIdErrorMsg, zap.Error(err))
 				err = common.ErrTechnical
@@ -182,7 +182,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 
 			err = errEmptyMessage
 			if message != "" {
-				err = forumService.CreateMessage(logger, puzzleweb.GetSessionUserId(logger, c), threadId, message)
+				err = forumService.CreateMessage(logger, puzzleweb.GetSessionUserId(c), threadId, message)
 			}
 
 			targetBuilder := threadUrlBuilder(common.GetBaseUrl(3, c), threadId)
@@ -204,7 +204,7 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 
-			err = forumService.DeleteMessage(logger, puzzleweb.GetSessionUserId(logger, c), threadId, messageId)
+			err = forumService.DeleteMessage(logger, puzzleweb.GetSessionUserId(c), threadId, messageId)
 
 			targetBuilder := threadUrlBuilder(common.GetBaseUrl(4, c), threadId)
 			if err != nil {

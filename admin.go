@@ -154,7 +154,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 		viewUserHandler: CreateTemplate(tracer, "adminWidget/viewUserHandler", func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)
 			adminId, _ := data[common.IdName].(uint64)
-			userId := GetRequestedUserId(logger, c)
+			userId := GetRequestedUserId(c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
@@ -180,7 +180,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 		editUserHandler: CreateTemplate(tracer, "adminWidget/editUserHandler", func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)
 			adminId, _ := data[common.IdName].(uint64)
-			userId := GetRequestedUserId(logger, c)
+			userId := GetRequestedUserId(c)
 			if userId == 0 {
 				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
@@ -206,7 +206,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 		}),
 		saveUserHandler: common.CreateRedirect(tracer, "adminWidget/saveUserHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
-			userId := GetRequestedUserId(logger, c)
+			userId := GetRequestedUserId(c)
 			err := common.ErrTechnical
 			if userId != 0 {
 				rolesStr := c.PostFormArray("roles")
@@ -217,7 +217,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 						roles = append(roles, service.Role{Name: splitted[0], GroupName: splitted[1]})
 					}
 				}
-				err = adminService.UpdateUser(logger, GetSessionUserId(logger, c), userId, roles)
+				err = adminService.UpdateUser(logger, GetSessionUserId(c), userId, roles)
 			}
 
 			targetBuilder := userListUrlBuilder()
@@ -228,12 +228,12 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 		}),
 		deleteUserHandler: common.CreateRedirect(tracer, "adminWidget/deleteUserHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
-			userId := GetRequestedUserId(logger, c)
+			userId := GetRequestedUserId(c)
 			err := common.ErrTechnical
 			if userId != 0 {
 				// an empty slice delete the user right
 				// only the first service call do a right check
-				err = adminService.UpdateUser(logger, GetSessionUserId(logger, c), userId, []service.Role{})
+				err = adminService.UpdateUser(logger, GetSessionUserId(c), userId, []service.Role{})
 				if err == nil {
 					err = profileService.Delete(logger, userId)
 					if err == nil {
@@ -291,7 +291,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 				group := c.PostForm(groupName)
 				actions := c.PostFormArray("actions")
 				logger := GetLogger(c)
-				err = adminService.UpdateRole(logger, GetSessionUserId(logger, c), service.Role{
+				err = adminService.UpdateRole(logger, GetSessionUserId(c), service.Role{
 					Name: roleName, GroupName: group, Actions: actions,
 				})
 			}

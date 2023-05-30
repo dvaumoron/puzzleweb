@@ -112,7 +112,7 @@ func newSettingsPage(settingsConfig config.ServiceConfig[*SettingsManager]) Page
 		}),
 		saveHandler: common.CreateRedirect(tracer, "settingsWidget/saveHandler", func(c *gin.Context) string {
 			logger := GetLogger(c)
-			userId := GetSessionUserId(logger, c)
+			userId := GetSessionUserId(c)
 			if userId == 0 {
 				return common.DefaultErrorRedirect(unknownUserKey)
 			}

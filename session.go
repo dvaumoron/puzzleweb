@@ -30,7 +30,7 @@ import (
 )
 
 const cookieName = "pw_session_id"
-const sessionName = "Session"
+const SessionName = "Session"
 
 var errDecodeTooShort = errors.New("the result from base64 decoding is too short")
 
@@ -116,7 +116,7 @@ func (s *Session) Load(key string) string {
 	return s.session[key]
 }
 
-func (s *Session) Store(key, value string) {
+func (s *Session) Store(key string, value string) {
 	oldValue := s.session[key]
 	if oldValue != value {
 		s.session[key] = value
@@ -130,6 +130,11 @@ func (s *Session) Delete(key string) {
 		s.session[key] = "" // to allow a deletion in the service
 		s.change = true
 	}
+}
+
+// Writing in the returned map will not be saved.
+func (s *Session) AsMap() map[string]string {
+	return s.session
 }
 
 func (m sessionManager) manage(c *gin.Context) {
@@ -151,10 +156,10 @@ func (m sessionManager) manage(c *gin.Context) {
 		session = map[string]string{}
 	}
 
-	c.Set(sessionName, &Session{session: session}) // change is false (default bool)
+	c.Set(SessionName, &Session{session: session}) // change is false (default bool)
 	c.Next()
 
-	if s := GetSession(logger, c); s.change {
+	if s := GetSession(c); s.change {
 		if m.Service.Update(logger, sessionId, s.session) != nil {
 			logSessionError("Failed to save session", sessionId, c)
 		}
@@ -166,27 +171,23 @@ func logSessionError(msg string, sessionId uint64, c *gin.Context) {
 	c.AbortWithStatus(http.StatusInternalServerError)
 }
 
-func GetSession(logger otelzap.LoggerWithCtx, c *gin.Context) *Session {
-	untyped, _ := c.Get(sessionName)
+func GetSession(c *gin.Context) *Session {
+	untyped, _ := c.Get(SessionName)
 	typed, ok := untyped.(*Session)
 	if !ok {
-		logger.Error("There is no session in context")
+		GetLogger(c).Error("There is no session in context")
 		typed = &Session{session: map[string]string{}, change: true}
-		c.Set(sessionName, typed)
+		c.Set(SessionName, typed)
 	}
 	return typed
 }
 
-func GetSessionUserId(logger otelzap.LoggerWithCtx, c *gin.Context) uint64 {
-	return extractUserIdFromSession(logger, GetSession(logger, c))
-}
-
-func extractUserIdFromSession(logger otelzap.LoggerWithCtx, session *Session) uint64 {
-	userId, err := strconv.ParseUint(session.Load(userIdName), 10, 64)
+func GetSessionUserId(c *gin.Context) uint64 {
+	userId, err := strconv.ParseUint(GetSession(c).Load(userIdName), 10, 64)
 	if err == nil {
-		logger.Debug("userId parsed from session", zap.Uint64(userIdName, userId))
+		GetLogger(c).Debug("userId parsed from session", zap.Uint64(userIdName, userId))
 	} else {
-		logger.Info("Failed to parse userId from session", zap.Error(err))
+		GetLogger(c).Info("Failed to parse userId from session", zap.Error(err))
 	}
 	return userId
 }

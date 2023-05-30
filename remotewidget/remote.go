@@ -19,6 +19,7 @@ package remotewidget
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 
@@ -68,13 +69,13 @@ func MakeRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName
 		actionPath := action.Path
 		var handler gin.HandlerFunc
 		switch httpMethod {
-		case http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace:
+		case http.MethodGet, http.MethodHead, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace:
 			pathKeys := extractKeysFromPath(actionPath)
 			dataAdder := func(data gin.H, c *gin.Context) {
 				retrievePathAndSessionData(pathKeys, data, c)
 			}
 			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
-		case http.MethodPost:
+		case http.MethodPost, http.MethodPut, http.MethodPatch:
 			pathKeys := extractKeysFromPath(actionPath)
 			dataAdder := func(data gin.H, c *gin.Context) {
 				data[formKey] = c.PostFormMap(formKey)
@@ -88,8 +89,7 @@ func MakeRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName
 				ctxLogger := puzzleweb.GetLogger(c)
 				data := gin.H{}
 				retrievePathAndSessionData(pathKeys, data, c)
-				files := readFiles(c)
-				_, _, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data, files)
+				_, _, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data, map[string][]byte{})
 				if err != nil {
 					c.AbortWithStatus(http.StatusInternalServerError)
 					return
@@ -126,24 +126,52 @@ func retrievePathAndSessionData(pathKeys [][2]string, data gin.H, c *gin.Context
 	data[puzzleweb.SessionName] = puzzleweb.GetSession(c).AsMap()
 }
 
-func readFiles(c *gin.Context) map[string][]byte {
-	fileList := strings.Split(c.Param("fileList"), ",")
+func readFiles(c *gin.Context) (map[string][]byte, error) {
 	files := map[string][]byte{}
-	for _, name := range fileList {
-		readFile(name, files, c)
+	fileList := c.PostForm("fileList")
+	if len(fileList) == 0 {
+		return files, nil
 	}
-	return files
+
+	for _, name := range strings.Split(fileList, ",") {
+		if trimmed := strings.TrimSpace(name); len(trimmed) != 0 {
+			if err := readFile(trimmed, files, c); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return files, nil
 }
 
-func readFile(name string, files map[string][]byte, c *gin.Context) {
-	// TODO
+func readFile(name string, files map[string][]byte, c *gin.Context) error {
+	header, err := c.FormFile(name)
+	if err != nil || header == nil {
+		return err
+	}
+
+	file, err := header.Open()
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	fileData, err := io.ReadAll(file)
+	if err != nil || len(fileData) == 0 {
+		return err
+	}
+	files[name] = fileData
+	return nil
 }
 
 func createHandler(tracer trace.Tracer, spanName string, widgetName string, actionName string, dataAdder common.DataAdder, widgetService service.WidgetService) gin.HandlerFunc {
 	return puzzleweb.CreateTemplate(tracer, spanName, func(data gin.H, c *gin.Context) (string, string) {
 		ctxLogger := puzzleweb.GetLogger(c)
 		dataAdder(data, c)
-		files := readFiles(c)
+		files, err := readFiles(c)
+		if err != nil {
+			ctxLogger.Error("Failed to retrieve post file", zap.Error(err))
+			return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+		}
 		redirect, templateName, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data, files)
 		if err != nil {
 			return "", common.DefaultErrorRedirect(err.Error())

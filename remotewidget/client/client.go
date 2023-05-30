@@ -84,7 +84,9 @@ func (client widgetClient) Process(logger otelzap.LoggerWithCtx, widgetName stri
 func convertActions(actions []*pb.Action) []service.Action {
 	res := make([]service.Action, 0, len(actions))
 	for _, action := range actions {
-		res = append(res, service.Action{Kind: converKind(action.Kind), Name: action.Name, Path: action.Path})
+		res = append(res, service.Action{
+			Kind: converKind(action.Kind), Name: action.Name, Path: action.Path, QueryNames: action.QueryNames},
+		)
 	}
 	return res
 }

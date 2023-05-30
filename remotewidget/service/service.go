@@ -25,9 +25,10 @@ import (
 const RawResult = "RAW"
 
 type Action struct {
-	Kind string
-	Name string
-	Path string
+	Kind       string
+	Name       string
+	Path       string
+	QueryNames []string
 }
 
 type WidgetService interface {

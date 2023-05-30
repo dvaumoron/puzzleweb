@@ -35,6 +35,7 @@ import (
 
 const formKey = "formData"
 const pathKeySlash = "pathData/"
+const queryKeySlash = "queryData/"
 const initMsg = "Failed to init remote widget"
 
 type handlerDesc struct {
@@ -67,28 +68,27 @@ func MakeRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName
 		httpMethod := action.Kind
 		actionName := action.Name
 		actionPath := action.Path
+		pathKeys := extractKeysFromPath(actionPath)
+		queryKeys := extractQueryKeys(action.QueryNames)
 		var handler gin.HandlerFunc
 		switch httpMethod {
 		case http.MethodGet, http.MethodHead, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace:
-			pathKeys := extractKeysFromPath(actionPath)
 			dataAdder := func(data gin.H, c *gin.Context) {
-				retrievePathAndSessionData(pathKeys, data, c)
+				retrieveContextData(pathKeys, queryKeys, data, c)
 			}
 			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
 		case http.MethodPost, http.MethodPut, http.MethodPatch:
-			pathKeys := extractKeysFromPath(actionPath)
 			dataAdder := func(data gin.H, c *gin.Context) {
 				data[formKey] = c.PostFormMap(formKey)
-				retrievePathAndSessionData(pathKeys, data, c)
+				retrieveContextData(pathKeys, queryKeys, data, c)
 			}
 			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
 		case service.RawResult:
 			httpMethod = http.MethodGet
-			pathKeys := extractKeysFromPath(actionPath)
 			handler = func(c *gin.Context) {
 				ctxLogger := puzzleweb.GetLogger(c)
 				data := gin.H{}
-				retrievePathAndSessionData(pathKeys, data, c)
+				retrieveContextData(pathKeys, queryKeys, data, c)
 				_, _, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data, map[string][]byte{})
 				if err != nil {
 					c.AbortWithStatus(http.StatusInternalServerError)
@@ -119,9 +119,23 @@ func extractKeysFromPath(path string) [][2]string {
 	return keys
 }
 
-func retrievePathAndSessionData(pathKeys [][2]string, data gin.H, c *gin.Context) {
+func extractQueryKeys(names []string) [][2]string {
+	keys := make([][2]string, 0, len(names))
+	for _, name := range names {
+		key := strings.TrimSpace(name)
+		if len(key) != 0 {
+			keys = append(keys, [2]string{queryKeySlash + key, key})
+		}
+	}
+	return keys
+}
+
+func retrieveContextData(pathKeys [][2]string, queryKeys [][2]string, data gin.H, c *gin.Context) {
 	for _, key := range pathKeys {
 		data[key[0]] = c.Param(key[1])
+	}
+	for _, key := range queryKeys {
+		data[key[0]] = c.Query(key[1])
 	}
 	data[puzzleweb.SessionName] = puzzleweb.GetSession(c).AsMap()
 }

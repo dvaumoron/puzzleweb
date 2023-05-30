@@ -133,7 +133,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 
 			picture, err := c.FormFile("picture")
 			if err != nil {
-				common.LogOriginalError(logger, err)
+				logger.Error("Failed to retrieve picture file", zap.Error(err))
 				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 
@@ -141,7 +141,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 				var pictureFile multipart.File
 				pictureFile, err = picture.Open()
 				if err != nil {
-					common.LogOriginalError(logger, err)
+					logger.Error("Failed to open retrieve picture file ", zap.Error(err))
 					return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 				}
 				defer pictureFile.Close()
@@ -149,7 +149,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 				var pictureData []byte
 				pictureData, err = io.ReadAll(pictureFile)
 				if err != nil {
-					common.LogOriginalError(logger, err)
+					logger.Error("Failed to read picture file ", zap.Error(err))
 					return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 				}
 

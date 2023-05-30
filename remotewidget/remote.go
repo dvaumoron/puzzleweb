@@ -180,17 +180,17 @@ func createHandler(tracer trace.Tracer, spanName string, widgetName string, acti
 			return "", redirect
 		}
 
-		if updateData(ctxLogger, data, resData, c) {
+		if updateDataAndSession(data, resData, c) {
 			return templateName, ""
 		}
+		ctxLogger.Error("Failed to unmarshal json from remote widget", zap.Error(err))
 		return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 	})
 }
 
-func updateData(ctxLogger otelzap.LoggerWithCtx, data gin.H, resData []byte, c *gin.Context) bool {
+func updateDataAndSession(data gin.H, resData []byte, c *gin.Context) bool {
 	var newData gin.H
 	if err := json.Unmarshal(resData, &newData); err != nil {
-		ctxLogger.Error("Failed to unmarshal json from remote widget", zap.Error(err))
 		return false
 	}
 	for key, value := range newData {

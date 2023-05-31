@@ -18,6 +18,6 @@ And optionnally (with some kind of page added) :
 - [puzzlemarkdownservice](https://github.com/dvaumoron/puzzlemarkdownservice)
 - [puzzleblogservice](https://github.com/dvaumoron/puzzleblogservice)
 - [puzzlewikiservice](https://github.com/dvaumoron/puzzlewikiservice)
-- [puzzlewidgetservice](https://github.com/dvaumoron/puzzlewidgetservice)
+- [puzzlewidgetservice](https://github.com/dvaumoron/puzzlewidgetservice), which is a way to add your custom dynamic page in a decoupled way
 
-The [PuzzleTest](https://github.com/dvaumoron/puzzletest) project show how to use PuzzleWeb.
+The projects [PuzzleFrame](https://github.com/dvaumoron/puzzleframe) and [PuzzleTest](https://github.com/dvaumoron/puzzletest) show how to use PuzzleWeb.

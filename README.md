@@ -28,5 +28,6 @@ List of helper projects :
 - [puzzledbclient](https://github.com/dvaumoron/puzzledbclient)
 - [puzzlemongoclient](https://github.com/dvaumoron/puzzlemongoclient)
 - [puzzleredisclient](https://github.com/dvaumoron/puzzleredisclient)
+- [puzzlesaltclient](https://github.com/dvaumoron/puzzlesaltclient)
 - [puzzletelemetry](https://github.com/dvaumoron/puzzletelemetry)
 - [puzzlewidgetserver](https://github.com/dvaumoron/puzzlewidgetserver)

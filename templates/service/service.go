@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package service
 
 import "github.com/uptrace/opentelemetry-go-extra/otelzap"

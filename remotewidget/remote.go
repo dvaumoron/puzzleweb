@@ -159,8 +159,8 @@ func readFiles(c *gin.Context) (map[string][]byte, error) {
 
 func readFile(name string, files map[string][]byte, c *gin.Context) error {
 	header, err := c.FormFile(name)
-	if err != nil || header == nil {
-		return err
+	if err != nil {
+		return nil // ignore non existing file here
 	}
 
 	file, err := header.Open()

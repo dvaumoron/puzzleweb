@@ -2,7 +2,7 @@
 
 <img src="https://github.com/dvaumoron/puzzleweb/raw/main/defaultData/static/images/puzzlelogo.jpg" width="100">
 
-A library based on [Gin](https://gin-gonic.com/) to easily create a microservice backed server allowing to include static content, blog, wiki, forum and custom "widget" with role based right management, user profile, user settings, and [i18n](https://www.w3.org/International/questions/qa-i18n.en#i18n).
+This library is intended to easily create a microservice backed server allowing to include static content, blog, wiki, forum and custom "widget" with role based right management, user profile, user settings, and [i18n](https://www.w3.org/International/questions/qa-i18n.en#i18n).
 
 ## License
 
@@ -16,7 +16,7 @@ See [API Documentation](https://pkg.go.dev/github.com/dvaumoron/puzzleweb) for d
 
 ## Technical overview
 
-The main server is backed by microservices called with [gRPC](https://grpc.io/), those services definitions (and list of proposed implementations) are :
+The main server use [Gin](https://gin-gonic.com/) and is backed by microservices called with [gRPC](https://grpc.io/), those services definitions (and list of proposed implementations) are :
 1. [puzzlesessionservice](https://github.com/dvaumoron/puzzlesessionservice) (this contract is also used for settings storage)
     - [puzzlesessionserver](https://github.com/dvaumoron/puzzlesessionserver)
     - [puzzlesettingsserver](https://github.com/dvaumoron/puzzlesettingsserver)
@@ -36,15 +36,15 @@ The main server is backed by microservices called with [gRPC](https://grpc.io/),
     - [puzzleprofileserver](https://github.com/dvaumoron/puzzleprofileserver)
 
 And optionnally (with some kind of page added) :
-8. [puzzleforumservice](https://github.com/dvaumoron/puzzleforumservice)
+1. [puzzleforumservice](https://github.com/dvaumoron/puzzleforumservice)
     - [puzzleforumserver](https://github.com/dvaumoron/puzzleforumserver)
-9. [puzzlemarkdownservice](https://github.com/dvaumoron/puzzlemarkdownservice)
+2. [puzzlemarkdownservice](https://github.com/dvaumoron/puzzlemarkdownservice)
     - [puzzlemarkdownserver](https://github.com/dvaumoron/puzzlemarkdownserver)
-10. [puzzleblogservice](https://github.com/dvaumoron/puzzleblogservice)
+3. [puzzleblogservice](https://github.com/dvaumoron/puzzleblogservice)
     - [puzzleblogserver](https://github.com/dvaumoron/puzzleblogserver)
-11. [puzzlewikiservice](https://github.com/dvaumoron/puzzlewikiservice)
+4. [puzzlewikiservice](https://github.com/dvaumoron/puzzlewikiservice)
     - [puzzlewikiserver](https://github.com/dvaumoron/puzzlewikiserver)
-12. [puzzlewidgetservice](https://github.com/dvaumoron/puzzlewidgetservice), which is a way to add your custom dynamic page in a decoupled way
+5. [puzzlewidgetservice](https://github.com/dvaumoron/puzzlewidgetservice), which is a way to add your custom dynamic page in a decoupled way
     - [puzzlegalleryserver](https://github.com/dvaumoron/puzzlegalleryserver) : Image gallery
 
 List of side projects:
@@ -54,9 +54,9 @@ List of side projects:
 List of helper projects :
 - [puzzlegrpcserver](https://github.com/dvaumoron/puzzlegrpcserver)
 - [puzzlegrpcclient](https://github.com/dvaumoron/puzzlegrpcclient)
-- [puzzledbclient](https://github.com/dvaumoron/puzzledbclient)
+- [puzzledbclient](https://github.com/dvaumoron/puzzledbclient) (use [gorm](https://gorm.io/))
 - [puzzlemongoclient](https://github.com/dvaumoron/puzzlemongoclient)
 - [puzzleredisclient](https://github.com/dvaumoron/puzzleredisclient)
+- [puzzletelemetry](https://github.com/dvaumoron/puzzletelemetry) (use [OpenTelemetry](https://opentelemetry.io/) and [Zap](https://pkg.go.dev/go.uber.org/zap))
 - [puzzlesaltclient](https://github.com/dvaumoron/puzzlesaltclient)
-- [puzzletelemetry](https://github.com/dvaumoron/puzzletelemetry)
 - [puzzlewidgetserver](https://github.com/dvaumoron/puzzlewidgetserver)

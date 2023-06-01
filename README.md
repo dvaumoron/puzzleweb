@@ -2,7 +2,7 @@
 
 <img src="https://github.com/dvaumoron/puzzleweb/raw/main/defaultData/static/images/puzzlelogo.jpg" width="100">
 
-A library based on [Gin](https://gin-gonic.com/) to easily create a microservice backed server allowing to include static content, blog, wiki, forum and custom "widget" with role based right management, user profile and user settings.
+A library based on [Gin](https://gin-gonic.com/) to easily create a microservice backed server allowing to include static content, blog, wiki, forum and custom "widget" with role based right management, user profile, user settings, and [i18n](https://developer.mozilla.org/en-US/docs/Glossary/I18N).
 
 ## License
 

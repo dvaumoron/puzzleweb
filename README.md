@@ -4,7 +4,7 @@
 
 A library based on [Gin](https://gin-gonic.com/) to easily create server with static content, blog, wiki and forum.
 
-The projects [PuzzleFrame](https://github.com/dvaumoron/puzzleframe) (configured with [frame.yaml](https://github.com/dvaumoron/puzzleframe/blob/main/frame.yaml)) and [PuzzleTest](https://github.com/dvaumoron/puzzletest) (initialized in [puzzletest.go](https://github.com/dvaumoron/puzzletest/blob/main/puzzletest.go)) show how to use PuzzleWeb. In both case, additionnal configuration should be provided with environment variable (or a .env file in the working).
+The projects [PuzzleFrame](https://github.com/dvaumoron/puzzleframe) (configured with [frame.yaml](https://github.com/dvaumoron/puzzleframe/blob/main/frame.yaml)) and [PuzzleTest](https://github.com/dvaumoron/puzzletest) (initialized in [puzzletest.go](https://github.com/dvaumoron/puzzletest/blob/main/puzzletest.go)) show how to use PuzzleWeb. In both case, additionnal configuration should be provided with environment variable (or a .env file in the working directory).
 
 ## Technical overview
 
@@ -25,8 +25,8 @@ And optionnally (with some kind of page added) :
 - [puzzlewidgetservice](https://github.com/dvaumoron/puzzlewidgetservice), which is a way to add your custom dynamic page in a decoupled way
 
 List of side projects:
-- [puzzlefront](https://github.com/dvaumoron/puzzlefront)
-- [puzzletools](https://github.com/dvaumoron/puzzletools)
+- [puzzlefront](https://github.com/dvaumoron/puzzlefront) : [WebAssembly](https://webassembly.org/) project containing the majority of browser side interaction.
+- [puzzletools](https://github.com/dvaumoron/puzzletools) : [Cobra](https://cobra.dev/) based utility CLI
 
 List of helper projects :
 - [puzzlegrpcserver](https://github.com/dvaumoron/puzzlegrpcserver)

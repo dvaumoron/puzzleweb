@@ -4,7 +4,7 @@
 
 A library based on [Gin](https://gin-gonic.com/) to easily create server with static content, blog, wiki and forum.
 
-The projects [PuzzleFrame](https://github.com/dvaumoron/puzzleframe) (with [frame.yaml](https://github.com/dvaumoron/puzzleframe/blob/main/frame.yaml)) and [PuzzleTest](https://github.com/dvaumoron/puzzletest) (with [puzzletest.go](https://github.com/dvaumoron/puzzletest/blob/main/puzzletest.go)) show how to use PuzzleWeb.
+The projects [PuzzleFrame](https://github.com/dvaumoron/puzzleframe) (configured with [frame.yaml](https://github.com/dvaumoron/puzzleframe/blob/main/frame.yaml)) and [PuzzleTest](https://github.com/dvaumoron/puzzletest) (initialized in [puzzletest.go](https://github.com/dvaumoron/puzzletest/blob/main/puzzletest.go)) show how to use PuzzleWeb. In both case, additionnal configuration should be provided with environment variable (or a .env file in the working)
 
 ## Technical overview
 

@@ -174,6 +174,7 @@ func (m *localesManager) SetLangCookie(lang string, c *gin.Context) string {
 	return m.setLangCookie(m.CheckLang(lang), c)
 }
 
+// TODO move message data in template server (avoid sending it all time)
 func (m *localesManager) GetMessages(c *gin.Context) map[string]string {
 	return m.messages[m.GetLang(c)]
 }

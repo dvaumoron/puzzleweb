@@ -6,7 +6,7 @@ This library is intended to easily create a microservice backed server allowing 
 
 ## License
 
-All of the project in the Puzzle ecosystem are released under the Apache 2.0 license. See [LICENSE](LICENSE)
+All of the project in the Puzzle ecosystem are released under the Apache 2.0 license. See [LICENSE](LICENSE).
 
 ## Getting started
 

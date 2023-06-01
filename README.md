@@ -58,5 +58,5 @@ List of helper projects :
 - [puzzlemongoclient](https://github.com/dvaumoron/puzzlemongoclient)
 - [puzzleredisclient](https://github.com/dvaumoron/puzzleredisclient)
 - [puzzletelemetry](https://github.com/dvaumoron/puzzletelemetry) (use [OpenTelemetry](https://opentelemetry.io/) and [Zap](https://pkg.go.dev/go.uber.org/zap))
-- [puzzlesaltclient](https://github.com/dvaumoron/puzzlesaltclient)
+- [puzzlesaltclient](https://github.com/dvaumoron/puzzlesaltclient) (use [x/crypto](https://pkg.go.dev/golang.org/x/crypto))
 - [puzzlewidgetserver](https://github.com/dvaumoron/puzzlewidgetserver)

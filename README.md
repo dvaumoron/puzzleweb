@@ -12,6 +12,8 @@ All of the project in the Puzzle ecosystem are released under the Apache 2.0 lic
 
 The projects [PuzzleFrame](https://github.com/dvaumoron/puzzleframe) (configured with [frame.yaml](https://github.com/dvaumoron/puzzleframe/blob/main/frame.yaml)) and [PuzzleTest](https://github.com/dvaumoron/puzzletest) (initialized in [puzzletest.go](https://github.com/dvaumoron/puzzletest/blob/main/puzzletest.go)) show how to use PuzzleWeb. In both case, additionnal configuration should be provided with environment variable (or a .env file in the working directory, see [this empty exemple](defaultData/.env)).
 
+See [this folder](https://github.com/dvaumoron/puzzletest/tree/main/deploy/conf/helm) for an exemple of [Helm chart](https://helm.sh).
+
 See [API Documentation](https://pkg.go.dev/github.com/dvaumoron/puzzleweb) for detailed package descriptions.
 
 ## Technical overview

@@ -86,8 +86,8 @@ github.com/dvaumoron/puzzlesaltservice v1.0.1 h1:VbqSOfYYTX2RZrKn0FIiL5ULie/cbSR
 github.com/dvaumoron/puzzlesaltservice v1.0.1/go.mod h1:S95i9P8YgmzHpVEXiBIZhaBnlyhsfJD+UBsgFQIKkzc=
 github.com/dvaumoron/puzzlesessionservice v1.2.0 h1:SHAZnBgSyCtyLJI69lQIX+MbKoR3vv+/PO4m5hafymQ=
 github.com/dvaumoron/puzzlesessionservice v1.2.0/go.mod h1:VB2EkzytHS7t6A6pCRl/Pu80VnwHcGlRNcXx9Zkmicg=
-github.com/dvaumoron/puzzletelemetry v1.1.0 h1:1KMOKBadHZ1vShpaXzF0fuP8B8GCm/jI2VFU3hELuys=
-github.com/dvaumoron/puzzletelemetry v1.1.0/go.mod h1:OKAkWUV8OiGm04oNhhZ32yPTp4qoTVqx4lYA5AJR78A=
+github.com/dvaumoron/puzzletelemetry v1.1.1 h1:7Cvd/VLu6PHce5lXjBSk+xyz3RJieUkXGTBTCSRo0CU=
+github.com/dvaumoron/puzzletelemetry v1.1.1/go.mod h1:OKAkWUV8OiGm04oNhhZ32yPTp4qoTVqx4lYA5AJR78A=
 github.com/dvaumoron/puzzletemplateservice v1.0.0 h1:E4AqIPgSaunOAuA10pKxKe5M7M/wKwia9r7FUYnVfdE=
 github.com/dvaumoron/puzzletemplateservice v1.0.0/go.mod h1:UkhiUqU6AsZnvOP/bYl8IrCq38D4Raw+9ewNH7nO0N8=
 github.com/dvaumoron/puzzlewidgetservice v1.2.0 h1:emjrpOqV3o9vwU9+I3dg1jT4QegxM83B7/UOg47FiJE=

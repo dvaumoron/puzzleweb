@@ -91,12 +91,12 @@ func (m *localesManager) CheckLang(lang string) string {
 			return lang
 		}
 	}
-	m.logger.Info("Asked not declared locale", zap.String("askedLocale", lang))
+	m.Logger.Info("Asked not declared locale", zap.String("askedLocale", lang))
 	return m.DefaultLang
 }
 
 func (m *localesManager) setLangCookie(lang string, c *gin.Context) string {
-	c.SetCookie(LangName, lang, m.sessionTimeOut, "/", m.domain, false, false)
+	c.SetCookie(LangName, lang, m.SessionTimeOut, "/", m.Domain, false, false)
 	return lang
 }
 

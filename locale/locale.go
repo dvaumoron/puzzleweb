@@ -23,7 +23,6 @@ import (
 
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
 )
@@ -41,21 +40,17 @@ type Manager interface {
 }
 
 type localesManager struct {
-	logger         *otelzap.Logger
-	AllLang        []string
-	DefaultLang    string
-	MultipleLang   bool
-	matcher        language.Matcher
-	sessionTimeOut int
-	domain         string
+	config.LocalesConfig
+	DefaultLang  string
+	MultipleLang bool
+	matcher      language.Matcher
 }
 
 func NewManager(localesConfig config.LocalesConfig) Manager {
-	logger := localesConfig.Logger
 	allLang := localesConfig.AllLang
 	size := len(allLang)
 	if size == 0 {
-		logger.Fatal("No locales declared")
+		localesConfig.Logger.Fatal("No locales declared")
 	}
 
 	tags := make([]language.Tag, 0, size)
@@ -64,8 +59,7 @@ func NewManager(localesConfig config.LocalesConfig) Manager {
 	}
 
 	return &localesManager{
-		logger: logger, AllLang: allLang, DefaultLang: allLang[0], MultipleLang: size > 1, matcher: language.NewMatcher(tags),
-		sessionTimeOut: localesConfig.SessionTimeOut, domain: localesConfig.Domain,
+		LocalesConfig: localesConfig, DefaultLang: allLang[0], MultipleLang: size > 1, matcher: language.NewMatcher(tags),
 	}
 }
 

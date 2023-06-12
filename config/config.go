@@ -42,8 +42,7 @@ type LocalesConfig struct {
 	Logger         *otelzap.Logger
 	Domain         string
 	SessionTimeOut int
-	Path           string
-	PasswordRules  map[string]string
+	AllLang        []string
 }
 
 type ServiceConfig[ServiceType any] struct {

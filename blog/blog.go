@@ -154,9 +154,9 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			data[common.AllowedToDeleteName] = commentService.DeleteRight(logger, userId)
 			if len(comments) == 0 {
 				if err == nil {
-					data[commentMsgName] = puzzleweb.GetMessages(c)["NoComment"]
+					data[commentMsgName] = "NoComment"
 				} else {
-					data[commentMsgName] = puzzleweb.GetMessages(c)["CommentDisplayError"]
+					data[commentMsgName] = "CommentDisplayError"
 				}
 			}
 			return viewTmpl, ""

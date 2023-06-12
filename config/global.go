@@ -81,7 +81,7 @@ type GlobalConfig struct {
 	Domain string
 	Port   string
 
-	PasswordRules      map[string]string
+	AllLang            []string
 	SessionTimeOut     int
 	ServiceTimeOut     time.Duration
 	MaxMultipartMemory int64
@@ -122,7 +122,6 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 	tracer := tp.Tracer(WebKey)
 
 	ctx, initSpan := tracer.Start(context.Background(), "initialization")
-
 	ctxLogger := logger.Ctx(ctx)
 
 	var sessionTimeOut int
@@ -201,21 +200,8 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 	confLangs := strings.Split(os.Getenv("AVAILABLE_LOCALES"), ",")
 	langNumber := len(confLangs)
 	allLang := make([]string, 0, langNumber)
-	passwordRules := make(map[string]string, langNumber)
-
-	ctx, cancel := context.WithTimeout(ctx, serviceTimeOut)
-	defer cancel()
-
-	ctxLogger2 := logger.Ctx(ctx)
-
-	for _, confLang := range confLangs {
-		lang := strings.TrimSpace(confLang)
-		allLang = append(allLang, lang)
-		passwordRule, err := strengthService.GetRules(ctxLogger2, lang)
-		if err != nil {
-			ctxLogger.Warn("Failed to retrieve password rule", zap.String("locale", lang), zap.Error(err))
-		}
-		passwordRules[lang] = passwordRule
+	for _, lang := range confLangs {
+		allLang = append(allLang, strings.TrimSpace(lang))
 	}
 	ctxLogger.Info("Declared locales", zap.Strings("locales", allLang))
 
@@ -248,9 +234,8 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 	)
 
 	globalConfig := &GlobalConfig{
-		Domain: domain, Port: port, PasswordRules: passwordRules, SessionTimeOut: sessionTimeOut,
-		ServiceTimeOut: serviceTimeOut, MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat,
-		PageSize: pageSize, ExtractSize: extractSize,
+		Domain: domain, Port: port, AllLang: allLang, SessionTimeOut: sessionTimeOut, ServiceTimeOut: serviceTimeOut,
+		MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
 
 		StaticPath:  staticPath,
 		FaviconPath: faviconPath,
@@ -319,10 +304,7 @@ func (c *GlobalConfig) ExtractAuthConfig() AuthConfig {
 }
 
 func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
-	return LocalesConfig{
-		Logger: c.GetLogger(), Domain: c.Domain, SessionTimeOut: c.SessionTimeOut,
-		Path: c.LocalesPath, PasswordRules: c.PasswordRules,
-	}
+	return LocalesConfig{Logger: c.GetLogger(), Domain: c.Domain, SessionTimeOut: c.SessionTimeOut, AllLang: c.AllLang}
 }
 
 func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {

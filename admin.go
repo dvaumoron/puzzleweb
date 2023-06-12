@@ -53,8 +53,8 @@ type GroupDisplay struct {
 	AddableRoles []RoleDisplay
 }
 
-func NewGroupDisplay(id uint64, name string, messages map[string]string) *GroupDisplay {
-	return &GroupDisplay{Id: id, Name: name, DisplayName: getGroupDisplayName(name, messages)}
+func NewGroupDisplay(id uint64, name string) *GroupDisplay {
+	return &GroupDisplay{Id: id, Name: name, DisplayName: getGroupDisplayName(name)}
 }
 
 type RoleDisplay struct {
@@ -62,8 +62,8 @@ type RoleDisplay struct {
 	Actions []string
 }
 
-func MakeRoleDisplay(role service.Role, messages map[string]string) RoleDisplay {
-	return RoleDisplay{Name: role.Name, Actions: displayActions(role.Actions, messages)}
+func MakeRoleDisplay(role service.Role) RoleDisplay {
+	return RoleDisplay{Name: role.Name, Actions: displayActions(role.Actions)}
 }
 
 type sortableGroups []*GroupDisplay
@@ -175,7 +175,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			user := users[userId]
 			data[common.ViewedUserName] = user
 			data[common.AllowedToUpdateName] = updateRight
-			data[groupsName] = DisplayGroups(roles, GetMessages(c))
+			data[groupsName] = DisplayGroups(roles)
 			return "admin/user/view", ""
 		}),
 		editUserHandler: CreateTemplate(tracer, "adminWidget/editUserHandler", func(data gin.H, c *gin.Context) (string, string) {
@@ -202,7 +202,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			}
 
 			data[common.ViewedUserName] = userIdToLogin[userId]
-			data[groupsName] = displayEditGroups(userRoles, allRoles, GetMessages(c))
+			data[groupsName] = displayEditGroups(userRoles, allRoles)
 			return "admin/user/edit", ""
 		}),
 		saveUserHandler: common.CreateRedirect(tracer, "adminWidget/saveUserHandler", func(c *gin.Context) string {
@@ -258,7 +258,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			}
 
 			allGroups := adminService.GetAllGroups(logger)
-			data[groupsName] = displayAllGroups(allGroups, allRoles, GetMessages(c))
+			data[groupsName] = displayAllGroups(allGroups, allRoles)
 			return "admin/role/list", ""
 		}),
 		editRoleHandler: CreateTemplate(tracer, "adminWidget/editRoleHandler", func(data gin.H, c *gin.Context) (string, string) {
@@ -267,7 +267,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 
 			data[roleNameName] = roleName
 			data[groupName] = group
-			data["GroupDisplayName"] = getGroupDisplayName(group, GetMessages(c))
+			data["GroupDisplayName"] = getGroupDisplayName(group)
 
 			if roleName != "new" {
 				adminId, _ := data[common.IdName].(uint64)
@@ -308,48 +308,48 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 	return p
 }
 
-func getGroupDisplayName(name string, messages map[string]string) string {
-	return messages["GroupLabel"+locale.CamelCase(name)]
+func getGroupDisplayName(name string) string {
+	return "GroupLabel" + locale.CamelCase(name)
 }
 
-func DisplayGroups(roles []service.Role, messages map[string]string) []*GroupDisplay {
+func DisplayGroups(roles []service.Role) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
-	populateGroup(nameToGroup, roles, messages, rolesAppender)
+	populateGroup(nameToGroup, roles, rolesAppender)
 	return sortGroups(nameToGroup)
 }
 
-func populateGroup(nameToGroup map[string]*GroupDisplay, roles []service.Role, messages map[string]string, appender func(*GroupDisplay, service.Role, map[string]string)) {
+func populateGroup(nameToGroup map[string]*GroupDisplay, roles []service.Role, appender func(*GroupDisplay, service.Role)) {
 	for _, role := range roles {
 		groupName := role.GroupName
 		group := nameToGroup[groupName]
 		if group == nil {
-			group = NewGroupDisplay(role.GroupId, groupName, messages)
+			group = NewGroupDisplay(role.GroupId, groupName)
 			nameToGroup[groupName] = group
 		}
-		appender(group, role, messages)
+		appender(group, role)
 	}
 }
 
-func rolesAppender(group *GroupDisplay, role service.Role, messages map[string]string) {
-	group.Roles = append(group.Roles, MakeRoleDisplay(role, messages))
+func rolesAppender(group *GroupDisplay, role service.Role) {
+	group.Roles = append(group.Roles, MakeRoleDisplay(role))
 }
 
-// convert a string slice of codes in a displayable string slice,
+// convert a string slice of codes in a displayable key slice,
 // always in the same order : access, create, update, delete
-func displayActions(actions []string, messages map[string]string) []string {
+func displayActions(actions []string) []string {
 	actionSet := common.MakeSet(actions)
 	res := make([]string, len(actions))
 	if actionSet.Contains(service.ActionAccess) {
-		res = append(res, messages[accessKey])
+		res = append(res, accessKey)
 	}
 	if actionSet.Contains(service.ActionCreate) {
-		res = append(res, messages[createKey])
+		res = append(res, createKey)
 	}
 	if actionSet.Contains(service.ActionUpdate) {
-		res = append(res, messages[updateKey])
+		res = append(res, updateKey)
 	}
 	if actionSet.Contains(service.ActionDelete) {
-		res = append(res, messages[deleteKey])
+		res = append(res, deleteKey)
 	}
 	return res
 }
@@ -364,30 +364,30 @@ func sortGroups(nameToGroup map[string]*GroupDisplay) []*GroupDisplay {
 	return groupRoles
 }
 
-func displayEditGroups(userRoles []service.Role, allRoles []service.Role, messages map[string]string) []*GroupDisplay {
+func displayEditGroups(userRoles []service.Role, allRoles []service.Role) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
-	populateGroup(nameToGroup, userRoles, messages, rolesAppender)
-	populateGroup(nameToGroup, allRoles, messages, addableRolesAppender)
+	populateGroup(nameToGroup, userRoles, rolesAppender)
+	populateGroup(nameToGroup, allRoles, addableRolesAppender)
 	return sortGroups(nameToGroup)
 }
 
-func addableRolesAppender(group *GroupDisplay, role service.Role, messages map[string]string) {
+func addableRolesAppender(group *GroupDisplay, role service.Role) {
 	// check if the user already have this role
 	contains := slices.ContainsFunc(group.Roles, func(roleDisplay RoleDisplay) bool {
 		return roleDisplay.Name == role.Name
 	})
 	// no duplicate
 	if !contains {
-		group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role, messages))
+		group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role))
 	}
 }
 
-func displayAllGroups(groups []service.Group, roles []service.Role, messages map[string]string) []*GroupDisplay {
+func displayAllGroups(groups []service.Group, roles []service.Role) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
 	for _, group := range groups {
-		nameToGroup[group.Name] = NewGroupDisplay(group.Id, group.Name, messages)
+		nameToGroup[group.Name] = NewGroupDisplay(group.Id, group.Name)
 	}
-	populateGroup(nameToGroup, roles, messages, rolesAppender)
+	populateGroup(nameToGroup, roles, rolesAppender)
 	return sortGroups(nameToGroup)
 }
 

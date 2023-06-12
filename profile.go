@@ -99,7 +99,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
 			}
 			if err == nil {
-				data["UserRight"] = DisplayGroups(roles, GetMessages(c))
+				data["UserRight"] = DisplayGroups(roles)
 			}
 
 			userProfile := profiles[viewedUserId]

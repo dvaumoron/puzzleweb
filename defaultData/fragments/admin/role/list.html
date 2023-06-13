@@ -7,7 +7,7 @@
 {{$newLinkLabel := .Messages.NewLinkLabel}}
 {{range .Groups}}
     <details>
-        <summary>{{.DisplayName}}</summary>
+        <summary>{{index .Messages .DisplayName}}</summary>
         {{$groupName := .Name}}
         {{if eq $groupName "public"}}
             <p>{{$groupDescPublic}}</p>

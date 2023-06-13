@@ -59,12 +59,11 @@
         {{.Messages.UserDescLabel}}
         <input type="text" name="userDesc" value="{{.ViewedUser.Desc}}"/>
     </label>
-    {{$messages := .Messages}}
     {{range $key, $value := .ViewedUser.Info}}
         <label>
             {{index $messages $key}}
-                <input type="text" name="userInfo[{{$key}}]" value="{{$value}}"/>
-            </label>
+            <input type="text" name="userInfo[{{$key}}]" value="{{$value}}"/>
+        </label>
     {{end}}
     <button type="submit">{{.Messages.SaveLinkLabel}}</button>
 </form>

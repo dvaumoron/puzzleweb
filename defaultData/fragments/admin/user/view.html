@@ -10,7 +10,7 @@
 
 {{range .Groups}}
     <details>
-        <summary>{{.DisplayName}}</summary>
+        <summary>{{index .Messages .DisplayName}}</summary>
         <ul>
             {{range .Roles}}
                 <li>

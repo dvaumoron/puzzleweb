@@ -55,12 +55,14 @@
         </div>
     {{end}}
 {{end}}
+{{$messages := .Messages}}
+{{$pageTitle := index .Messages .PageTitle}}
 <!doctype html>
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
-        <title>SiteTitle - {{.PageTitle}}</title>
+        <title>SiteTitle - {{$pageTitle}}</title>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@200" rel="stylesheet"/>
         <link href="/static/css/pico.min.css" type="text/css" rel="stylesheet"/>
         <link href="/static/css/main.css" type="text/css" rel="stylesheet"/>
@@ -70,7 +72,7 @@
         <nav class="container-fluid">
             <ul>
                 <li><a href="/"><img src="/favicon.ico"/></a></li>
-                <li>{{.PageTitle}}</li>
+                <li>{{$pageTitle}}</li>
                 {{if .LangSelectorUrl}}
                     <li>
                         <details role="list">
@@ -104,7 +106,7 @@
             <nav class="container-fluid">
                 <ul>
                     {{range .SubPages}}
-                        <li><a href="{{.Url}}">{{.Name}}</a></li>
+                        <li><a href="{{.Url}}">{{index $messages .Name}}</a></li>
                     {{end}}
                 </ul>
             </nav>
@@ -113,13 +115,13 @@
             <ul>
                 <li><a href="/"><span class="material-symbols-outlined">home</span></a></li>
                 {{range .Ariane}}
-                    <li><a href="{{.Url}}">{{.Name}}</a></li>
+                    <li><a href="{{.Url}}">{{index $messages .Name}}</a></li>
                 {{end}}
             </ul>
         </nav>
         <div class="container-fluid">
             {{with .ErrorMsg}}
-                <h6 class="error">{{.}}</h6>
+                <h6 class="error">{{index $messages .}}</h6>
             {{end}}
             {{.WidgetBody}}
         </div>

@@ -29,7 +29,7 @@
 {{end}}
 
 {{with .CommentMsg}}
-    <h6 class="error">{{.}}</h6>
+    <h6 class="error">{{index $messages .}}</h6>
 {{end}}
 
 {{$baseUrl := .BaseUrl}}

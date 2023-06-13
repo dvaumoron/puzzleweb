@@ -7,7 +7,7 @@
 <form action="/admin/user/save/{{.ViewedUser.Id}}" method="POST">
     {{range .Groups}}
         <details>
-            <summary>{{.DisplayName}}</summary>
+            <summary>{{index $messages .DisplayName}}</summary>
             <fieldset>
                 {{$groupName := .Name}}
                 {{range .Roles}}

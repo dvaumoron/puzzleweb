@@ -23,7 +23,7 @@
 
 {{range .UserRight}}
     <div>
-        <p>{{.DisplayName}}</p>
+        <p>{{index $messages .DisplayName}}</p>
         <ul>
             {{range .Roles}}
                 <li>

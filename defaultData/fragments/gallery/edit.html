@@ -1,0 +1,38 @@
+
+<h2>
+    {{$imageTitle := .Image.Title}}
+    {{if eq $imageTitle "new"}}
+        {{.Messages.NewImageLabel}}
+    {{else}}
+        {{.Messages.EditLabel}} {{$imageTitle}}
+    {{end}}
+    <a href="{{.BaseUrl}}" role="button">{{.Messages.CancelLinkLabel}}</a>
+</h2>
+
+<div>
+    {{$imageId := .Image.ImageId}}
+    {{$imageDesc := .Image.Desc}}
+    <img src="{{.BaseUrl}}retrieve/{{$imageId}}" alt="{{$imageDesc}}"/>
+</div>
+
+<form action="{{.BaseUrl}}save" method="POST" enctype="multipart/form-data">
+    <div class="hide">
+        <!-- to allow JavaScript or WebAssembly to display a localized error message -->
+        <span id="errorBadImageTitleMessage">{{.Messages.ErrorBadImageTitle}}</span>
+        <input type="text" name="fileList" value="image"/>
+        <input type="text" name="formData[ImageId]" value="{{$imageId}}"/>
+    </div>
+    <label>
+        {{.Messages.TitleLabel}}
+        <input type="text" name="formData[Title]" value="{{$imageTitle}}"/>
+    </label>
+    <label>
+        {{.Messages.ImageFileLabel}}
+        <input type="file" name="image" accept="image/png, image/jpeg"/>
+    </label>
+    <label>
+        {{.Messages.ImageDescLabel}}
+        <input type="text" name="formData[Desc]" value="{{$imageDesc}}"/>
+    </label>
+    <button type="submit">{{.Messages.SaveLinkLabel}}</button>
+</form>

@@ -19,7 +19,6 @@
 package client
 
 import (
-	"html/template"
 	"sort"
 	"time"
 
@@ -203,7 +202,6 @@ func (client blogClient) sortConvertPosts(logger otelzap.LoggerWithCtx, list []*
 func convertPost(post *pb.Content, creator profileservice.UserProfile, dateFormat string) service.BlogPost {
 	createdAt := time.Unix(post.CreatedAt, 0)
 	return service.BlogPost{
-		PostId: post.PostId, Creator: creator, Date: createdAt.Format(dateFormat),
-		Title: post.Title, Content: template.HTML(post.Text),
+		PostId: post.PostId, Creator: creator, Date: createdAt.Format(dateFormat), Title: post.Title, Content: post.Text,
 	}
 }

@@ -19,8 +19,6 @@
 package service
 
 import (
-	"html/template"
-
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
@@ -30,7 +28,7 @@ type BlogPost struct {
 	Creator profileservice.UserProfile
 	Date    string
 	Title   string
-	Content template.HTML // markdown apply is done before storage
+	Content string
 }
 
 type BlogService interface {

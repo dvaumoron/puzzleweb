@@ -19,8 +19,6 @@
 package client
 
 import (
-	"html/template"
-
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzlemarkdownservice"
 	"github.com/dvaumoron/puzzleweb/common"
@@ -37,7 +35,7 @@ func New(serviceAddr string, dialOptions []grpc.DialOption) service.MarkdownServ
 	return markdownClient{Client: grpcclient.Make(serviceAddr, dialOptions...)}
 }
 
-func (client markdownClient) Apply(logger otelzap.LoggerWithCtx, text string) (template.HTML, error) {
+func (client markdownClient) Apply(logger otelzap.LoggerWithCtx, text string) (string, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return "", common.LogOriginalError(logger, err)
@@ -48,5 +46,5 @@ func (client markdownClient) Apply(logger otelzap.LoggerWithCtx, text string) (t
 	if err != nil {
 		return "", common.LogOriginalError(logger, err)
 	}
-	return template.HTML(markdownHtml.Html), nil
+	return markdownHtml.Html, nil
 }

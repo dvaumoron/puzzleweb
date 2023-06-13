@@ -20,7 +20,6 @@ package blog
 
 import (
 	"errors"
-	"html/template"
 	"strconv"
 	"strings"
 
@@ -314,6 +313,6 @@ func postUrlBuilder(base string, postId uint64) *strings.Builder {
 
 func filterPostsExtract(posts []service.BlogPost, extractSize uint64) {
 	for index := range posts {
-		posts[index].Content = template.HTML(common.FilterExtractHtml(string(posts[index].Content), extractSize))
+		posts[index].Content = common.FilterExtractHtml(string(posts[index].Content), extractSize)
 	}
 }

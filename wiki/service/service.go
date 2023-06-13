@@ -19,7 +19,6 @@
 package service
 
 import (
-	"html/template"
 	"sync"
 
 	markdownservice "github.com/dvaumoron/puzzleweb/markdown/service"
@@ -31,11 +30,11 @@ type WikiContent struct {
 	Version   uint64
 	Markdown  string
 	bodyMutex sync.RWMutex
-	body      template.HTML
+	body      string
 }
 
 // Lazy loading for markdown application on body.
-func (content *WikiContent) GetBody(logger otelzap.LoggerWithCtx, markdownService markdownservice.MarkdownService) (template.HTML, error) {
+func (content *WikiContent) GetBody(logger otelzap.LoggerWithCtx, markdownService markdownservice.MarkdownService) (string, error) {
 	content.bodyMutex.RLock()
 	body := content.body
 	content.bodyMutex.RUnlock()

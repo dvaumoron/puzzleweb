@@ -7,7 +7,7 @@
 {{$newLinkLabel := .Messages.NewLinkLabel}}
 {{range .Groups}}
     <details>
-        <summary>{{index .Messages .DisplayName}}</summary>
+        <summary>{{index $messages .DisplayName}}</summary>
         {{$groupName := .Name}}
         {{if eq $groupName "public"}}
             <p>{{$groupDescPublic}}</p>
@@ -17,7 +17,7 @@
                     <p>
                         {{.Name}}
                         ({{range .Actions}}
-                            {{.}}
+                            {{index $messages .}}
                         {{end}})
                     </p>
                     <p><a href="/admin/role/edit/{{.Name}}/{{$groupName}}" role="button">{{$editLinkLabel}}</a></p>

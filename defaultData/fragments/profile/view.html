@@ -29,7 +29,7 @@
                 <li>
                     {{.Name}}
                     ({{range .Actions}}
-                        {{.}}
+                        {{index $messages .}}
                     {{end}})
                 </li>
             {{end}}

@@ -14,7 +14,7 @@
                     <label>
                         {{.Name}}
                         ({{range .Actions}}
-                            {{.}}
+                            {{index $messages .}}
                         {{end}})
                         <input type="checkbox" name="roles" value="{{.Name}}/{{$groupName}}" checked role="switch"/>
                     </label>
@@ -23,7 +23,7 @@
                     <label>
                         {{.Name}}
                         ({{range .Actions}}
-                            {{.}}
+                            {{index $messages .}}
                         {{end}})
                         <input type="checkbox" name="roles" value="{{.Name}}/{{$groupName}}" role="switch"/>
                     </label>

@@ -10,13 +10,13 @@
 
 {{range .Groups}}
     <details>
-        <summary>{{index .Messages .DisplayName}}</summary>
+        <summary>{{index $messages .DisplayName}}</summary>
         <ul>
             {{range .Roles}}
                 <li>
                     {{.Name}}
                     ({{range .Actions}}
-                        {{.}}
+                        {{index $messages .}}
                     {{end}})
                 </li>
             {{end}}

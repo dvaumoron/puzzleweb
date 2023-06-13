@@ -54,7 +54,7 @@ type GroupDisplay struct {
 }
 
 func NewGroupDisplay(id uint64, name string) *GroupDisplay {
-	return &GroupDisplay{Id: id, Name: name, DisplayName: getGroupDisplayName(name)}
+	return &GroupDisplay{Id: id, Name: name, DisplayName: getGroupDisplayNameKey(name)}
 }
 
 type RoleDisplay struct {
@@ -267,7 +267,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 
 			data[roleNameName] = roleName
 			data[groupName] = group
-			data["GroupDisplayName"] = getGroupDisplayName(group)
+			data["GroupDisplayName"] = getGroupDisplayNameKey(group)
 
 			if roleName != "new" {
 				adminId, _ := data[common.IdName].(uint64)
@@ -308,7 +308,7 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 	return p
 }
 
-func getGroupDisplayName(name string) string {
+func getGroupDisplayNameKey(name string) string {
 	return "GroupLabel" + locale.CamelCase(name)
 }
 

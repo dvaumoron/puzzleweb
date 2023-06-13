@@ -91,7 +91,6 @@ type GlobalConfig struct {
 
 	StaticPath  string
 	FaviconPath string
-	LocalesPath string
 	Page404Url  string
 
 	CtxLogger        otelzap.LoggerWithCtx
@@ -239,7 +238,6 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 
 		StaticPath:  staticPath,
 		FaviconPath: faviconPath,
-		LocalesPath: retrievePath(ctxLogger, "LOCALES_PATH", "locales"),
 		Page404Url:  os.Getenv("PAGE_404_URL"),
 
 		CtxLogger:      ctxLogger,

@@ -66,7 +66,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@200" rel="stylesheet"/>
         <link href="/static/css/pico.min.css" type="text/css" rel="stylesheet"/>
         <link href="/static/css/main.css" type="text/css" rel="stylesheet"/>
-        {{.WidgetHeader}}
+        [[.WidgetHeader]]
     </head>
     <body>
         <nav class="container-fluid">
@@ -123,7 +123,7 @@
             {{with .ErrorMsg}}
                 <h6 class="error">{{index $messages .}}</h6>
             {{end}}
-            {{.WidgetBody}}
+            [[.WidgetBody]]
         </div>
         <footer class="container-fluid">
             Made with <a href="https://github.com/dvaumoron/puzzleweb">PuzzleWeb</a> and <a href="https://picocss.com/">Pico.css</a>

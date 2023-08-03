@@ -41,6 +41,7 @@ const parsingPostIdErrorMsg = "Failed to parse postId"
 
 var errEmptyComment = errors.New("EmptyComment")
 
+// TODO RSS feed ?
 type blogWidget struct {
 	listHandler          gin.HandlerFunc
 	viewHandler          gin.HandlerFunc

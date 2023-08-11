@@ -21,7 +21,6 @@ package blog
 import (
 	"errors"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -328,15 +327,13 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 				return
 			}
 
-			baseUrl, err := url.JoinPath(host, common.GetBaseUrl(1, c))
-			if err != nil {
-				common.LogOriginalError(logger, err)
-				c.AbortWithStatus(http.StatusInternalServerError)
-				return
-			}
+			var baseBuilder strings.Builder
+			baseBuilder.WriteString(host)
+			baseBuilder.WriteString(common.GetBaseUrl(1, c))
+			baseBuilder.WriteByte('/')
 
 			// TODO improve blog title ?
-			data, err := buildFeed(posts, blogName, baseUrl, dateFormat, extractSize, feedFormat)
+			data, err := buildFeed(posts, blogName, baseBuilder.String(), dateFormat, extractSize, feedFormat)
 			if err != nil {
 				common.LogOriginalError(logger, err)
 				c.AbortWithStatus(http.StatusInternalServerError)

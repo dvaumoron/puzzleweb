@@ -45,7 +45,7 @@ const parsingPostIdErrorMsg = "Failed to parse postId"
 var errEmptyComment = errors.New("EmptyComment")
 var errFeedFormat = errors.New("unrecognized feed format")
 
-// draft with modify until publish ?
+// TODO draft with modify until publish ?
 type blogWidget struct {
 	listHandler          gin.HandlerFunc
 	viewHandler          gin.HandlerFunc

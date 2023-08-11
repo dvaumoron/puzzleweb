@@ -70,6 +70,13 @@ func checkTarget(target string) string {
 	return target
 }
 
+func CheckPort(port string) string {
+	if port[0] != ':' {
+		port = ":" + port
+	}
+	return port
+}
+
 func CreateRedirect(tracer trace.Tracer, spanName string, redirecter Redirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		_, span := tracer.Start(c.Request.Context(), spanName)

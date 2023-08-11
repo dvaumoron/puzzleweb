@@ -141,7 +141,7 @@ func (site *Site) Run(siteConfig config.SiteConfig) error {
 			stopSpan.End()
 		}
 	}()
-	return site.initEngine(siteConfig).Run(checkPort(siteConfig.Port))
+	return site.initEngine(siteConfig).Run(common.CheckPort(siteConfig.Port))
 }
 
 type SiteAndConfig struct {
@@ -152,7 +152,7 @@ type SiteAndConfig struct {
 func Run(ginLogger *zap.Logger, sites ...SiteAndConfig) error {
 	var g errgroup.Group
 	for _, siteAndConfig := range sites {
-		port := checkPort(siteAndConfig.Config.Port)
+		port := common.CheckPort(siteAndConfig.Config.Port)
 		handler := siteAndConfig.Site.initEngine(siteAndConfig.Config).Handler()
 		g.Go(func() error {
 			server := &http.Server{Addr: port, Handler: handler}
@@ -165,13 +165,6 @@ func Run(ginLogger *zap.Logger, sites ...SiteAndConfig) error {
 func changeLangRedirecter(c *gin.Context) string {
 	getSite(c).localesManager.SetLangCookie(c.Query(locale.LangName), c)
 	return c.Query(common.RedirectName)
-}
-
-func checkPort(port string) string {
-	if port[0] != ':' {
-		port = ":" + port
-	}
-	return port
 }
 
 func BuildDefaultSite(serviceName string, version string) (*Site, *config.GlobalConfig, trace.Span) {

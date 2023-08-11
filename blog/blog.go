@@ -76,6 +76,10 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 	blogService := blogConfig.Service
 	commentService := blogConfig.CommentService
 	markdownService := blogConfig.MarkdownService
+	host := blogConfig.Domain
+	if port := common.CheckPort(blogConfig.Port); port != ":80" {
+		host += port
+	}
 	dateFormat := blogConfig.DateFormat
 	defaultPageSize := blogConfig.PageSize
 	extractSize := blogConfig.ExtractSize
@@ -324,7 +328,6 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 				return
 			}
 
-			host := c.Request.URL.Host
 			baseUrl, err := url.JoinPath(host, common.GetBaseUrl(1, c))
 			if err != nil {
 				common.LogOriginalError(logger, err)

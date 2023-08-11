@@ -370,8 +370,8 @@ func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...s
 		MarkdownService: c.MarkdownService, CommentService: forumclient.New(
 			c.ForumServiceAddr, c.DialOptions, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		),
-		DateFormat: c.DateFormat, PageSize: c.PageSize, ExtractSize: c.ExtractSize, FeedFormat: c.FeedFormat,
-		FeedSize: c.FeedSize, Args: args,
+		Domain: c.Domain, Port: c.Port, DateFormat: c.DateFormat, PageSize: c.PageSize, ExtractSize: c.ExtractSize,
+		FeedFormat: c.FeedFormat, FeedSize: c.FeedSize, Args: args,
 	}
 }
 

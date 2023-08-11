@@ -20,14 +20,17 @@ package blog
 
 import (
 	"errors"
+	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/blog/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/feeds"
 	"go.uber.org/zap"
 )
 
@@ -40,8 +43,9 @@ const commentMsgName = "CommentMsg"
 const parsingPostIdErrorMsg = "Failed to parse postId"
 
 var errEmptyComment = errors.New("EmptyComment")
+var errFeedFormat = errors.New("unrecognized feed format")
 
-// TODO RSS feed ? draft with modify until publish ?
+// draft with modify until publish ?
 type blogWidget struct {
 	listHandler          gin.HandlerFunc
 	viewHandler          gin.HandlerFunc
@@ -51,6 +55,7 @@ type blogWidget struct {
 	previewHandler       gin.HandlerFunc
 	saveHandler          gin.HandlerFunc
 	deleteHandler        gin.HandlerFunc
+	rssHandler           gin.HandlerFunc
 }
 
 func (w blogWidget) LoadInto(router gin.IRouter) {
@@ -62,6 +67,7 @@ func (w blogWidget) LoadInto(router gin.IRouter) {
 	router.POST("/preview", w.previewHandler)
 	router.POST("/save", w.saveHandler)
 	router.GET("/delete/:postId", w.deleteHandler)
+	router.GET("/rss", w.rssHandler)
 }
 
 func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page {
@@ -69,8 +75,11 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 	blogService := blogConfig.Service
 	commentService := blogConfig.CommentService
 	markdownService := blogConfig.MarkdownService
+	dateFormat := blogConfig.DateFormat
 	defaultPageSize := blogConfig.PageSize
 	extractSize := blogConfig.ExtractSize
+	feedFormat := blogConfig.FeedFormat
+	feedSize := blogConfig.FeedSize
 
 	listTmpl := "blog/list"
 	viewTmpl := "blog/view"
@@ -300,6 +309,30 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			}
 			return targetBuilder.String()
 		}),
+		rssHandler: func(c *gin.Context) {
+			logger := puzzleweb.GetLogger(c)
+			userId := puzzleweb.GetRequestedUserId(c)
+
+			_, posts, err := blogService.GetPosts(logger, userId, 0, feedSize, "")
+			if err != nil {
+				status := http.StatusInternalServerError
+				if err == common.ErrNotAuthorized {
+					status = http.StatusForbidden
+				}
+				c.AbortWithStatus(status)
+				return
+			}
+
+			baseUrl := common.GetBaseUrl(1, c)
+			// TODO improve blog title ?
+			data, err := buildFeed(posts, blogName, baseUrl, dateFormat, extractSize, feedFormat)
+			if err != nil {
+				common.LogOriginalError(logger, err)
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+			c.Data(http.StatusOK, http.DetectContentType(data), data)
+		},
 	}
 	return p
 }
@@ -316,4 +349,41 @@ func filterPostsExtract(posts []service.BlogPost, extractSize uint64) {
 	for index := range posts {
 		posts[index].Content = common.FilterExtractHtml(string(posts[index].Content), extractSize)
 	}
+}
+
+func buildFeed(posts []service.BlogPost, blogTitle string, baseUrl string, dateFormat string, extractSize uint64, feedFormat string) ([]byte, error) {
+	feedData := feeds.Feed{
+		Title:   blogTitle,
+		Link:    &feeds.Link{Href: baseUrl},
+		Created: time.Now(),
+	}
+
+	for _, post := range posts {
+		date, err := time.Parse(dateFormat, post.Date)
+		if err != nil {
+			return nil, err
+		}
+
+		feedData.Items = append(feedData.Items, &feeds.Item{
+			Title:       post.Title,
+			Link:        &feeds.Link{Href: postUrlBuilder(baseUrl, post.PostId).String()},
+			Description: common.FilterExtractHtml(string(post.Content), extractSize),
+			Author:      &feeds.Author{Name: post.Creator.Login},
+			Created:     date,
+		})
+	}
+
+	data := ""
+	var err error
+	switch feedFormat {
+	case "atom":
+		data, err = feedData.ToAtom()
+	case "json":
+		data, err = feedData.ToJSON()
+	case "rss":
+		data, err = feedData.ToRss()
+	default:
+		return nil, errFeedFormat
+	}
+	return []byte(data), err
 }

@@ -85,9 +85,11 @@ type GlobalConfig struct {
 	SessionTimeOut     int
 	ServiceTimeOut     time.Duration
 	MaxMultipartMemory int64
-	DateFormat         string
+	DateFormat         string // TODO move this to template service
 	PageSize           uint64
 	ExtractSize        uint64
+	FeedFormat         string
+	FeedSize           uint64
 
 	StaticPath  string
 	FaviconPath string
@@ -162,6 +164,8 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 	dateFormat := retrieveWithDefault(ctxLogger, "DATE_FORMAT", "2/1/2006 15:04:05")
 	pageSize := retrieveUintWithDefault(ctxLogger, "PAGE_SIZE", 20)
 	extractSize := retrieveUintWithDefault(ctxLogger, "EXTRACT_SIZE", 200)
+	feedFormat := retrieveWithDefault(ctxLogger, "FEED_FORMAT", "atom")
+	feedSize := retrieveUintWithDefault(ctxLogger, "FEED_SIZE", 100)
 
 	dialOptions := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -235,6 +239,7 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 	globalConfig := &GlobalConfig{
 		Domain: domain, Port: port, AllLang: allLang, SessionTimeOut: sessionTimeOut, ServiceTimeOut: serviceTimeOut,
 		MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
+		FeedFormat: feedFormat, FeedSize: feedSize,
 
 		StaticPath:  staticPath,
 		FaviconPath: faviconPath,
@@ -365,7 +370,8 @@ func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...s
 		MarkdownService: c.MarkdownService, CommentService: forumclient.New(
 			c.ForumServiceAddr, c.DialOptions, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		),
-		PageSize: c.PageSize, ExtractSize: c.ExtractSize, Args: args,
+		DateFormat: c.DateFormat, PageSize: c.PageSize, ExtractSize: c.ExtractSize, FeedFormat: c.FeedFormat,
+		FeedSize: c.FeedSize, Args: args,
 	}
 }
 

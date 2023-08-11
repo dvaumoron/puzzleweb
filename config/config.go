@@ -110,8 +110,11 @@ type BlogConfig struct {
 	ServiceConfig[blogservice.BlogService]
 	MarkdownService markdownservice.MarkdownService
 	CommentService  forumservice.CommentService
+	DateFormat      string
 	PageSize        uint64
 	ExtractSize     uint64
+	FeedFormat      string
+	FeedSize        uint64
 	Args            []string
 }
 

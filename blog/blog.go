@@ -330,7 +330,6 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			var baseBuilder strings.Builder
 			baseBuilder.WriteString(host)
 			baseBuilder.WriteString(common.GetBaseUrl(1, c))
-			baseBuilder.WriteByte('/')
 
 			// TODO improve blog title ?
 			data, err := buildFeed(posts, blogName, baseBuilder.String(), dateFormat, extractSize, feedFormat)

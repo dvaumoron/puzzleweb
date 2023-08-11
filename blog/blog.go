@@ -327,12 +327,9 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 				return
 			}
 
-			var baseBuilder strings.Builder
-			baseBuilder.WriteString(host)
-			baseBuilder.WriteString(common.GetBaseUrl(1, c))
-
+			baseUrl := host + common.GetBaseUrl(1, c)
 			// TODO improve blog title ?
-			data, err := buildFeed(posts, blogName, baseBuilder.String(), dateFormat, extractSize, feedFormat)
+			data, err := buildFeed(posts, blogName, baseUrl, dateFormat, extractSize, feedFormat)
 			if err != nil {
 				common.LogOriginalError(logger, err)
 				c.AbortWithStatus(http.StatusInternalServerError)

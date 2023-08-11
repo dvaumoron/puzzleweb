@@ -311,7 +311,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 		}),
 		rssHandler: func(c *gin.Context) {
 			logger := puzzleweb.GetLogger(c)
-			userId := puzzleweb.GetRequestedUserId(c)
+			userId := puzzleweb.GetSessionUserId(c)
 
 			_, posts, err := blogService.GetPosts(logger, userId, 0, feedSize, "")
 			if err != nil {

@@ -32,7 +32,7 @@ The main server use [Gin](https://gin-gonic.com/) and is backed by microservices
 5. [puzzleloginservice](https://github.com/dvaumoron/puzzleloginservice)
     - [puzzleloginserver](https://github.com/dvaumoron/puzzleloginserver)
 6. [puzzlerightservice](https://github.com/dvaumoron/puzzlerightservice)
-    - [puzzlerightserver](https://github.com/dvaumoron/puzzlerightserver)
+    - [puzzlerightserver](https://github.com/dvaumoron/puzzlerightserver) (use Rego from [Open Policy Agent](https://www.openpolicyagent.org/))
     - [puzzlecachedrightserver](https://github.com/dvaumoron/puzzlecachedrightserver)
 7. [puzzleprofileservice](https://github.com/dvaumoron/puzzleprofileservice)
     - [puzzleprofileserver](https://github.com/dvaumoron/puzzleprofileserver)

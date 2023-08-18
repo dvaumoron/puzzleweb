@@ -381,7 +381,7 @@ func (client forumClient) DeleteComment(logger otelzap.LoggerWithCtx, userId uin
 	}
 	threadId := response.List[0].Id
 
-	response2, err := forumClient.DeleteThread(logger.Context(), &pb.IdRequest{ContainerId: threadId, Id: commentId})
+	response2, err := forumClient.DeleteMessage(logger.Context(), &pb.IdRequest{ContainerId: threadId, Id: commentId})
 	if err != nil {
 		return common.LogOriginalError(logger, err)
 	}

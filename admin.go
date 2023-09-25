@@ -338,7 +338,7 @@ func rolesAppender(group *GroupDisplay, role service.Role) {
 // always in the same order : access, create, update, delete
 func displayActions(actions []string) []string {
 	actionSet := common.MakeSet(actions)
-	res := make([]string, len(actions))
+	res := make([]string, 0, len(actionSet))
 	if actionSet.Contains(service.ActionAccess) {
 		res = append(res, accessKey)
 	}

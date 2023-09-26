@@ -16,7 +16,7 @@ The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to 
 
 Other projects based on PuzzleWeb are [PuzzleFrame](https://github.com/dvaumoron/puzzleframe) (configured with [frame.yaml](https://github.com/dvaumoron/puzzleframe/blob/main/frame.yaml)) and [PuzzleTest](https://github.com/dvaumoron/puzzletest) (initialized in [puzzletest.go](https://github.com/dvaumoron/puzzletest/blob/main/puzzletest.go)). PuzzleFrame and PuzzleTest needs additionnal configuration to be provided with environment variable (or a .env file in the working directory, see [this empty exemple](defaultData/.env)) and the backing services should be handled separately.
 
-See [this folder](https://github.com/dvaumoron/puzzletest/tree/main/deploy/conf/helm) for an example of [Helm chart](https://helm.sh).
+See [this folder](https://github.com/dvaumoron/puzzletest/tree/main/deploy/conf/helm) for an example of [Helm chart](https://helm.sh) deploying the different services.
 
 See [API Documentation](https://pkg.go.dev/github.com/dvaumoron/puzzleweb) for detailed package descriptions.
 

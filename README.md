@@ -10,7 +10,7 @@ All of the project in the Puzzle ecosystem are released under the Apache 2.0 lic
 
 ## Getting started
 
-The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to use PuzzleWeb features with a single binary (it is a modular monolith done with [ServiceWeaver](https://serviceweaver.dev/) and configured with [puzzleweaver.toml](https://github.com/dvaumoron/puzzleweaver/blob/main/puzzleweaver.toml)). Once installed, you can run it with the command :
+The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to use PuzzleWeb features with a single binary (a modular monolith done with [ServiceWeaver](https://serviceweaver.dev/) and configured with [puzzleweaver.toml](https://github.com/dvaumoron/puzzleweaver/blob/main/puzzleweaver.toml)). Once installed, you can run it with the command :
 
     weaver single deploy puzzleweaver.toml
 

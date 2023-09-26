@@ -10,7 +10,11 @@ All of the project in the Puzzle ecosystem are released under the Apache 2.0 lic
 
 ## Getting started
 
-The projects [PuzzleFrame](https://github.com/dvaumoron/puzzleframe) (configured with [frame.yaml](https://github.com/dvaumoron/puzzleframe/blob/main/frame.yaml)) and [PuzzleTest](https://github.com/dvaumoron/puzzletest) (initialized in [puzzletest.go](https://github.com/dvaumoron/puzzletest/blob/main/puzzletest.go)) show how to use PuzzleWeb. In both case, additionnal configuration should be provided with environment variable (or a .env file in the working directory, see [this empty exemple](defaultData/.env)).
+The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to use PuzzleWeb features with a single binary (it is a modular monolith done with [ServiceWeaver](https://serviceweaver.dev/) and configured with [puzzleweaver.toml](https://github.com/dvaumoron/puzzleweaver/blob/main/puzzleweaver.toml)). Once installed, you can run it with the command :
+
+    weaver single deploy puzzleweaver.toml
+
+Other projects based on PuzzleWeb are [PuzzleFrame](https://github.com/dvaumoron/puzzleframe) (configured with [frame.yaml](https://github.com/dvaumoron/puzzleframe/blob/main/frame.yaml)) and [PuzzleTest](https://github.com/dvaumoron/puzzletest) (initialized in [puzzletest.go](https://github.com/dvaumoron/puzzletest/blob/main/puzzletest.go)). PuzzleFrame and PuzzleTest needs additionnal configuration to be provided with environment variable (or a .env file in the working directory, see [this empty exemple](defaultData/.env)) and the backing services should be handled separately.
 
 See [this folder](https://github.com/dvaumoron/puzzletest/tree/main/deploy/conf/helm) for an example of [Helm chart](https://helm.sh).
 
@@ -19,6 +23,7 @@ See [API Documentation](https://pkg.go.dev/github.com/dvaumoron/puzzleweb) for d
 ## Technical overview
 
 The main server use [Gin](https://gin-gonic.com/) and is backed by microservices called with [gRPC](https://grpc.io/), those services definitions (and list of proposed implementations) are :
+
 1. [puzzlesessionservice](https://github.com/dvaumoron/puzzlesessionservice) (this contract is also used for settings storage)
     - [puzzlesessionserver](https://github.com/dvaumoron/puzzlesessionserver)
     - [puzzlesettingsserver](https://github.com/dvaumoron/puzzlesettingsserver)
@@ -38,6 +43,7 @@ The main server use [Gin](https://gin-gonic.com/) and is backed by microservices
     - [puzzleprofileserver](https://github.com/dvaumoron/puzzleprofileserver)
 
 And optionnally (with some kind of page added) :
+
 1. [puzzleforumservice](https://github.com/dvaumoron/puzzleforumservice)
     - [puzzleforumserver](https://github.com/dvaumoron/puzzleforumserver)
 2. [puzzlemarkdownservice](https://github.com/dvaumoron/puzzlemarkdownservice)
@@ -50,10 +56,12 @@ And optionnally (with some kind of page added) :
     - [puzzlegalleryserver](https://github.com/dvaumoron/puzzlegalleryserver) : Image gallery
 
 List of side projects:
+
 - [puzzlefront](https://github.com/dvaumoron/puzzlefront) : [WebAssembly](https://webassembly.org/) project containing the majority of browser side interaction.
 - [puzzletools](https://github.com/dvaumoron/puzzletools) : [Cobra](https://cobra.dev/) based utility CLI.
 
 List of helper projects :
+
 - [puzzlegrpcserver](https://github.com/dvaumoron/puzzlegrpcserver)
 - [puzzlegrpcclient](https://github.com/dvaumoron/puzzlegrpcclient)
 - [puzzledbclient](https://github.com/dvaumoron/puzzledbclient) (use [gorm](https://gorm.io/))

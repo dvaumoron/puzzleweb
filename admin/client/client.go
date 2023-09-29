@@ -67,7 +67,7 @@ func (client RightClient) GetGroupName(groupId uint64) string {
 	return client.groupIdToName[groupId]
 }
 
-func (client RightClient) GetAllGroups(logger otelzap.LoggerWithCtx) []service.Group {
+func (client RightClient) GetAllGroups(_ otelzap.LoggerWithCtx) []service.Group {
 	groups := make([]service.Group, 0, len(client.groupIdToName))
 	for id, name := range client.groupIdToName {
 		groups = append(groups, service.Group{Id: id, Name: name})

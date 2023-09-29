@@ -19,8 +19,9 @@
 package puzzleweb
 
 import (
+	"cmp"
 	"errors"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb/admin/service"
@@ -28,7 +29,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/exp/slices"
 )
 
 const roleNameName = "RoleName"
@@ -66,32 +66,12 @@ func MakeRoleDisplay(role service.Role) RoleDisplay {
 	return RoleDisplay{Name: role.Name, Actions: displayActions(role.Actions)}
 }
 
-type sortableGroups []*GroupDisplay
-
-func (s sortableGroups) Len() int {
-	return len(s)
+func cmpGroupAsc(a *GroupDisplay, b *GroupDisplay) int {
+	return cmp.Compare(a.Id, b.Id)
 }
 
-func (s sortableGroups) Less(i, j int) bool {
-	return s[i].Id < s[j].Id
-}
-
-func (s sortableGroups) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-type sortableRoles []RoleDisplay
-
-func (s sortableRoles) Len() int {
-	return len(s)
-}
-
-func (s sortableRoles) Less(i, j int) bool {
-	return s[i].Name < s[j].Name
-}
-
-func (s sortableRoles) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
+func cmpRoleAsc(a RoleDisplay, b RoleDisplay) int {
+	return cmp.Compare(a.Name, b.Name)
 }
 
 type adminWidget struct {
@@ -356,10 +336,10 @@ func displayActions(actions []string) []string {
 
 func sortGroups(nameToGroup map[string]*GroupDisplay) []*GroupDisplay {
 	groupRoles := common.MapToValueSlice(nameToGroup)
-	sort.Sort(sortableGroups(groupRoles))
+	slices.SortFunc(groupRoles, cmpGroupAsc)
 	for _, group := range groupRoles {
-		sort.Sort(sortableRoles(group.Roles))
-		sort.Sort(sortableRoles(group.AddableRoles))
+		slices.SortFunc(group.Roles, cmpRoleAsc)
+		slices.SortFunc(group.AddableRoles, cmpRoleAsc)
 	}
 	return groupRoles
 }

@@ -7,7 +7,7 @@
 </h2>
 
 <form action="{{.BaseUrl}}save/{{.WikiTitle}}" method="POST">
-    <textarea name="content" rows="20">{{.WikiContent}}</textarea>
+    <textarea name="content" rows="20">{{with .WikiContent}}{{.}}{{end}}</textarea>
     <div class="hide">
         <input type="text" name="version" value="{{.WikiVersion}}"/>
     </div>

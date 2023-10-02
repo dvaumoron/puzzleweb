@@ -2,11 +2,11 @@
 <form id="loginForm" action="/login/submit" method="POST">
     <label>
         {{.Messages.LoginLabel}}
-        <input type="text" id="loginField" name="Login"/>
+        <input type="text" id="loginField" name="Login" required-message="errorEmptyLoginMessage"/>
     </label>
     <label>
         {{.Messages.PasswordLabel}}
-        <input type="password" id="passwordField" name="Password"/>
+        <input type="password" id="passwordField" name="Password" required-message="errorEmptyPasswordMessage"/>
     </label>
     <div id="confirmPasswordBlock" class="hide">
         <label>
@@ -23,7 +23,7 @@
         <span id="errorEmptyPasswordMessage">{{.Messages.EmptyPassword}}</span>
         <span id="errorWrongConfimPasswordMessage">{{.Messages.WrongConfirmPassword}}</span>
     </div>
-    <button type="button" id="loginSubmitButton">{{.Messages.LoginLinkLabel}}</button>
+    <button type="button" validate-form="loginForm">{{.Messages.LoginLinkLabel}}</button>
     <div>
         <button type="button" id="loginRegisterButton">{{.Messages.RegisterLinkLabel}}</button>
         <button type="button" id="loginRegisterButton2" class="hide">{{.Messages.RegisterLinkLabel}}</button>

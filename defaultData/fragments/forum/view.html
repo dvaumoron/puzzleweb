@@ -36,11 +36,11 @@
 
 {{if .AllowedToCreate}}
     <form id="createForumMessageForm" action="{{.BaseUrl}}message/save/{{$threadId}}" method="POST">
-        <textarea id="forumMessageField" name="message" rows="5" placeholder="{{.Messages.ResponseMessageLabel}}"></textarea>
+        <textarea name="message" rows="5" placeholder="{{.Messages.ResponseMessageLabel}}" required-message="errorEmptyForumMessageMessage"></textarea>
         <div class="hide">
             {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
             <span id="errorEmptyForumMessageMessage">{{.Messages.EmptyForumMessage}}</span>
         </div>
-        <button type="button" id="createForumMessageButton" class="secondary">{{.Messages.PublishLinkLabel}}</button>
+        <button type="button" validate-form="createForumMessageForm" class="secondary">{{.Messages.PublishLinkLabel}}</button>
     </form>
 {{end}}

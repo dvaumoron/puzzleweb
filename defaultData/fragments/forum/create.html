@@ -7,13 +7,13 @@
 <form id="createThreadForm" action="{{.BaseUrl}}save" method="POST">
     <label>
         {{.Messages.TitleLabel}}
-        <input type="text" id="threadTitleField" name="title"/>
+        <input type="text" name="title" required-message="errorEmptyThreadTitleMessage"/>
     </label>
-    <textarea id="forumMessageField" name="message" rows="5"></textarea>
+    <textarea name="message" rows="5" required-message="errorEmptyForumMessageMessage"></textarea>
     <div class="hide">
         {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
         <span id="errorEmptyThreadTitleMessage">{{.Messages.EmptyThreadTitle}}</span>
         <span id="errorEmptyForumMessageMessage">{{.Messages.EmptyForumMessage}}</span>
     </div>
-    <button type="button" id="createThreadButton">{{.Messages.CreateLinkLabel}}</button>
+    <button type="button" validate-form="createThreadForm">{{.Messages.CreateLinkLabel}}</button>
 </form>

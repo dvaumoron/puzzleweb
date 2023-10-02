@@ -19,12 +19,12 @@
 {{$postId := .Post.PostId}}
 {{if .AllowedToCreate}}
     <form id="commentForm" action="{{.BaseUrl}}comment/save/{{$postId}}" method="POST">
-        <textarea id="commentField" name="comment" rows="5" placeholder="{{.Messages.LeaveCommentLabel}}"></textarea>
+        <textarea name="comment" rows="5" placeholder="{{.Messages.LeaveCommentLabel}}" required-message="errorEmptyCommentMessage"></textarea>
         <div class="hide">
             {{/* to allow JavaScript or WebAssembly to display a localized error message */}}
             <span id="errorEmptyCommentMessage">{{.Messages.EmptyComment}}</span>
         </div>
-        <button type="button" id="commentButton" class="secondary">{{.Messages.PublishLinkLabel}}</button>
+        <button type="button" class="secondary" validate-form="commentForm">{{.Messages.PublishLinkLabel}}</button>
     </form>
 {{end}}
 

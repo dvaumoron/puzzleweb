@@ -19,13 +19,13 @@
     <form id="changeLoginForm" action="/profile/changeLogin" method="POST">
         <label>
             {{.Messages.NewLoginLabel}}
-            <input type="text" id="loginField" name="Login"/>
+            <input type="text" name="Login" required-message="errorEmptyLoginMessage"/>
         </label>
         <label>
             {{.Messages.PasswordLabel}}
-            <input type="password" id="passwordField" name="Password"/>
+            <input type="password" name="Password" required-message="errorEmptyPasswordMessage"/>
         </label>
-        <button type="button" id="changeLoginButton">{{.Messages.SaveLinkLabel}}</button>
+        <button type="button" validate-form="changeLoginForm">{{.Messages.SaveLinkLabel}}</button>
     </form>
 </details>
 
@@ -34,18 +34,18 @@
     <form id="changePasswordForm" action="/profile/changePassword" method="POST">
         <label>
             {{.Messages.OldPasswordLabel}}
-            <input type="password" name="oldPassword"/>
+            <input type="password" name="oldPassword" required-message="errorEmptyPasswordMessage"/>
         </label>
         <label>
             {{.Messages.NewPasswordLabel}}
             <a href id="passwordHelp"><span class="material-symbols-outlined">help</span></a>
-            <input type="password" id="changePasswordField" name="newPassword"/>
+            <input type="password" id="changePasswordField" name="newPassword" required-message="errorEmptyPasswordMessage"/>
         </label>
         <label>
             {{.Messages.ConfirmPasswordLabel}}
-            <input type="password" id="confirmChangePasswordField" name="ConfirmPassword"/>
+            <input type="password" name="ConfirmPassword" confirm-field="changePasswordField" confirm-message="errorWrongConfimPasswordMessage"/>
         </label>
-        <button type="button" id="changePasswordButton">{{.Messages.SaveLinkLabel}}</button>
+        <button type="button" validate-form="changePasswordForm">{{.Messages.SaveLinkLabel}}</button>
     </form>
 </details>
 

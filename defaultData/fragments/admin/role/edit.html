@@ -12,7 +12,7 @@
     <div {{if ne .RoleName "new"}} class="hide" {{end}}>
         <label>
             {{.Messages.NameLabel}}
-            <input type="text" id="editRoleNameField" name="RoleName" value="{{.RoleName}}"/>
+            <input type="text" name="RoleName" value="{{.RoleName}}" forbidden-values="new" required-message="errorBadRoleNameMessage"/>
         </label>
     </div>
     <div class="hide">
@@ -38,5 +38,5 @@
             <input type="checkbox" name="actions" value="delete" {{with .Delete}} checked {{end}} role="switch"/>
         </label>
     </fieldset>
-    <button type="button" id="saveRoleButton">{{.Messages.SaveLinkLabel}}</button>
+    <button type="button" validate-form="editRoleForm">{{.Messages.SaveLinkLabel}}</button>
 </form>

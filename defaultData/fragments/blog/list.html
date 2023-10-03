@@ -8,6 +8,7 @@
 {{end}}
 
 {{$baseUrl := .CurrentUrl}}
+{{$dateFormat := .Messages.DateFormat}}
 {{$viewLinkLabel := .Messages.ViewMoreLinkLabel}}
 {{if .AllowedToDelete}}
     {{$deleteLinkLabel := .Messages.DeleteLinkLabel}}
@@ -16,7 +17,7 @@
             <header>
                 <hgroup>
                     <h2>{{.Title}}</h2>
-                    <h3>{{template "profileLink" .Creator}} {{date .Date .Messages.DateFormat}}</h3>
+                    <h3>{{template "profileLink" .Creator}} {{date .Date $dateFormat}}</h3>
                 </hgroup>
             </header>
             <p>{{.Content}}</p>
@@ -32,7 +33,7 @@
             <header>
                 <hgroup>
                     <h2>{{.Title}}</h2>
-                    <h3>{{template "profileLink" .Creator}} {{date .Date .Messages.DateFormat}}</h3>
+                    <h3>{{template "profileLink" .Creator}} {{date .Date $dateFormat}}</h3>
                 </hgroup>
             </header>
             <p>{{.Content}}</p>

@@ -16,7 +16,7 @@
             <header>
                 <hgroup>
                     <h2>{{.Title}}</h2>
-                    <h3>{{template "profileLink" .Creator}} {{.Date}}</h3>
+                    <h3>{{template "profileLink" .Creator}} {{date .Date .Messages.DateFormat}}</h3>
                 </hgroup>
             </header>
             <p>{{.Content}}</p>
@@ -32,7 +32,7 @@
             <header>
                 <hgroup>
                     <h2>{{.Title}}</h2>
-                    <h3>{{template "profileLink" .Creator}} {{.Date}}</h3>
+                    <h3>{{template "profileLink" .Creator}} {{date .Date .Messages.DateFormat}}</h3>
                 </hgroup>
             </header>
             <p>{{.Content}}</p>

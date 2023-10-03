@@ -16,7 +16,7 @@
         <div class="grid">
             {{template "profilePictureLink" .Creator}}
             <div>
-                <p>{{.Date}}</p>
+                <p>{{date .Date .Messages.DateFormat}}</p>
                 <p>{{html .Text}}</p>
             </div>
             <p><a href="{{$baseUrl}}message/delete/{{$threadId}}/{{.Id}}" class="contrast" role="button">{{$deleteLinkLabel}}</a></p>
@@ -27,7 +27,7 @@
         <div class="grid">
             {{template "profilePictureLink" .Creator}}
             <div>
-                <p>{{.Date}}</p>
+                <p>{{date .Date .Messages.DateFormat}}</p>
                 <p>{{html .Text}}</p>
             </div>
         </div>

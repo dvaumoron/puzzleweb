@@ -1,6 +1,6 @@
 
 <h2>
-    {{.ViewedUser.Login}} ({{.Messages.RegistredAtLabel}} {{.ViewedUser.RegistredAt}})
+    {{.ViewedUser.Login}} ({{.Messages.RegistredAtLabel}} {{date .ViewedUser.RegistredAt .Messages.DateFormat}})
     <a href="/admin/user/list" role="button">{{.Messages.CancelLinkLabel}}</a>
     {{if .AllowedToUpdate}}
         <a href="/admin/user/edit/{{.ViewedUser.Id}}" role="button">{{.Messages.EditLinkLabel}}</a>

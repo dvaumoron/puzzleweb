@@ -6,7 +6,7 @@
             <a href="{{.BaseUrl}}" role="button">{{.Messages.CancelLinkLabel}}</a>
         </h1>
         <h3>{{.Messages.PostAuthorLabel}} {{template "profileLink" .Post.Creator}}</h3>
-        <h3>{{.Messages.PostDateLabel}} {{.Post.Date}}</h3>
+        <h3>{{.Messages.PostDateLabel}} {{date .Post.Date .Messages.DateFormat}}</h3>
     </hgroup>
 </header>
 
@@ -40,7 +40,7 @@
             <div class="grid">
                 {{template "profilePictureLink" .Creator}}
                 <div>
-                    <p>{{.Date}}</p>
+                    <p>{{date .Date .Messages.DateFormat}}</p>
                     <p>{{.Text}}</p>
                 </div>
             </div>
@@ -55,7 +55,7 @@
             <div class="grid">
                 {{template "profilePictureLink" .Creator}}
                 <div>
-                    <p>{{.Date}}</p>
+                    <p>{{date .Date .Messages.DateFormat}}</p>
                     <p>{{.Text}}</p>
                 </div>
             </div>

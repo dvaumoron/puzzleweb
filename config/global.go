@@ -85,7 +85,7 @@ type GlobalConfig struct {
 	SessionTimeOut     int
 	ServiceTimeOut     time.Duration
 	MaxMultipartMemory int64
-	DateFormat         string // TODO move this to template service
+	DateFormat         string
 	PageSize           uint64
 	ExtractSize        uint64
 	FeedFormat         string

@@ -169,6 +169,13 @@ func CreateTemplate(tracer trace.Tracer, spanName string, redirecter common.Temp
 		data := initData(c)
 		tmpl, redirect := redirecter(data, c)
 		if redirect == "" {
+			if pagePart := c.Query("pagePart"); pagePart != "" {
+				var tmplBuilder strings.Builder
+				tmplBuilder.WriteString(tmpl)
+				tmplBuilder.WriteByte('#')
+				tmplBuilder.WriteString(pagePart)
+				tmpl = tmplBuilder.String()
+			}
 			otelgin.HTML(c, http.StatusOK, tmpl, templates.ContextAndData{Ctx: ctx, Data: data})
 		} else {
 			c.Redirect(http.StatusFound, redirect)

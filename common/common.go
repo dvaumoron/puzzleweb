@@ -20,12 +20,12 @@ package common
 
 import (
 	"net/http"
+	"slices"
 	"strconv"
 	"unicode"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/exp/slices"
 )
 
 const RedirectName = "Redirect"

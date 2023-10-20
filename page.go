@@ -167,8 +167,7 @@ func CreateTemplate(tracer trace.Tracer, spanName string, redirecter common.Temp
 		_, span := tracer.Start(ctx, spanName)
 		defer span.End()
 		data := initData(c)
-		tmpl, redirect := redirecter(data, c)
-		if redirect == "" {
+		if tmpl, redirect := redirecter(data, c); redirect == "" {
 			if pagePart := c.Query("pagePart"); pagePart != "" {
 				var tmplBuilder strings.Builder
 				tmplBuilder.WriteString(tmpl)

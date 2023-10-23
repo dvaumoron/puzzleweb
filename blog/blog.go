@@ -25,10 +25,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/blog/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
+	puzzleweb "github.com/dvaumoron/puzzleweb/main"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/feeds"
 	"go.uber.org/zap"

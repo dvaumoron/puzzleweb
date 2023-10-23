@@ -24,9 +24,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
+	puzzleweb "github.com/dvaumoron/puzzleweb/main"
 	"github.com/dvaumoron/puzzleweb/remotewidget/service"
 	"github.com/gin-gonic/gin"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"

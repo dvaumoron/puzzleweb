@@ -22,10 +22,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dvaumoron/puzzleweb"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
+	puzzleweb "github.com/dvaumoron/puzzleweb/main"
 	"github.com/gin-gonic/gin"
 )
 

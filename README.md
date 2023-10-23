@@ -1,6 +1,6 @@
 # PuzzleWeb
 
-<img src="https://github.com/dvaumoron/puzzleweb/raw/main/defaultData/static/images/puzzlelogo.jpg" width="100">
+<img src="https://github.com/dvaumoron/puzzleweb/raw/main/logo/puzzlelogo.jpg" width="100">
 
 PuzzleWeb is a microservice backed server allowing to include static content, blog, wiki, forum and custom "widget" with role based right management, user profile, user settings, and [i18n](https://www.w3.org/International/questions/qa-i18n.en#i18n).
 

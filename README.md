@@ -2,7 +2,7 @@
 
 <img src="https://github.com/dvaumoron/puzzleweb/raw/main/defaultData/static/images/puzzlelogo.jpg" width="100">
 
-This library is intended to easily create a microservice backed server allowing to include static content, blog, wiki, forum and custom "widget" with role based right management, user profile, user settings, and [i18n](https://www.w3.org/International/questions/qa-i18n.en#i18n).
+PuzzleWeb is a microservice backed server allowing to include static content, blog, wiki, forum and custom "widget" with role based right management, user profile, user settings, and [i18n](https://www.w3.org/International/questions/qa-i18n.en#i18n).
 
 ## License
 
@@ -14,7 +14,7 @@ The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to 
 
     weaver single deploy puzzleweaver.toml
 
-Other projects based on PuzzleWeb are [PuzzleFrame](https://github.com/dvaumoron/puzzleframe) (configured with [frame.yaml](https://github.com/dvaumoron/puzzleframe/blob/main/frame.yaml)) and [PuzzleTest](https://github.com/dvaumoron/puzzletest) (initialized in [puzzletest.go](https://github.com/dvaumoron/puzzletest/blob/main/puzzletest.go)). PuzzleFrame and PuzzleTest needs additionnal configuration to be provided with environment variable (or a .env file in the working directory, see [this empty exemple](defaultData/.env)) and the backing services should be handled separately.
+[PuzzleTest](https://github.com/dvaumoron/puzzletest) contains test datas (configurations : [frame.yaml](https://github.com/dvaumoron/puzzletest/blob/main/frame.yaml) and [.env](https://github.com/dvaumoron/puzzletest/blob/main/.env), page templates : [templatedata] (<https://github.com/dvaumoron/puzzletest/blob/main/templatedata>), and static files [static](https://github.com/dvaumoron/puzzletest/blob/main/static)).
 
 See [this folder](https://github.com/dvaumoron/puzzletest/tree/main/deploy/conf/helm) for an example of [Helm chart](https://helm.sh) deploying the different services.
 

@@ -14,7 +14,7 @@ The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to 
 
     weaver single deploy puzzleweaver.toml
 
-[PuzzleTest](https://github.com/dvaumoron/puzzletest) contains test datas (configurations : [frame.yaml](https://github.com/dvaumoron/puzzletest/blob/main/frame.yaml) and [.env](https://github.com/dvaumoron/puzzletest/blob/main/.env), page templates : [templatedata] (<https://github.com/dvaumoron/puzzletest/blob/main/templatedata>), and static files [static](https://github.com/dvaumoron/puzzletest/blob/main/static)).
+[PuzzleTest](https://github.com/dvaumoron/puzzletest) contains test datas (configurations : [frame.yaml](https://github.com/dvaumoron/puzzletest/blob/main/frame.yaml) and [.env](https://github.com/dvaumoron/puzzletest/blob/main/.env), page templates : [templatedata](<https://github.com/dvaumoron/puzzletest/blob/main/templatedata>), and static files [static](https://github.com/dvaumoron/puzzletest/blob/main/static)).
 
 See [this folder](https://github.com/dvaumoron/puzzletest/tree/main/deploy/conf/helm) for an example of [Helm chart](https://helm.sh) deploying the different services.
 

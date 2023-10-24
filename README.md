@@ -30,7 +30,7 @@ The main server use [Gin](https://gin-gonic.com/) and is backed by microservices
     - [puzzlesessionserver](https://github.com/dvaumoron/puzzlesessionserver)
     - [puzzlesettingsserver](https://github.com/dvaumoron/puzzlesettingsserver)
 2. [puzzletemplateservice](https://github.com/dvaumoron/puzzletemplateservice)
-    - [puzzlegotemplateserver](https://github.com/dvaumoron/puzzlegotemplateserver)
+    - [puzzlegotemplateserver](https://github.com/dvaumoron/puzzlegotemplateserver) (use [PartRenderer](https://github.com/dvaumoron/partrenderer))
     - [puzzleindentlangserver](https://github.com/dvaumoron/puzzleindentlangserver)
 3. [puzzlepassstrengthservice](https://github.com/dvaumoron/puzzlepassstrengthservice)
     - [puzzlepassstrengthserver](https://github.com/dvaumoron/puzzlepassstrengthserver)

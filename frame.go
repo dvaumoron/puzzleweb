@@ -52,6 +52,7 @@ func main() {
 		ctxLogger.Fatal("Failed to read frame configuration file", zap.Error(err))
 	}
 
+	// TODO use HCL instead ? both options ?
 	var frameConfig map[string]any
 	if err = yaml.Unmarshal(frameConfigBody, &frameConfig); err != nil {
 		ctxLogger.Fatal("Failed to parse frame configuration", zap.Error(err))

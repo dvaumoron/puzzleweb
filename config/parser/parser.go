@@ -74,6 +74,7 @@ func LoadFrameConfig(path string) (FrameConfig, error) {
 	var err error
 	var frameConfig FrameConfig
 	if strings.HasSuffix(path, ".hcl") {
+		// TODO use EvalContext for self reference
 		err = hclsimple.DecodeFile(path, nil, &frameConfig)
 	} else {
 		var frameConfigBody []byte

@@ -27,7 +27,7 @@ import (
 )
 
 type FrameConfig struct {
-	PermissionGroups []PermissionGroupConfig `hcl:"permissionGroup,block"`
+	PermissionGroups []PermissionGroupConfig `hcl:"permission,block"`
 	PageGroups       []PageGroupConfig       `hcl:"pageGroup,block"`
 	Widgets          []WidgetConfig          `hcl:"widget,block"`
 	WidgetPages      []WidgetPageConfig      `hcl:"widgetPage,block"`
@@ -43,7 +43,7 @@ func (frame *FrameConfig) WidgetsAsMap() map[string]WidgetConfig {
 
 type PermissionGroupConfig struct {
 	Name string `hcl:"name,label"`
-	Id   uint64 `hcl:"id"`
+	Id   uint64 `hcl:"groupId"`
 }
 
 type PageGroupConfig struct {
@@ -56,15 +56,15 @@ type WidgetConfig struct {
 	Kind        string   `hcl:"kind"`
 	ObjectId    uint64   `hcl:"objectId"`
 	GroupId     uint64   `hcl:"groupId"`
-	ServiceAddr string   `hcl:"serviceAddr"`
-	WidgetName  string   `hcl:"widgetName"`
-	Templates   []string `hcl:"templates"`
+	ServiceAddr string   `hcl:"serviceAddr,optional"`
+	WidgetName  string   `hcl:"widgetName,optional"`
+	Templates   []string `hcl:"templates,optional"`
 }
 
 type WidgetPageConfig struct {
 	Name        string `hcl:"name,label"`
 	WidgetRef   string `hcl:"widgetRef"`
-	Emplacement string `hcl:"emplacement"`
+	Emplacement string `hcl:"emplacement,optional"`
 }
 
 func LoadFrameConfig(path string) (FrameConfig, error) {

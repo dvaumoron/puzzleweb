@@ -27,10 +27,10 @@ import (
 )
 
 type FrameConfig struct {
-	PermissionGroups []PermissionGroupConfig `hcl:"permission,block"`
-	PageGroups       []PageGroupConfig       `hcl:"pageGroup,block"`
-	Widgets          []WidgetConfig          `hcl:"widget,block"`
-	WidgetPages      []WidgetPageConfig      `hcl:"widgetPage,block"`
+	PermissionGroups []PermissionGroupConfig `hcl:"permission,block" yaml:"permissionGroups"`
+	PageGroups       []PageGroupConfig       `hcl:"pageGroup,block" yaml:"pageGroups"`
+	Widgets          []WidgetConfig          `hcl:"widget,block" yaml:"widgets"`
+	WidgetPages      []WidgetPageConfig      `hcl:"widgetPage,block" yaml:"widgetPages"`
 }
 
 func (frame *FrameConfig) WidgetsAsMap() map[string]WidgetConfig {
@@ -42,29 +42,29 @@ func (frame *FrameConfig) WidgetsAsMap() map[string]WidgetConfig {
 }
 
 type PermissionGroupConfig struct {
-	Name string `hcl:"name,label"`
-	Id   uint64 `hcl:"groupId"`
+	Name string `hcl:"name,label" yaml:"name"`
+	Id   uint64 `hcl:"groupId" yaml:"id"`
 }
 
 type PageGroupConfig struct {
-	GroupId uint64   `hcl:"groupId"`
-	Pages   []string `hcl:"pages"`
+	GroupId uint64   `hcl:"groupId" yaml:"groupId"`
+	Pages   []string `hcl:"pages" yaml:"pages"`
 }
 
 type WidgetConfig struct {
-	Name        string   `hcl:"name,label"`
-	Kind        string   `hcl:"kind"`
-	ObjectId    uint64   `hcl:"objectId"`
-	GroupId     uint64   `hcl:"groupId"`
-	ServiceAddr string   `hcl:"serviceAddr,optional"`
-	WidgetName  string   `hcl:"widgetName,optional"`
-	Templates   []string `hcl:"templates,optional"`
+	Name        string   `hcl:"name,label" yaml:"name"`
+	Kind        string   `hcl:"kind" yaml:"kind"`
+	ObjectId    uint64   `hcl:"objectId" yaml:"objectId"`
+	GroupId     uint64   `hcl:"groupId" yaml:"groupId"`
+	ServiceAddr string   `hcl:"serviceAddr,optional" yaml:"serviceAddr"`
+	WidgetName  string   `hcl:"widgetName,optional" yaml:"widgetName"`
+	Templates   []string `hcl:"templates,optional" yaml:"templates"`
 }
 
 type WidgetPageConfig struct {
-	Name        string `hcl:"name,label"`
-	WidgetRef   string `hcl:"widgetRef"`
-	Emplacement string `hcl:"emplacement,optional"`
+	Name        string `hcl:"name,label" yaml:"name"`
+	WidgetRef   string `hcl:"widgetRef" yaml:"widgetRef"`
+	Emplacement string `hcl:"emplacement,optional" yaml:"emplacement"`
 }
 
 func LoadFrameConfig(path string) (FrameConfig, error) {
@@ -75,7 +75,7 @@ func LoadFrameConfig(path string) (FrameConfig, error) {
 	} else {
 		var frameConfigBody []byte
 		frameConfigBody, err = os.ReadFile(path)
-		if err != nil {
+		if err == nil {
 			err = yaml.Unmarshal(frameConfigBody, &frameConfig)
 		}
 	}

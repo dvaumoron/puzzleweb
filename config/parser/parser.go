@@ -46,11 +46,13 @@ type PermissionGroupConfig struct {
 	Id   uint64 `hcl:"groupId" yaml:"id"`
 }
 
+// TODO renaming "StaticPage"
 type PageGroupConfig struct {
 	GroupId uint64   `hcl:"groupId" yaml:"groupId"`
 	Pages   []string `hcl:"pages" yaml:"pages"`
 }
 
+// TODO improve disinction kind/widgetName ?
 type WidgetConfig struct {
 	Name        string   `hcl:"name,label" yaml:"name"`
 	Kind        string   `hcl:"kind" yaml:"kind"`
@@ -61,6 +63,7 @@ type WidgetConfig struct {
 	Templates   []string `hcl:"templates,optional" yaml:"templates"`
 }
 
+// TODO merge name and emplacement
 type WidgetPageConfig struct {
 	Name        string `hcl:"name,label" yaml:"name"`
 	WidgetRef   string `hcl:"widgetRef" yaml:"widgetRef"`

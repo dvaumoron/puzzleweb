@@ -21,6 +21,7 @@ package main
 import (
 	_ "embed"
 	"os"
+	"strings"
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/blog"
@@ -57,25 +58,27 @@ func main() {
 
 	site.AddPage(puzzleweb.MakeHiddenStaticPage(globalConfig.Tracer, notFound, adminservice.PublicGroupId, notFound))
 
-	for _, pageGroup := range frameConfig.PageGroups {
-		site.AddStaticPages(globalConfig.CtxLogger, pageGroup.GroupId, pageGroup.Pages)
+	for _, pageGroup := range frameConfig.StaticPages {
+		site.AddStaticPages(globalConfig.CtxLogger, pageGroup.GroupId, pageGroup.Locations)
 	}
 
 	widgets := frameConfig.WidgetsAsMap()
 	for _, widgetPageConfig := range frameConfig.WidgetPages {
-		emplacement := widgetPageConfig.Emplacement
-		ok := false
+		name := widgetPageConfig.Path
+		nested := false
 		var parentPage puzzleweb.Page
-		if emplacement != "" {
-			parentPage, ok = site.GetPageWithPath(emplacement)
-			if !ok {
+		if index := strings.LastIndex(name, "/"); index != -1 {
+			emplacement := name[:index]
+			name = name[index+1:]
+			parentPage, nested = site.GetPageWithPath(emplacement)
+			if !nested {
 				ctxLogger.Fatal("Failed to retrive parentPage", zap.String("emplacement", emplacement))
 			}
 		}
 
-		widgetPage := makeWidgetPage(widgetPageConfig.Name, globalConfig, widgets[widgetPageConfig.WidgetRef])
+		widgetPage := makeWidgetPage(name, globalConfig, widgets[widgetPageConfig.WidgetRef])
 
-		if ok {
+		if nested {
 			parentPage.AddSubPage(widgetPage)
 		} else {
 			site.AddPage(widgetPage)
@@ -107,11 +110,12 @@ func makeWidgetPage(pageName string, globalConfig *config.GlobalConfig, widgetCo
 		wikiId, groupId := widgetConfig.ObjectId, widgetConfig.GroupId
 		args := widgetConfig.Templates
 		return wiki.MakeWikiPage(pageName, globalConfig.CreateWikiConfig(wikiId, groupId, args...))
-	case "remote":
-		serviceAddr, widgetName := widgetConfig.ServiceAddr, widgetConfig.WidgetName
-		objectId, groupId := widgetConfig.ObjectId, widgetConfig.GroupId
-		return remotewidget.MakeRemotePage(pageName, ctxLogger, widgetName, globalConfig.CreateWidgetConfig(serviceAddr, objectId, groupId))
 	default:
+		if widgetName, ok := strings.CutPrefix(kind, "remote/"); ok {
+			serviceAddr := widgetConfig.ServiceAddr
+			objectId, groupId := widgetConfig.ObjectId, widgetConfig.GroupId
+			return remotewidget.MakeRemotePage(pageName, ctxLogger, widgetName, globalConfig.CreateWidgetConfig(serviceAddr, objectId, groupId))
+		}
 		ctxLogger.Fatal("Widget kind unknown ", zap.String("widgetKind", kind))
 	}
 	return puzzleweb.Page{} // unreachable

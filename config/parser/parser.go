@@ -22,13 +22,16 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsimple"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/function"
 	"gopkg.in/yaml.v3"
 )
 
 type FrameConfig struct {
 	PermissionGroups []PermissionGroupConfig `hcl:"permission,block" yaml:"permissionGroups"`
-	PageGroups       []PageGroupConfig       `hcl:"pageGroup,block" yaml:"pageGroups"`
+	StaticPages      []StaticPagesConfig     `hcl:"staticPages,block" yaml:"staticPages"`
 	Widgets          []WidgetConfig          `hcl:"widget,block" yaml:"widgets"`
 	WidgetPages      []WidgetPageConfig      `hcl:"widgetPage,block" yaml:"widgetPages"`
 }
@@ -46,36 +49,30 @@ type PermissionGroupConfig struct {
 	Id   uint64 `hcl:"groupId" yaml:"id"`
 }
 
-// TODO renaming "StaticPage"
-type PageGroupConfig struct {
-	GroupId uint64   `hcl:"groupId" yaml:"groupId"`
-	Pages   []string `hcl:"pages" yaml:"pages"`
+type StaticPagesConfig struct {
+	GroupId   uint64   `hcl:"groupId" yaml:"groupId"`
+	Locations []string `hcl:"locations" yaml:"locations"`
 }
 
-// TODO improve disinction kind/widgetName ?
 type WidgetConfig struct {
 	Name        string   `hcl:"name,label" yaml:"name"`
 	Kind        string   `hcl:"kind" yaml:"kind"`
 	ObjectId    uint64   `hcl:"objectId" yaml:"objectId"`
 	GroupId     uint64   `hcl:"groupId" yaml:"groupId"`
 	ServiceAddr string   `hcl:"serviceAddr,optional" yaml:"serviceAddr"`
-	WidgetName  string   `hcl:"widgetName,optional" yaml:"widgetName"`
 	Templates   []string `hcl:"templates,optional" yaml:"templates"`
 }
 
-// TODO merge name and emplacement
 type WidgetPageConfig struct {
-	Name        string `hcl:"name,label" yaml:"name"`
-	WidgetRef   string `hcl:"widgetRef" yaml:"widgetRef"`
-	Emplacement string `hcl:"emplacement,optional" yaml:"emplacement"`
+	Path      string `hcl:"path,label" yaml:"path"`
+	WidgetRef string `hcl:"widgetRef" yaml:"widgetRef"`
 }
 
 func LoadFrameConfig(path string) (FrameConfig, error) {
 	var err error
 	var frameConfig FrameConfig
 	if strings.HasSuffix(path, ".hcl") {
-		// TODO use EvalContext for self reference
-		err = hclsimple.DecodeFile(path, nil, &frameConfig)
+		err = hclsimple.DecodeFile(path, &configContext, &frameConfig)
 	} else {
 		var frameConfigBody []byte
 		frameConfigBody, err = os.ReadFile(path)
@@ -84,4 +81,14 @@ func LoadFrameConfig(path string) (FrameConfig, error) {
 		}
 	}
 	return frameConfig, err
+}
+
+var configContext = hcl.EvalContext{Functions: map[string]function.Function{"env": function.New(&function.Spec{
+	Params: []function.Parameter{{Name: "key", Type: cty.String}},
+	Type:   function.StaticReturnType(cty.String),
+	Impl:   wrappedGetenv,
+})}}
+
+func wrappedGetenv(args []cty.Value, retType cty.Type) (cty.Value, error) {
+	return cty.StringVal(os.Getenv(args[0].AsString())), nil
 }

@@ -114,13 +114,8 @@ func (p Page) AddSubPage(page Page) {
 
 func (p Page) AddStaticPages(logger otelzap.LoggerWithCtx, tracer trace.Tracer, groupId uint64, pagePaths []string) {
 	for _, pagePath := range pagePaths {
-		if last := len(pagePath) - 1; pagePath[last] == '/' {
-			subPage, name := p.extractSubPageAndNameFromPath(pagePath[:last])
-			subPage.AddSubPage(MakeStaticPage(tracer, name, groupId, pagePath+"index"))
-		} else {
-			subPage, name := p.extractSubPageAndNameFromPath(pagePath)
-			subPage.AddSubPage(MakeStaticPage(tracer, name, groupId, pagePath))
-		}
+		subPage, pageName, templateName := p.extractSubPageAndNamesFromPath(pagePath)
+		subPage.AddSubPage(MakeStaticPage(tracer, pageName, groupId, templateName))
 	}
 }
 
@@ -154,11 +149,15 @@ func (current Page) getPageWithSplittedPath(splittedPath []string) (Page, bool) 
 	return current, true
 }
 
-func (p Page) extractSubPageAndNameFromPath(path string) (Page, string) {
+func (p Page) extractSubPageAndNamesFromPath(path string) (Page, string, string) {
 	splitted := strings.Split(path, "/")
 	last := len(splitted) - 1
+	if splitted[last] == "" {
+		last--
+		path += "index"
+	}
 	resPage, _ := p.getPageWithSplittedPath(splitted[:last])
-	return resPage, splitted[last]
+	return resPage, splitted[last], path
 }
 
 func CreateTemplate(tracer trace.Tracer, spanName string, redirecter common.TemplateRedirecter) gin.HandlerFunc {

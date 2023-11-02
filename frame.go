@@ -35,35 +35,34 @@ import (
 )
 
 const notFound = "notFound"
-const castMsg = "Failed to cast value"
-const valueName = "valueName"
 
 //go:embed version.txt
 var version string
 
 func main() {
-	site, globalConfig, initSpan := puzzleweb.BuildDefaultSite(config.WebKey, version)
+	confPath := "frame.hcl"
+	if len(os.Args) > 1 {
+		confPath = os.Args[1]
+	}
+
+	parsedConfig, err := parser.ParseConfig(confPath)
+	site, globalConfig, initSpan := puzzleweb.BuildDefaultSite(config.WebKey, version, parsedConfig, err)
 	ctxLogger := globalConfig.CtxLogger
 	rightClient := globalConfig.RightClient
 
-	frameConfig, err := parser.LoadFrameConfig(os.Getenv("FRAME_CONFIG_PATH"))
-	if err != nil {
-		ctxLogger.Fatal("Failed to read frame configuration file", zap.Error(err))
-	}
-
 	// create group for permissions
-	for _, group := range frameConfig.PermissionGroups {
+	for _, group := range parsedConfig.PermissionGroups {
 		rightClient.RegisterGroup(group.Id, group.Name)
 	}
 
 	site.AddPage(puzzleweb.MakeHiddenStaticPage(globalConfig.Tracer, notFound, adminservice.PublicGroupId, notFound))
 
-	for _, pageGroup := range frameConfig.StaticPages {
+	for _, pageGroup := range parsedConfig.StaticPages {
 		site.AddStaticPages(globalConfig.CtxLogger, pageGroup.GroupId, pageGroup.Locations)
 	}
 
-	widgets := frameConfig.WidgetsAsMap()
-	for _, widgetPageConfig := range frameConfig.WidgetPages {
+	widgets := parsedConfig.WidgetsAsMap()
+	for _, widgetPageConfig := range parsedConfig.WidgetPages {
 		name := widgetPageConfig.Path
 		nested := false
 		var parentPage puzzleweb.Page

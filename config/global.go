@@ -22,7 +22,6 @@ import (
 	"context"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dvaumoron/puzzlesaltclient"
@@ -30,6 +29,7 @@ import (
 	adminclient "github.com/dvaumoron/puzzleweb/admin/client"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogclient "github.com/dvaumoron/puzzleweb/blog/client"
+	"github.com/dvaumoron/puzzleweb/config/parser"
 	forumclient "github.com/dvaumoron/puzzleweb/forum/client"
 	forumservice "github.com/dvaumoron/puzzleweb/forum/service"
 	loginclient "github.com/dvaumoron/puzzleweb/login/client"
@@ -110,7 +110,8 @@ type GlobalConfig struct {
 	ProfileService  profileservice.AdvancedProfileService
 
 	// lazy service
-	MarkdownService markdownservice.MarkdownService
+	MarkdownServiceAddr string
+	MarkdownService     markdownservice.MarkdownService
 
 	// lazy & only adresses (instance need specific data)
 	WikiServiceAddr  string
@@ -118,54 +119,48 @@ type GlobalConfig struct {
 	BlogServiceAddr  string
 }
 
-func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span) {
+func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, err error) (*GlobalConfig, trace.Span) {
 	logger, tp := puzzletelemetry.Init(serviceName, version)
 	tracer := tp.Tracer(WebKey)
 
 	ctx, initSpan := tracer.Start(context.Background(), "initialization")
 	ctxLogger := logger.Ctx(ctx)
+	if err != nil {
+		ctxLogger.Fatal("Failed to read configuration file", zap.Error(err))
+	}
 
-	var sessionTimeOut int
 	var serviceTimeOut time.Duration
-	var maxMultipartMemory int64
 
-	domain := retrieveWithDefault(ctxLogger, "SITE_DOMAIN", "localhost")
-	port := retrieveWithDefault(ctxLogger, "SITE_PORT", "8080")
+	domain := retrieveWithDefault(ctxLogger, "domain", parsedConfig.Domain, "localhost")
+	port := retrieveWithDefault(ctxLogger, "port", parsedConfig.Port, "8080")
 
-	sessionTimeOutStr := os.Getenv("SESSION_TIME_OUT")
-	if sessionTimeOutStr == "" {
-		ctxLogger.Info("SESSION_TIME_OUT not found, using default", zap.Int(defaultName, defaultSessionTimeOut))
-		sessionTimeOut = defaultSessionTimeOut
-	} else if sessionTimeOut, _ = strconv.Atoi(sessionTimeOutStr); sessionTimeOut == 0 {
-		ctxLogger.Warn("Failed to parse SESSION_TIME_OUT, using default", zap.Int(defaultName, defaultSessionTimeOut))
+	sessionTimeOut := parsedConfig.SessionTimeOut
+	if sessionTimeOut == 0 {
+		ctxLogger.Info("sessionTimeOut empty, using default", zap.Int(defaultName, defaultSessionTimeOut))
 		sessionTimeOut = defaultSessionTimeOut
 	}
 
-	serviceTimeOutStr := os.Getenv("SERVICE_TIME_OUT")
+	serviceTimeOutStr := parsedConfig.ServiceTimeOut
 	if serviceTimeOutStr == "" {
-		ctxLogger.Info("SERVICE_TIME_OUT not found, using default", zap.Duration(defaultName, defaultServiceTimeOut))
+		ctxLogger.Info("serviceTimeOut empty, using default", zap.Duration(defaultName, defaultServiceTimeOut))
 		serviceTimeOut = defaultServiceTimeOut
 	} else if timeOut, _ := strconv.ParseInt(serviceTimeOutStr, 10, 64); timeOut == 0 {
-		ctxLogger.Warn("Failed to parse SERVICE_TIME_OUT, using default", zap.Duration(defaultName, defaultServiceTimeOut))
+		ctxLogger.Warn("Failed to parse serviceTimeOut, using default", zap.Duration(defaultName, defaultServiceTimeOut))
 		serviceTimeOut = defaultServiceTimeOut
 	} else {
 		serviceTimeOut = time.Duration(timeOut) * time.Second
 	}
 
-	maxMultipartMemoryStr := os.Getenv("MAX_MULTIPART_MEMORY")
-	if maxMultipartMemoryStr == "" {
-		ctxLogger.Info("MAX_MULTIPART_MEMORY not found, using gin default")
-	} else {
-		if maxMultipartMemory, _ = strconv.ParseInt(maxMultipartMemoryStr, 10, 64); maxMultipartMemory == 0 {
-			ctxLogger.Warn("Failed to parse MAX_MULTIPART_MEMORY, using gin default")
-		}
+	maxMultipartMemory := parsedConfig.MaxMultipartMemory
+	if maxMultipartMemory == 0 {
+		ctxLogger.Warn("maxMultipartMemory empty, using gin default")
 	}
 
-	dateFormat := retrieveWithDefault(ctxLogger, "DATE_FORMAT", "2/1/2006 15:04:05")
-	pageSize := retrieveUintWithDefault(ctxLogger, "PAGE_SIZE", 20)
-	extractSize := retrieveUintWithDefault(ctxLogger, "EXTRACT_SIZE", 200)
-	feedFormat := retrieveWithDefault(ctxLogger, "FEED_FORMAT", "atom")
-	feedSize := retrieveUintWithDefault(ctxLogger, "FEED_SIZE", 100)
+	dateFormat := retrieveWithDefault(ctxLogger, "dateFormat", parsedConfig.DateFormat, "2/1/2006 15:04:05")
+	pageSize := retrieveUintWithDefault(ctxLogger, "pageSize", parsedConfig.PageSize, 20)
+	extractSize := retrieveUintWithDefault(ctxLogger, "extractSize", parsedConfig.ExtractSize, 200)
+	feedFormat := retrieveWithDefault(ctxLogger, "feedFormat", parsedConfig.FeedFormat, "atom")
+	feedSize := retrieveUintWithDefault(ctxLogger, "feedSize", parsedConfig.FeedSize, 100)
 
 	dialOptions := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -173,56 +168,50 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 	}
 
-	sessionService := sessionclient.New(requiredFromEnv(ctxLogger, "SESSION_SERVICE_ADDR"), dialOptions)
-	templateService := templateclient.New(requiredFromEnv(ctxLogger, "TEMPLATE_SERVICE_ADDR"), dialOptions)
-	settingsService := sessionclient.New(requiredFromEnv(ctxLogger, "SETTINGS_SERVICE_ADDR"), dialOptions)
-	strengthService := strengthclient.New(requiredFromEnv(ctxLogger, "PASSSTRENGTH_SERVICE_ADDR"), dialOptions)
-	saltService := puzzlesaltclient.Make(requiredFromEnv(ctxLogger, "SALT_SERVICE_ADDR"), dialOptions)
-	loginService := loginclient.New(
-		requiredFromEnv(ctxLogger, "LOGIN_SERVICE_ADDR"), dialOptions, dateFormat, saltService, strengthService,
-	)
-	rightClient := adminclient.Make(requiredFromEnv(ctxLogger, "RIGHT_SERVICE_ADDR"), dialOptions)
+	sessionService := sessionclient.New(parsedConfig.SessionServiceAddr, dialOptions)
+	templateService := templateclient.New(parsedConfig.TemplateServiceAddr, dialOptions)
+	settingsService := sessionclient.New(parsedConfig.SettingsServiceAddr, dialOptions)
+	strengthService := strengthclient.New(parsedConfig.PasswordStrengthServiceAddr, dialOptions)
+	saltService := puzzlesaltclient.Make(parsedConfig.SaltServiceAddr, dialOptions)
+	loginService := loginclient.New(parsedConfig.LoginServiceAddr, dialOptions, dateFormat, saltService, strengthService)
+	rightClient := adminclient.Make(parsedConfig.RightServiceAddr, dialOptions)
 
-	staticPath := retrievePath(ctxLogger, "STATIC_PATH", "static")
+	staticPath := retrievePath(ctxLogger, "staticPath", parsedConfig.StaticPath, "static")
 	augmentedStaticPath := staticPath + "/"
-	faviconPath := os.Getenv("FAVICON_PATH")
+	faviconPath := parsedConfig.FaviconPath
 	if faviconPath == "" {
 		faviconPath = staticPath + DefaultFavicon
-		ctxLogger.Info("FAVICON_PATH not found, using default", zap.String(defaultName, faviconPath))
+		ctxLogger.Info("faviconPath empty, using default", zap.String(defaultName, faviconPath))
 	} else if faviconPath[0] != '/' {
-		// user should use absolute path or path relative to STATIC_PATH
+		// user should use absolute path or path relative to staticPath
 		faviconPath = augmentedStaticPath + faviconPath
 	}
 
-	defaultPicturePath := retrieveWithDefault(ctxLogger, "PROFILE_DEFAULT_PICTURE_PATH", staticPath+"/images/unknownuser.png")
+	defaultPicturePath := retrieveWithDefault(ctxLogger, "profileDefaultPicturePath", parsedConfig.ProfileDefaultPicturePath, staticPath+"/images/unknownuser.png")
 	defaultPicture, err := os.ReadFile(defaultPicturePath)
 	if err != nil {
 		ctxLogger.Fatal("Can not read", zap.String("filepath", defaultPicturePath), zap.Error(err))
 	}
 
-	confLangs := strings.Split(os.Getenv("AVAILABLE_LOCALES"), ",")
-	langNumber := len(confLangs)
-	allLang := make([]string, 0, langNumber)
-	for _, lang := range confLangs {
-		allLang = append(allLang, strings.TrimSpace(lang))
-	}
+	allLang := parsedConfig.AllLang
 	ctxLogger.Info("Declared locales", zap.Strings("locales", allLang))
 
+	langNumber := len(allLang)
 	langPicturePaths := make(map[string]string, langNumber)
-	confLangPicturePaths := strings.Split(os.Getenv("LOCALE_PICTURE_PATHS"), ",")
+	confLangPicturePaths := parsedConfig.LocalePicturePaths
 	confLangPicturePathsLen := len(confLangPicturePaths)
 	for index, lang := range allLang {
 		if index >= confLangPicturePathsLen {
-			ctxLogger.Warn("LOCALE_PICTURE_PATHS have less element than AVAILABLE_LOCALES")
+			ctxLogger.Warn("localePicturePaths have less element than availableLocales")
 			break
 		}
 
-		langPicturePath := strings.TrimSpace(confLangPicturePaths[index])
+		langPicturePath := confLangPicturePaths[index]
 		if langPicturePath == "" {
 			// skip not configured picture
 			continue
 		}
-		// user should use absolute path or path relative to STATIC_PATH
+		// user should use absolute path or path relative to staticPath
 		if langPicturePath[0] != '/' {
 			langPicturePath = augmentedStaticPath + langPicturePath
 		}
@@ -230,10 +219,9 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 	}
 
 	// if not setted in configuration, profile are public
-	profileGroupId := retrieveUintWithDefault(ctxLogger, "PROFILE_GROUP_ID", adminservice.PublicGroupId)
+	profileGroupId := retrieveUintWithDefault(ctxLogger, "profileGroupId", parsedConfig.ProfileGroupId, adminservice.PublicGroupId)
 	profileService := profileclient.New(
-		requiredFromEnv(ctxLogger, "PROFILE_SERVICE_ADDR"), dialOptions,
-		profileGroupId, loginService, rightClient, defaultPicture,
+		parsedConfig.ProfileServiceAddr, dialOptions, profileGroupId, loginService, rightClient, defaultPicture,
 	)
 
 	globalConfig := &GlobalConfig{
@@ -243,7 +231,7 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 
 		StaticPath:  staticPath,
 		FaviconPath: faviconPath,
-		Page404Url:  os.Getenv("PAGE_404_URL"),
+		Page404Url:  parsedConfig.Page404Url,
 
 		CtxLogger:      ctxLogger,
 		TracerProvider: tp,
@@ -258,6 +246,11 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 		LoginService:     loginService,
 		RightClient:      rightClient,
 		ProfileService:   profileService,
+
+		ForumServiceAddr:    parsedConfig.ForumServiceAddr,
+		MarkdownServiceAddr: parsedConfig.MarkdownServiceAddr,
+		BlogServiceAddr:     parsedConfig.BlogServiceAddr,
+		WikiServiceAddr:     parsedConfig.WikiServiceAddr,
 	}
 
 	return globalConfig, initSpan
@@ -265,29 +258,24 @@ func LoadDefault(serviceName string, version string) (*GlobalConfig, trace.Span)
 
 func (c *GlobalConfig) loadMarkdown() {
 	if c.MarkdownService == nil {
-		c.MarkdownService = markdownclient.New(requiredFromEnv(c.CtxLogger, "MARKDOWN_SERVICE_ADDR"), c.DialOptions)
+		require(c.CtxLogger, "markdownServiceAddr", c.MarkdownServiceAddr)
+		c.MarkdownService = markdownclient.New(c.MarkdownServiceAddr, c.DialOptions)
 	}
 }
 
 func (c *GlobalConfig) loadWiki() {
-	if c.WikiServiceAddr == "" {
-		c.loadMarkdown()
-		c.WikiServiceAddr = requiredFromEnv(c.CtxLogger, "WIKI_SERVICE_ADDR")
-	}
+	c.loadMarkdown()
+	require(c.CtxLogger, "wikiServiceAddr", c.WikiServiceAddr)
 }
 
 func (c *GlobalConfig) loadForum() {
-	if c.ForumServiceAddr == "" {
-		c.ForumServiceAddr = requiredFromEnv(c.CtxLogger, "FORUM_SERVICE_ADDR")
-	}
+	require(c.CtxLogger, "forumServiceAddr", c.ForumServiceAddr)
 }
 
 func (c *GlobalConfig) loadBlog() {
-	if c.BlogServiceAddr == "" {
-		c.loadForum()
-		c.loadMarkdown()
-		c.BlogServiceAddr = requiredFromEnv(c.CtxLogger, "BLOG_SERVICE_ADDR")
-	}
+	c.loadForum()
+	c.loadMarkdown()
+	require(c.CtxLogger, "blogServiceAddr", c.BlogServiceAddr)
 }
 
 func (c *GlobalConfig) GetLogger() *otelzap.Logger {
@@ -379,47 +367,32 @@ func (c *GlobalConfig) CreateWidgetConfig(serviceAddr string, objectId uint64, g
 	return MakeServiceConfig(c, widgetclient.New(serviceAddr, c.DialOptions, objectId, groupId))
 }
 
-func retrieveWithDefault(logger otelzap.LoggerWithCtx, name string, defaultValue string) string {
-	if value := os.Getenv(name); value != "" {
-		return value
-	}
-	logger.Info(name+" not found, using default", zap.String(defaultName, defaultValue))
-	return defaultValue
-}
-
-func retrieveUintWithDefault(logger otelzap.LoggerWithCtx, name string, defaultValue uint64) uint64 {
-	valueStr := os.Getenv(name)
-	if valueStr == "" {
-		logger.Info(name+" not found, using default", zap.Uint64(defaultName, defaultValue))
-		return defaultValue
-	}
-	value, _ := strconv.ParseUint(valueStr, 10, 64)
-	if value == 0 {
-		var messageBuilder strings.Builder
-		messageBuilder.WriteString("Failed to parse ")
-		messageBuilder.WriteString(name)
-		messageBuilder.WriteString(" using default")
-		logger.Warn(messageBuilder.String(), zap.Uint64(defaultName, defaultValue))
-		return defaultValue
-	}
-	return value
-}
-
-func retrievePath(logger otelzap.LoggerWithCtx, name string, defaultPath string) string {
-	if path := os.Getenv(name); path != "" {
-		if last := len(path) - 1; path[last] == '/' {
-			path = path[:last]
-		}
-		return path
-	}
-	logger.Info(name+" not found, using default", zap.String(defaultName, defaultPath))
-	return defaultPath
-}
-
-func requiredFromEnv(logger otelzap.LoggerWithCtx, name string) string {
-	value := os.Getenv(name)
+func retrieveWithDefault(logger otelzap.LoggerWithCtx, name string, value string, defaultValue string) string {
 	if value == "" {
-		logger.Fatal(name + " not found in env")
+		logger.Info(name+" empty, using default", zap.String(defaultName, defaultValue))
+		return defaultValue
 	}
 	return value
+}
+
+func retrieveUintWithDefault(logger otelzap.LoggerWithCtx, name string, value uint64, defaultValue uint64) uint64 {
+	if value == 0 {
+		logger.Info(name+" empty, using default", zap.Uint64(defaultName, defaultValue))
+		return defaultValue
+	}
+	return value
+}
+
+func retrievePath(logger otelzap.LoggerWithCtx, name string, path string, defaultPath string) string {
+	path = retrieveWithDefault(logger, name, path, defaultPath)
+	if last := len(path) - 1; path[last] == '/' {
+		path = path[:last]
+	}
+	return path
+}
+
+func require(logger otelzap.LoggerWithCtx, name string, value string) {
+	if value == "" {
+		logger.Fatal(name + " is required")
+	}
 }

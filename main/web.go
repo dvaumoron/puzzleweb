@@ -26,6 +26,7 @@ import (
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/config/parser"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/templates"
 	"github.com/gin-gonic/gin"
@@ -167,12 +168,9 @@ func changeLangRedirecter(c *gin.Context) string {
 	return c.Query(common.RedirectName)
 }
 
-func BuildDefaultSite(serviceName string, version string) (*Site, *config.GlobalConfig, trace.Span) {
-	globalConfig, initSpan := config.LoadDefault(serviceName, version)
+func BuildDefaultSite(serviceName string, version string, parsedConfig parser.ParsedConfig, parseErr error) (*Site, *config.GlobalConfig, trace.Span) {
+	globalConfig, initSpan := config.Init(serviceName, version, parsedConfig, parseErr)
 	localesManager := locale.NewManager(globalConfig.ExtractLocalesConfig())
 	settingsManager := NewSettingsManager(globalConfig.ExtractSettingsConfig())
-
-	site := NewSite(globalConfig, localesManager, settingsManager)
-
-	return site, globalConfig, initSpan
+	return NewSite(globalConfig, localesManager, settingsManager), globalConfig, initSpan
 }

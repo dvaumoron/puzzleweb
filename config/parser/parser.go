@@ -29,14 +29,48 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type FrameConfig struct {
+type ParsedConfig struct {
+	Domain string `hcl:"domain,optional" yaml:"domain"`
+	Port   string `hcl:"port,optional" yaml:"port"`
+
+	AllLang            []string `hcl:"availableLocales" yaml:"availableLocales"`
+	SessionTimeOut     int      `hcl:"sessionTimeOut,optional" yaml:"sessionTimeOut"`
+	ServiceTimeOut     string   `hcl:"serviceTimeOut,optional" yaml:"serviceTimeOut"`
+	MaxMultipartMemory int64    `hcl:"maxMultipartMemory,optional" yaml:"maxMultipartMemory"`
+	DateFormat         string   `hcl:"dateFormat,optional" yaml:"dateFormat"`
+	PageSize           uint64   `hcl:"pageSize,optional" yaml:"pageSize"`
+	ExtractSize        uint64   `hcl:"extractSize,optional" yaml:"extractSize"`
+	FeedFormat         string   `hcl:"feedFormat,optional" yaml:"feedFormat"`
+	FeedSize           uint64   `hcl:"feedSize,optional" yaml:"feedSize"`
+
+	StaticPath  string `hcl:"staticPath,optional" yaml:"staticPath"`
+	FaviconPath string `hcl:"faviconPath,optional" yaml:"faviconPath"`
+	Page404Url  string `hcl:"page404Url,optional" yaml:"page404Url"`
+
+	ProfileGroupId            uint64   `hcl:"profileGroupId,optional" yaml:"profileGroupId"`
+	ProfileDefaultPicturePath string   `hcl:"profileDefaultPicturePath,optional" yaml:"profileDefaultPicturePath"`
+	LocalePicturePaths        []string `hcl:"localePicturePaths" yaml:"localePicturePaths"`
+
+	SessionServiceAddr          string `hcl:"sessionServiceAddr,optional" yaml:"sessionServiceAddr"`
+	TemplateServiceAddr         string `hcl:"templateServiceAddr,optional" yaml:"templateServiceAddr"`
+	PasswordStrengthServiceAddr string `hcl:"passwordStrengthServiceAddr,optional" yaml:"passwordStrengthServiceAddr"`
+	SaltServiceAddr             string `hcl:"saltServiceAddr,optional" yaml:"saltServiceAddr"`
+	LoginServiceAddr            string `hcl:"loginServiceAddr,optional" yaml:"loginServiceAddr"`
+	RightServiceAddr            string `hcl:"rightServiceAddr,optional" yaml:"rightServiceAddr"`
+	SettingsServiceAddr         string `hcl:"settingsServiceAddr,optional" yaml:"settingsServiceAddr"`
+	ProfileServiceAddr          string `hcl:"profileServiceAddr,optional" yaml:"profileServiceAddr"`
+	ForumServiceAddr            string `hcl:"forumServiceAddr" yaml:"forumServiceAddr"`
+	MarkdownServiceAddr         string `hcl:"markdownServiceAddr" yaml:"markdownServiceAddr"`
+	BlogServiceAddr             string `hcl:"blogServiceAddr" yaml:"blogServiceAddr"`
+	WikiServiceAddr             string `hcl:"wikiServiceAddr" yaml:"wikiServiceAddr"`
+
 	PermissionGroups []PermissionGroupConfig `hcl:"permission,block" yaml:"permissionGroups"`
 	StaticPages      []StaticPagesConfig     `hcl:"staticPages,block" yaml:"staticPages"`
 	Widgets          []WidgetConfig          `hcl:"widget,block" yaml:"widgets"`
 	WidgetPages      []WidgetPageConfig      `hcl:"widgetPage,block" yaml:"widgetPages"`
 }
 
-func (frame *FrameConfig) WidgetsAsMap() map[string]WidgetConfig {
+func (frame *ParsedConfig) WidgetsAsMap() map[string]WidgetConfig {
 	res := map[string]WidgetConfig{}
 	for _, widget := range frame.Widgets {
 		res[widget.Name] = widget
@@ -68,9 +102,9 @@ type WidgetPageConfig struct {
 	WidgetRef string `hcl:"widgetRef" yaml:"widgetRef"`
 }
 
-func LoadFrameConfig(path string) (FrameConfig, error) {
+func ParseConfig(path string) (ParsedConfig, error) {
 	var err error
-	var frameConfig FrameConfig
+	var frameConfig ParsedConfig
 	if strings.HasSuffix(path, ".hcl") {
 		err = hclsimple.DecodeFile(path, &configContext, &frameConfig)
 	} else {

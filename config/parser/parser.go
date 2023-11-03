@@ -19,6 +19,7 @@
 package parser
 
 import (
+	"errors"
 	"os"
 	"strings"
 
@@ -117,12 +118,33 @@ func ParseConfig(path string) (ParsedConfig, error) {
 	return frameConfig, err
 }
 
-var configContext = hcl.EvalContext{Functions: map[string]function.Function{"env": function.New(&function.Spec{
-	Params: []function.Parameter{{Name: "key", Type: cty.String}},
-	Type:   function.StaticReturnType(cty.String),
-	Impl:   wrappedGetenv,
-})}}
+var configContext = hcl.EvalContext{Functions: map[string]function.Function{
+	"env": function.New(&function.Spec{
+		Params: []function.Parameter{{Name: "key", Type: cty.String}},
+		Type:   function.StaticReturnType(cty.String),
+		Impl:   wrappedGetenv,
+	}),
+	"envAsNumber": function.New(&function.Spec{
+		Params: []function.Parameter{{Name: "key", Type: cty.String}},
+		Type:   function.StaticReturnType(cty.Number),
+		Impl:   wrappedGetenv,
+	}),
+	"envAsBool": function.New(&function.Spec{
+		Params: []function.Parameter{{Name: "key", Type: cty.String}},
+		Type:   function.StaticReturnType(cty.Bool),
+		Impl:   wrappedGetenv,
+	}),
+}}
 
 func wrappedGetenv(args []cty.Value, retType cty.Type) (cty.Value, error) {
-	return cty.StringVal(os.Getenv(args[0].AsString())), nil
+	valueStr := os.Getenv(args[0].AsString())
+	switch retType {
+	case cty.String:
+		return cty.StringVal(valueStr), nil
+	case cty.Number:
+		return cty.ParseNumberVal(valueStr)
+	case cty.Bool:
+		return cty.BoolVal(valueStr != ""), nil
+	}
+	return cty.NilVal, errors.New("unreachable")
 }

@@ -187,7 +187,9 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 		faviconPath = augmentedStaticPath + faviconPath
 	}
 
-	defaultPicturePath := retrieveWithDefault(ctxLogger, "profileDefaultPicturePath", parsedConfig.ProfileDefaultPicturePath, staticPath+"/images/unknownuser.png")
+	defaultPicturePath := retrieveWithDefault(
+		ctxLogger, "profileDefaultPicturePath", parsedConfig.ProfileDefaultPicturePath, staticPath+"/images/unknownuser.png",
+	)
 	defaultPicture, err := os.ReadFile(defaultPicturePath)
 	if err != nil {
 		ctxLogger.Fatal("Can not read", zap.String("filepath", defaultPicturePath), zap.Error(err))

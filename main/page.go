@@ -24,6 +24,7 @@ import (
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
+	"github.com/dvaumoron/puzzleweb/config/parser"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/templates"
 	"github.com/gin-gonic/gin"
@@ -112,10 +113,16 @@ func (p Page) AddSubPage(page Page) {
 	}
 }
 
-func (p Page) AddStaticPages(logger otelzap.LoggerWithCtx, tracer trace.Tracer, groupId uint64, pagePaths []string) {
-	for _, pagePath := range pagePaths {
+func (p Page) AddStaticPages(logger otelzap.LoggerWithCtx, tracer trace.Tracer, pageGroup parser.StaticPagesConfig) {
+	for _, pagePath := range pageGroup.Locations {
 		subPage, pageName, templateName := p.extractSubPageAndNamesFromPath(pagePath)
-		subPage.AddSubPage(MakeStaticPage(tracer, pageName, groupId, templateName))
+		var newPage Page
+		if pageGroup.Hidden {
+			newPage = MakeHiddenStaticPage(tracer, pageName, pageGroup.GroupId, templateName)
+		} else {
+			newPage = MakeStaticPage(tracer, pageName, pageGroup.GroupId, templateName)
+		}
+		subPage.AddSubPage(newPage)
 	}
 }
 

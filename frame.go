@@ -23,7 +23,6 @@ import (
 	"os"
 	"strings"
 
-	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/blog"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/config/parser"
@@ -55,10 +54,8 @@ func main() {
 		rightClient.RegisterGroup(group.Id, group.Name)
 	}
 
-	site.AddPage(puzzleweb.MakeHiddenStaticPage(globalConfig.Tracer, notFound, adminservice.PublicGroupId, notFound))
-
 	for _, pageGroup := range parsedConfig.StaticPages {
-		site.AddStaticPages(globalConfig.CtxLogger, pageGroup.GroupId, pageGroup.Locations)
+		site.AddStaticPages(globalConfig.CtxLogger, pageGroup)
 	}
 
 	widgets := parsedConfig.WidgetsAsMap()

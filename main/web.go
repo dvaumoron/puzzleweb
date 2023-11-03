@@ -69,8 +69,8 @@ func (site *Site) AddPage(page Page) {
 	site.root.AddSubPage(page)
 }
 
-func (site *Site) AddStaticPages(logger otelzap.LoggerWithCtx, groupId uint64, pagePaths []string) {
-	site.root.AddStaticPages(logger, site.tracer, groupId, pagePaths)
+func (site *Site) AddStaticPages(logger otelzap.LoggerWithCtx, pageGroup parser.StaticPagesConfig) {
+	site.root.AddStaticPages(logger, site.tracer, pageGroup)
 }
 
 func (site *Site) GetPage(name string) (Page, bool) {
@@ -115,12 +115,9 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	if localesManager := site.localesManager; localesManager.GetMultipleLang() {
 		engine.GET("/changeLang", common.CreateRedirect(tracer, "changeLangHandler", changeLangRedirecter))
 
-		langPicturePaths := siteConfig.LangPicturePaths
-		for _, lang := range localesManager.GetAllLang() {
-			if langPicturePath, ok := langPicturePaths[lang]; ok {
-				// allow modified time check (instead of always sending same data)
-				engine.StaticFile("/langPicture/"+lang, langPicturePath)
-			}
+		for lang, langPicturePath := range siteConfig.LangPicturePaths {
+			// allow modified time check (instead of always sending same data)
+			engine.StaticFile("/langPicture/"+lang, langPicturePath)
 		}
 	}
 

@@ -34,23 +34,21 @@ type ParsedConfig struct {
 	Domain string `hcl:"domain,optional" yaml:"domain"`
 	Port   string `hcl:"port,optional" yaml:"port"`
 
-	AllLang            []string `hcl:"availableLocales" yaml:"availableLocales"`
-	SessionTimeOut     int      `hcl:"sessionTimeOut,optional" yaml:"sessionTimeOut"`
-	ServiceTimeOut     string   `hcl:"serviceTimeOut,optional" yaml:"serviceTimeOut"`
-	MaxMultipartMemory int64    `hcl:"maxMultipartMemory,optional" yaml:"maxMultipartMemory"`
-	DateFormat         string   `hcl:"dateFormat,optional" yaml:"dateFormat"`
-	PageSize           uint64   `hcl:"pageSize,optional" yaml:"pageSize"`
-	ExtractSize        uint64   `hcl:"extractSize,optional" yaml:"extractSize"`
-	FeedFormat         string   `hcl:"feedFormat,optional" yaml:"feedFormat"`
-	FeedSize           uint64   `hcl:"feedSize,optional" yaml:"feedSize"`
+	SessionTimeOut     int    `hcl:"sessionTimeOut,optional" yaml:"sessionTimeOut"`
+	ServiceTimeOut     string `hcl:"serviceTimeOut,optional" yaml:"serviceTimeOut"`
+	MaxMultipartMemory int64  `hcl:"maxMultipartMemory,optional" yaml:"maxMultipartMemory"`
+	DateFormat         string `hcl:"dateFormat,optional" yaml:"dateFormat"`
+	PageSize           uint64 `hcl:"pageSize,optional" yaml:"pageSize"`
+	ExtractSize        uint64 `hcl:"extractSize,optional" yaml:"extractSize"`
+	FeedFormat         string `hcl:"feedFormat,optional" yaml:"feedFormat"`
+	FeedSize           uint64 `hcl:"feedSize,optional" yaml:"feedSize"`
 
 	StaticPath  string `hcl:"staticPath,optional" yaml:"staticPath"`
 	FaviconPath string `hcl:"faviconPath,optional" yaml:"faviconPath"`
 	Page404Url  string `hcl:"page404Url,optional" yaml:"page404Url"`
 
-	ProfileGroupId            uint64   `hcl:"profileGroupId,optional" yaml:"profileGroupId"`
-	ProfileDefaultPicturePath string   `hcl:"profileDefaultPicturePath,optional" yaml:"profileDefaultPicturePath"`
-	LocalePicturePaths        []string `hcl:"localePicturePaths" yaml:"localePicturePaths"`
+	ProfileGroupId            uint64 `hcl:"profileGroupId,optional" yaml:"profileGroupId"`
+	ProfileDefaultPicturePath string `hcl:"profileDefaultPicturePath,optional" yaml:"profileDefaultPicturePath"`
 
 	SessionServiceAddr          string `hcl:"sessionServiceAddr,optional" yaml:"sessionServiceAddr"`
 	TemplateServiceAddr         string `hcl:"templateServiceAddr,optional" yaml:"templateServiceAddr"`
@@ -65,6 +63,7 @@ type ParsedConfig struct {
 	BlogServiceAddr             string `hcl:"blogServiceAddr" yaml:"blogServiceAddr"`
 	WikiServiceAddr             string `hcl:"wikiServiceAddr" yaml:"wikiServiceAddr"`
 
+	Locales          []LocaleConfig          `hcl:"locale,block" yaml:"locales"`
 	PermissionGroups []PermissionGroupConfig `hcl:"permission,block" yaml:"permissionGroups"`
 	StaticPages      []StaticPagesConfig     `hcl:"staticPages,block" yaml:"staticPages"`
 	Widgets          []WidgetConfig          `hcl:"widget,block" yaml:"widgets"`
@@ -79,6 +78,11 @@ func (frame *ParsedConfig) WidgetsAsMap() map[string]WidgetConfig {
 	return res
 }
 
+type LocaleConfig struct {
+	Lang        string `hcl:"lang,label" yaml:"lang"`
+	PicturePath string `hcl:"picturePath" yaml:"picturePath"`
+}
+
 type PermissionGroupConfig struct {
 	Name string `hcl:"name,label" yaml:"name"`
 	Id   uint64 `hcl:"groupId" yaml:"id"`
@@ -86,6 +90,7 @@ type PermissionGroupConfig struct {
 
 type StaticPagesConfig struct {
 	GroupId   uint64   `hcl:"groupId" yaml:"groupId"`
+	Hidden    bool     `hcl:"hidden,optional" yaml:"hidden"`
 	Locations []string `hcl:"locations" yaml:"locations"`
 }
 

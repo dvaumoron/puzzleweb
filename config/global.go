@@ -195,30 +195,26 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 		ctxLogger.Fatal("Can not read", zap.String("filepath", defaultPicturePath), zap.Error(err))
 	}
 
-	allLang := parsedConfig.AllLang
-	ctxLogger.Info("Declared locales", zap.Strings("locales", allLang))
-
-	langNumber := len(allLang)
+	locales := parsedConfig.Locales
+	langNumber := len(locales)
+	allLang := make([]string, 0, langNumber)
 	langPicturePaths := make(map[string]string, langNumber)
-	confLangPicturePaths := parsedConfig.LocalePicturePaths
-	confLangPicturePathsLen := len(confLangPicturePaths)
-	for index, lang := range allLang {
-		if index >= confLangPicturePathsLen {
-			ctxLogger.Warn("localePicturePaths have less element than availableLocales")
-			break
-		}
+	for _, locale := range locales {
+		allLang = append(allLang, locale.Lang)
 
-		langPicturePath := confLangPicturePaths[index]
+		langPicturePath := locale.PicturePath
 		if langPicturePath == "" {
 			// skip not configured picture
 			continue
 		}
+
 		// user should use absolute path or path relative to staticPath
 		if langPicturePath[0] != '/' {
 			langPicturePath = augmentedStaticPath + langPicturePath
 		}
-		langPicturePaths[lang] = langPicturePath
+		langPicturePaths[locale.Lang] = langPicturePath
 	}
+	ctxLogger.Info("Declared locales", zap.Strings("locales", allLang))
 
 	// if not setted in configuration, profile are public
 	profileGroupId := retrieveUintWithDefault(ctxLogger, "profileGroupId", parsedConfig.ProfileGroupId, adminservice.PublicGroupId)

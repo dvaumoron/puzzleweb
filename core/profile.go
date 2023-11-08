@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/common/config"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

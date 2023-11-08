@@ -27,7 +27,7 @@ import (
 
 	blogservice "github.com/dvaumoron/puzzleweb/blog/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/common/config"
 	puzzleweb "github.com/dvaumoron/puzzleweb/core"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/feeds"

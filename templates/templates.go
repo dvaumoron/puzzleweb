@@ -22,7 +22,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/dvaumoron/puzzleweb/config"
+	"github.com/dvaumoron/puzzleweb/common/config"
 	templateservice "github.com/dvaumoron/puzzleweb/templates/service"
 	"github.com/gin-gonic/gin/render"
 )

@@ -23,13 +23,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dvaumoron/puzzleweb/blog"
-	"github.com/dvaumoron/puzzleweb/config"
-	"github.com/dvaumoron/puzzleweb/config/parser"
+	"github.com/dvaumoron/puzzleweb/common/build"
+	"github.com/dvaumoron/puzzleweb/common/config"
+	"github.com/dvaumoron/puzzleweb/common/config/parser"
 	puzzleweb "github.com/dvaumoron/puzzleweb/core"
-	"github.com/dvaumoron/puzzleweb/forum"
-	"github.com/dvaumoron/puzzleweb/remotewidget"
-	"github.com/dvaumoron/puzzleweb/wiki"
 	"go.uber.org/zap"
 )
 
@@ -46,7 +43,7 @@ func main() {
 
 	parsedConfig, err := parser.ParseConfig(confPath)
 	site, globalConfig, initSpan := puzzleweb.BuildDefaultSite(config.WebKey, version, parsedConfig, err)
-	ctxLogger := globalConfig.Logger
+	logger := globalConfig.Logger
 	rightClient := globalConfig.RightClient
 
 	// create group for permissions
@@ -68,11 +65,11 @@ func main() {
 			name = name[index+1:]
 			parentPage, nested = site.GetPageWithPath(emplacement)
 			if !nested {
-				ctxLogger.Fatal("Failed to retrive parentPage", zap.String("emplacement", emplacement))
+				logger.Fatal("Failed to retrive parentPage", zap.String("emplacement", emplacement))
 			}
 		}
 
-		widgetPage := makeWidgetPage(name, globalConfig, widgets[widgetPageConfig.WidgetRef])
+		widgetPage := build.MakeWidgetPage(name, globalConfig.InitCtx, logger, globalConfig, widgets[widgetPageConfig.WidgetRef])
 
 		if nested {
 			parentPage.AddSubPage(widgetPage)
@@ -90,33 +87,4 @@ func main() {
 	if err := site.Run(siteConfig); err != nil {
 		siteConfig.Logger.Fatal("Failed to serve", zap.Error(err))
 	}
-}
-
-func makeWidgetPage(pageName string, globalConfig *config.GlobalConfig, widgetConfig parser.WidgetConfig) puzzleweb.Page {
-	switch kind := widgetConfig.Kind; kind {
-	case "forum":
-		return forum.MakeForumPage(pageName, globalConfig.CreateForumConfig(
-			widgetConfig.ObjectId, widgetConfig.GroupId, widgetConfig.Templates...,
-		))
-	case "blog":
-		return blog.MakeBlogPage(pageName, globalConfig.CreateBlogConfig(
-			widgetConfig.ObjectId, widgetConfig.GroupId, widgetConfig.Templates...,
-		))
-	case "wiki":
-		return wiki.MakeWikiPage(pageName, globalConfig.CreateWikiConfig(
-			widgetConfig.ObjectId, widgetConfig.GroupId, widgetConfig.Templates...,
-		))
-	default:
-		logger := globalConfig.Logger
-		if widgetName, ok := strings.CutPrefix(kind, "remote/"); ok {
-			serviceAddr := widgetConfig.ServiceAddr
-			objectId, groupId := widgetConfig.ObjectId, widgetConfig.GroupId
-			return remotewidget.MakeRemotePage(
-				pageName, globalConfig.InitCtx, logger, widgetName,
-				globalConfig.CreateWidgetConfig(serviceAddr, objectId, groupId),
-			)
-		}
-		logger.Fatal("Widget kind unknown ", zap.String("widgetKind", kind))
-	}
-	return puzzleweb.Page{} // unreachable
 }

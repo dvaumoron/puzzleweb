@@ -24,8 +24,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/dvaumoron/puzzleweb/common/config"
 	"github.com/dvaumoron/puzzleweb/common/log"
-	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

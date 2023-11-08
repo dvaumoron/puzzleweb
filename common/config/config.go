@@ -21,6 +21,7 @@ package config
 import (
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogservice "github.com/dvaumoron/puzzleweb/blog/service"
+	"github.com/dvaumoron/puzzleweb/common/config/parser"
 	"github.com/dvaumoron/puzzleweb/common/log"
 	forumservice "github.com/dvaumoron/puzzleweb/forum/service"
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
@@ -36,6 +37,13 @@ import (
 type BaseConfig interface {
 	GetLogger() log.Logger
 	GetLoggerGetter() log.LoggerGetter
+}
+
+type WidgetConfigBuilder interface {
+	CreateWikiConfig(widgetConfig parser.WidgetConfig) WikiConfig
+	CreateForumConfig(widgetConfig parser.WidgetConfig) ForumConfig
+	CreateBlogConfig(widgetConfig parser.WidgetConfig) BlogConfig
+	CreateWidgetConfig(widgetConfig parser.WidgetConfig) RemoteWidgetConfig
 }
 
 type LocalesConfig struct {

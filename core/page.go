@@ -24,7 +24,7 @@ import (
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/config/parser"
+	"github.com/dvaumoron/puzzleweb/common/config/parser"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/templates"
 	"github.com/gin-gonic/gin"

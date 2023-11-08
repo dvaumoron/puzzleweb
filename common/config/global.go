@@ -29,8 +29,8 @@ import (
 	adminclient "github.com/dvaumoron/puzzleweb/admin/client"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogclient "github.com/dvaumoron/puzzleweb/blog/client"
+	"github.com/dvaumoron/puzzleweb/common/config/parser"
 	"github.com/dvaumoron/puzzleweb/common/log"
-	"github.com/dvaumoron/puzzleweb/config/parser"
 	forumclient "github.com/dvaumoron/puzzleweb/forum/client"
 	forumservice "github.com/dvaumoron/puzzleweb/forum/service"
 	loginclient "github.com/dvaumoron/puzzleweb/login/client"
@@ -70,7 +70,7 @@ type AuthConfig = ServiceConfig[adminservice.AuthService]
 type LoginConfig = ServiceConfig[loginservice.LoginService]
 type SettingsConfig = ServiceConfig[sessionservice.SessionService]
 type TemplateConfig = ServiceConfig[templateservice.TemplateService]
-type WidgetConfig = ServiceConfig[widgetservice.WidgetService]
+type RemoteWidgetConfig = ServiceConfig[widgetservice.WidgetService]
 
 type BaseConfigExtracter interface {
 	BaseConfig
@@ -343,42 +343,48 @@ func (c *GlobalConfig) ExtractSettingsConfig() SettingsConfig {
 	return MakeServiceConfig(c, c.SettingsService)
 }
 
-func (c *GlobalConfig) CreateWikiConfig(wikiId uint64, groupId uint64, args ...string) WikiConfig {
+func (c *GlobalConfig) CreateWikiConfig(widgetConfig parser.WidgetConfig) WikiConfig {
 	c.loadWiki()
 	return WikiConfig{
 		ServiceConfig: MakeServiceConfig(c, wikiclient.New(
-			c.WikiServiceAddr, c.DialOptions, wikiId, groupId, c.DateFormat, c.RightClient, c.ProfileService, c.LoggerGetter,
+			c.WikiServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
+			c.RightClient, c.ProfileService, c.LoggerGetter,
 		)),
-		MarkdownService: c.MarkdownService, Args: args,
+		MarkdownService: c.MarkdownService, Args: widgetConfig.Templates,
 	}
 }
 
-func (c *GlobalConfig) CreateForumConfig(forumId uint64, groupId uint64, args ...string) ForumConfig {
+func (c *GlobalConfig) CreateForumConfig(widgetConfig parser.WidgetConfig) ForumConfig {
 	c.loadForum()
 	return ForumConfig{
 		ServiceConfig: MakeServiceConfig[forumservice.ForumService](c, forumclient.New(
-			c.ForumServiceAddr, c.DialOptions, forumId, groupId, c.DateFormat, c.RightClient, c.ProfileService, c.LoggerGetter,
+			c.ForumServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
+			c.RightClient, c.ProfileService, c.LoggerGetter,
 		)),
-		PageSize: c.PageSize, Args: args,
+		PageSize: c.PageSize, Args: widgetConfig.Templates,
 	}
 }
 
-func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...string) BlogConfig {
+func (c *GlobalConfig) CreateBlogConfig(widgetConfig parser.WidgetConfig) BlogConfig {
 	c.loadBlog()
 	return BlogConfig{
 		ServiceConfig: MakeServiceConfig(c, blogclient.New(
-			c.BlogServiceAddr, c.DialOptions, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.BlogServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
+			c.RightClient, c.ProfileService,
 		)),
 		MarkdownService: c.MarkdownService, CommentService: forumclient.New(
-			c.ForumServiceAddr, c.DialOptions, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService, c.LoggerGetter,
+			c.ForumServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
+			c.RightClient, c.ProfileService, c.LoggerGetter,
 		),
 		Domain: c.Domain, Port: c.Port, DateFormat: c.DateFormat, PageSize: c.PageSize, ExtractSize: c.ExtractSize,
-		FeedFormat: c.FeedFormat, FeedSize: c.FeedSize, Args: args,
+		FeedFormat: c.FeedFormat, FeedSize: c.FeedSize, Args: widgetConfig.Templates,
 	}
 }
 
-func (c *GlobalConfig) CreateWidgetConfig(serviceAddr string, objectId uint64, groupId uint64) WidgetConfig {
-	return MakeServiceConfig(c, widgetclient.New(serviceAddr, c.DialOptions, objectId, groupId, c.LoggerGetter))
+func (c *GlobalConfig) CreateWidgetConfig(widgetConfig parser.WidgetConfig) RemoteWidgetConfig {
+	return MakeServiceConfig(c, widgetclient.New(
+		widgetConfig.ServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.LoggerGetter,
+	))
 }
 
 func retrieveWithDefault(logger otelzap.LoggerWithCtx, name string, value string, defaultValue string) string {

@@ -26,18 +26,20 @@ import (
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb/common"
+	"github.com/dvaumoron/puzzleweb/common/config"
 	"github.com/dvaumoron/puzzleweb/common/log"
-	"github.com/dvaumoron/puzzleweb/config"
 	puzzleweb "github.com/dvaumoron/puzzleweb/core"
 	widgetservice "github.com/dvaumoron/puzzleweb/remotewidget/service"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-const formKey = "formData"
-const pathKeySlash = "pathData/"
-const queryKeySlash = "queryData/"
-const initMsg = "Failed to init remote widget"
+const (
+	formKey       = "formData"
+	pathKeySlash  = "pathData/"
+	queryKeySlash = "queryData/"
+	initMsg       = "Failed to init remote widget"
+)
 
 type handlerDesc struct {
 	httpMethod string
@@ -55,7 +57,7 @@ func (w remoteWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func MakeRemotePage(pageName string, initCtx context.Context, logger log.Logger, widgetName string, remoteConfig config.WidgetConfig) puzzleweb.Page {
+func MakeRemotePage(pageName string, initCtx context.Context, logger log.Logger, widgetName string, remoteConfig config.RemoteWidgetConfig) puzzleweb.Page {
 	widgetService := remoteConfig.Service
 	actions, err := widgetService.GetDesc(initCtx, widgetName)
 	if err != nil {

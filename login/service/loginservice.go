@@ -16,13 +16,9 @@
  *
  */
 
-package service
+package loginservice
 
-import (
-	"context"
-
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
-)
+import "context"
 
 type User struct {
 	Id          uint64
@@ -31,20 +27,20 @@ type User struct {
 }
 
 type UserService interface {
-	GetUsers(logger otelzap.LoggerWithCtx, userIds []uint64) (map[uint64]User, error)
+	GetUsers(ctx context.Context, userIds []uint64) (map[uint64]User, error)
 }
 
 type AdvancedUserService interface {
 	UserService
-	ListUsers(logger otelzap.LoggerWithCtx, start uint64, end uint64, filter string) (uint64, []User, error)
-	Delete(logger otelzap.LoggerWithCtx, userId uint64) error
+	ListUsers(ctx context.Context, start uint64, end uint64, filter string) (uint64, []User, error)
+	Delete(ctx context.Context, userId uint64) error
 }
 
 type LoginService interface {
-	Verify(logger otelzap.LoggerWithCtx, login string, password string) (bool, uint64, error)
-	Register(logger otelzap.LoggerWithCtx, login string, password string) (bool, uint64, error)
-	ChangeLogin(logger otelzap.LoggerWithCtx, userId uint64, oldLogin string, newLogin string, password string) error
-	ChangePassword(logger otelzap.LoggerWithCtx, userId uint64, login string, oldPassword string, newPassword string) error
+	Verify(ctx context.Context, login string, password string) (bool, uint64, error)
+	Register(ctx context.Context, login string, password string) (bool, uint64, error)
+	ChangeLogin(ctx context.Context, userId uint64, oldLogin string, newLogin string, password string) error
+	ChangePassword(ctx context.Context, userId uint64, login string, oldPassword string, newPassword string) error
 }
 
 type FullLoginService interface {

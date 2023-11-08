@@ -25,10 +25,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dvaumoron/puzzleweb/blog/service"
+	blogservice "github.com/dvaumoron/puzzleweb/blog/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	puzzleweb "github.com/dvaumoron/puzzleweb/main"
+	puzzleweb "github.com/dvaumoron/puzzleweb/core"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/feeds"
 	"go.uber.org/zap"
@@ -71,7 +71,6 @@ func (w blogWidget) LoadInto(router gin.IRouter) {
 }
 
 func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page {
-	tracer := blogConfig.Tracer
 	blogService := blogConfig.Service
 	commentService := blogConfig.CommentService
 	markdownService := blogConfig.MarkdownService
@@ -117,54 +116,56 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 
 	p := puzzleweb.MakePage(blogName)
 	p.Widget = blogWidget{
-		listHandler: puzzleweb.CreateTemplate(tracer, "blogWidget/listHandler", func(data gin.H, c *gin.Context) (string, string) {
+		listHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			logger := puzzleweb.GetLogger(c)
-			userId, _ := data[common.IdName].(uint64)
+			userId, _ := data[common.UserIdName].(uint64)
 
 			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
 
-			total, posts, err := blogService.GetPosts(logger, userId, start, end, filter)
+			ctx := c.Request.Context()
+			total, posts, err := blogService.GetPosts(ctx, userId, start, end, filter)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(logger, err.Error())
 			}
 
 			filterPostsExtract(posts, extractSize)
 
 			common.InitPagination(data, filter, pageNumber, end, total)
 			data["Posts"] = posts
-			data[common.AllowedToCreateName] = blogService.CreateRight(logger, userId)
-			data[common.AllowedToDeleteName] = blogService.DeleteRight(logger, userId)
+			data[common.AllowedToCreateName] = blogService.CreateRight(ctx, userId)
+			data[common.AllowedToDeleteName] = blogService.DeleteRight(ctx, userId)
 			puzzleweb.InitNoELementMsg(data, len(posts), c)
 			return listTmpl, ""
 		}),
-		viewHandler: puzzleweb.CreateTemplate(tracer, "blogWidget/viewHandler", func(data gin.H, c *gin.Context) (string, string) {
+		viewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			logger := puzzleweb.GetLogger(c)
-			userId, _ := data[common.IdName].(uint64)
+			userId, _ := data[common.UserIdName].(uint64)
 
 			pageNumber, start, end, _ := common.GetPagination(defaultPageSize, c)
 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingPostIdErrorMsg, zap.Error(err))
-				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+				return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 			}
 
-			post, err := blogService.GetPost(logger, userId, postId)
+			ctx := c.Request.Context()
+			post, err := blogService.GetPost(ctx, userId, postId)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(logger, err.Error())
 			}
 
-			total, comments, err := commentService.GetCommentThread(logger, userId, post.Title, start, end)
+			total, comments, err := commentService.GetCommentThread(ctx, userId, post.Title, start, end)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(logger, err.Error())
 			}
 
 			common.InitPagination(data, "", pageNumber, end, total)
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data["Post"] = post
 			data["Comments"] = comments
-			data[common.AllowedToCreateName] = commentService.CreateMessageRight(logger, userId)
-			data[common.AllowedToDeleteName] = commentService.DeleteRight(logger, userId)
+			data[common.AllowedToCreateName] = commentService.CreateMessageRight(ctx, userId)
+			data[common.AllowedToDeleteName] = commentService.DeleteRight(ctx, userId)
 			if len(comments) == 0 {
 				if err == nil {
 					data[commentMsgName] = "NoComment"
@@ -174,79 +175,83 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			}
 			return viewTmpl, ""
 		}),
-		saveCommentHandler: common.CreateRedirect(tracer, "blogWidget/saveCommentHandler", func(c *gin.Context) string {
+		saveCommentHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			userId := puzzleweb.GetSessionUserId(c)
 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingPostIdErrorMsg, zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+				return common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 			}
 			comment := c.PostForm("comment")
 
 			err = errEmptyComment
+			ctx := c.Request.Context()
 			if comment != "" {
-				var post service.BlogPost
-				post, err = blogService.GetPost(logger, userId, postId)
+				var post blogservice.BlogPost
+				post, err = blogService.GetPost(ctx, userId, postId)
 				if err != nil {
-					return common.DefaultErrorRedirect(err.Error())
+					return common.DefaultErrorRedirect(logger, err.Error())
 				}
 
-				err = commentService.CreateComment(logger, userId, post.Title, comment)
+				err = commentService.CreateComment(ctx, userId, post.Title, comment)
 			}
 
 			targetBuilder := postUrlBuilder(common.GetBaseUrl(3, c), postId)
 			if err != nil {
-				common.WriteError(targetBuilder, err.Error())
+				common.WriteError(targetBuilder, logger, err.Error())
 			}
 			return targetBuilder.String()
 		}),
-		deleteCommentHandler: common.CreateRedirect(tracer, "blogWidget/deleteCommentHandler", func(c *gin.Context) string {
+		deleteCommentHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			userId := puzzleweb.GetSessionUserId(c)
 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingPostIdErrorMsg, zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+				return common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 			}
 			commentId, err := strconv.ParseUint(c.Param("commentId"), 10, 64)
 			if err != nil {
 				logger.Warn("Failed to parse commentId", zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+				return common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 			}
 
-			post, err := blogService.GetPost(logger, userId, postId)
+			ctx := c.Request.Context()
+			post, err := blogService.GetPost(ctx, userId, postId)
 			if err != nil {
-				return common.DefaultErrorRedirect(err.Error())
+				return common.DefaultErrorRedirect(logger, err.Error())
 			}
 
-			err = commentService.DeleteComment(logger, userId, post.Title, commentId)
+			err = commentService.DeleteComment(ctx, userId, post.Title, commentId)
 			targetBuilder := postUrlBuilder(common.GetBaseUrl(4, c), postId)
 			if err != nil {
-				common.WriteError(targetBuilder, err.Error())
+				common.WriteError(targetBuilder, logger, err.Error())
 			}
 			return targetBuilder.String()
 		}),
-		createHandler: puzzleweb.CreateTemplate(tracer, "blogWidget/createHandler", func(data gin.H, c *gin.Context) (string, string) {
+		createHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 			return createTmpl, ""
 		}),
-		previewHandler: puzzleweb.CreateTemplate(tracer, "blogWidget/previewHandler", func(data gin.H, c *gin.Context) (string, string) {
+		previewHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+			logger := puzzleweb.GetLogger(c)
 			title := c.PostForm("title")
 			markdown := c.PostForm("markdown")
 
 			if title == "" {
-				return "", common.DefaultErrorRedirect(emptyTitle)
+				return "", common.DefaultErrorRedirect(logger, emptyTitle)
 			}
 			if markdown == "" {
-				return "", common.DefaultErrorRedirect(emptyContent)
+				return "", common.DefaultErrorRedirect(logger, emptyContent)
 			}
 
-			html, err := markdownService.Apply(puzzleweb.GetLogger(c), markdown)
+			ctx := c.Request.Context()
+			html, err := markdownService.Apply(ctx, markdown)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(logger, err.Error())
 			}
 
 			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
@@ -255,36 +260,37 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			data["PreviewHTML"] = html
 			return previewTmpl, ""
 		}),
-		saveHandler: common.CreateRedirect(tracer, "blogWidget/saveHandler", func(c *gin.Context) string {
+		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			title := c.PostForm("title")
 			userId := puzzleweb.GetSessionUserId(c)
 			markdown := c.PostForm("markdown")
 
 			if title == "" {
-				return common.DefaultErrorRedirect(emptyTitle)
+				return common.DefaultErrorRedirect(logger, emptyTitle)
 			}
 			if markdown == "" {
-				return common.DefaultErrorRedirect(emptyContent)
+				return common.DefaultErrorRedirect(logger, emptyContent)
 			}
 
-			html, err := markdownService.Apply(logger, markdown)
+			ctx := c.Request.Context()
+			html, err := markdownService.Apply(ctx, markdown)
 			if err != nil {
-				return common.DefaultErrorRedirect(err.Error())
+				return common.DefaultErrorRedirect(logger, err.Error())
 			}
 
-			postId, err := blogService.CreatePost(logger, userId, title, string(html))
+			postId, err := blogService.CreatePost(ctx, userId, title, string(html))
 			if err != nil {
-				return common.DefaultErrorRedirect(err.Error())
+				return common.DefaultErrorRedirect(logger, err.Error())
 			}
 
-			err = commentService.CreateCommentThread(logger, userId, title)
+			err = commentService.CreateCommentThread(ctx, userId, title)
 			if err != nil {
-				return common.DefaultErrorRedirect(err.Error())
+				return common.DefaultErrorRedirect(logger, err.Error())
 			}
 			return postUrlBuilder(common.GetBaseUrl(1, c), postId).String()
 		}),
-		deleteHandler: common.CreateRedirect(tracer, "blogWidget/deleteHandler", func(c *gin.Context) string {
+		deleteHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			var targetBuilder strings.Builder
 			targetBuilder.WriteString(common.GetBaseUrl(2, c))
@@ -292,24 +298,25 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			postId, err := strconv.ParseUint(c.Param(postIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingPostIdErrorMsg, zap.Error(err))
-				common.WriteError(&targetBuilder, common.ErrorTechnicalKey)
+				common.WriteError(&targetBuilder, logger, common.ErrorTechnicalKey)
 				return targetBuilder.String()
 			}
 			userId := puzzleweb.GetSessionUserId(c)
 
-			post, err := blogService.GetPost(logger, userId, postId)
+			ctx := c.Request.Context()
+			post, err := blogService.GetPost(ctx, userId, postId)
 			if err != nil {
-				common.WriteError(&targetBuilder, err.Error())
+				common.WriteError(&targetBuilder, logger, err.Error())
 				return targetBuilder.String()
 			}
 
-			if err = blogService.DeletePost(logger, userId, postId); err != nil {
-				common.WriteError(&targetBuilder, err.Error())
+			if err = blogService.DeletePost(ctx, userId, postId); err != nil {
+				common.WriteError(&targetBuilder, logger, err.Error())
 				return targetBuilder.String()
 			}
 
-			if err = commentService.DeleteCommentThread(logger, userId, post.Title); err != nil {
-				common.WriteError(&targetBuilder, err.Error())
+			if err = commentService.DeleteCommentThread(ctx, userId, post.Title); err != nil {
+				common.WriteError(&targetBuilder, logger, err.Error())
 			}
 			return targetBuilder.String()
 		}),
@@ -317,7 +324,7 @@ func MakeBlogPage(blogName string, blogConfig config.BlogConfig) puzzleweb.Page 
 			logger := puzzleweb.GetLogger(c)
 			userId := puzzleweb.GetSessionUserId(c)
 
-			_, posts, err := blogService.GetPosts(logger, userId, 0, feedSize, "")
+			_, posts, err := blogService.GetPosts(c.Request.Context(), userId, 0, feedSize, "")
 			if err != nil {
 				status := http.StatusInternalServerError
 				if err == common.ErrNotAuthorized {
@@ -349,13 +356,13 @@ func postUrlBuilder(base string, postId uint64) *strings.Builder {
 	return targetBuilder
 }
 
-func filterPostsExtract(posts []service.BlogPost, extractSize uint64) {
+func filterPostsExtract(posts []blogservice.BlogPost, extractSize uint64) {
 	for index := range posts {
 		posts[index].Content = common.FilterExtractHtml(string(posts[index].Content), extractSize)
 	}
 }
 
-func buildFeed(posts []service.BlogPost, blogTitle string, baseUrl string, dateFormat string, extractSize uint64, feedFormat string) ([]byte, error) {
+func buildFeed(posts []blogservice.BlogPost, blogTitle string, baseUrl string, dateFormat string, extractSize uint64, feedFormat string) ([]byte, error) {
 	feedData := feeds.Feed{
 		Title:   blogTitle,
 		Link:    &feeds.Link{Href: baseUrl},

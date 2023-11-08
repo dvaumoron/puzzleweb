@@ -16,46 +16,48 @@
  *
  */
 
-package client
+package templateclient
 
 import (
+	"context"
 	"encoding/json"
 
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzletemplateservice"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/templates/service"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"github.com/dvaumoron/puzzleweb/common/log"
+	templateservice "github.com/dvaumoron/puzzleweb/templates/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 type templateClient struct {
 	grpcclient.Client
+	loggerGetter log.LoggerGetter
 }
 
-func New(serviceAddr string, dialOptions []grpc.DialOption) service.TemplateService {
-	return templateClient{Client: grpcclient.Make(serviceAddr, dialOptions...)}
+func New(serviceAddr string, dialOptions []grpc.DialOption, loggerGetter log.LoggerGetter) templateservice.TemplateService {
+	return templateClient{Client: grpcclient.Make(serviceAddr, dialOptions...), loggerGetter: loggerGetter}
 }
 
-func (client templateClient) Render(logger otelzap.LoggerWithCtx, templateName string, data any) ([]byte, error) {
+func (client templateClient) Render(ctx context.Context, templateName string, data any) ([]byte, error) {
 	dataBytes, err := json.Marshal(data)
 	if err != nil {
-		logger.Error("Failed to marshal data", zap.Error(err))
+		client.loggerGetter.Logger(ctx).Error("Failed to marshal data", zap.Error(err))
 		return nil, common.ErrTechnical
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(logger, err)
+		return nil, err
 	}
 	defer conn.Close()
 
 	response, err := pb.NewTemplateClient(conn).Render(
-		logger.Context(), &pb.RenderRequest{TemplateName: templateName, Data: dataBytes},
+		ctx, &pb.RenderRequest{TemplateName: templateName, Data: dataBytes},
 	)
 	if err != nil {
-		return nil, common.LogOriginalError(logger, err)
+		return nil, err
 	}
 	return response.Content, nil
 }

@@ -16,11 +16,23 @@
  *
  */
 
-package service
+package log
 
-import "github.com/uptrace/opentelemetry-go-extra/otelzap"
+import (
+	"context"
 
-type PasswordStrengthService interface {
-	Validate(logger otelzap.LoggerWithCtx, password string) (bool, error)
-	GetRules(logger otelzap.LoggerWithCtx, lang string) (string, error)
+	"go.uber.org/zap/zapcore"
+)
+
+// TODO wrapper and loggerWrappper
+type LoggerGetter interface {
+	Logger(context.Context) Logger
+}
+
+type Logger interface {
+	Debug(string, ...zapcore.Field)
+	Info(string, ...zapcore.Field)
+	Warn(string, ...zapcore.Field)
+	Error(string, ...zapcore.Field)
+	Fatal(string, ...zapcore.Field)
 }

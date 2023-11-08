@@ -25,17 +25,19 @@ import (
 	"unicode"
 
 	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/otel/trace"
 )
 
-const RedirectName = "Redirect"
-const BaseUrlName = "BaseUrl"
-const AllowedToCreateName = "AllowedToCreate"
-const AllowedToUpdateName = "AllowedToUpdate"
-const AllowedToDeleteName = "AllowedToDelete"
+const (
+	RedirectName = "Redirect"
+	BaseUrlName  = "BaseUrl"
 
-const IdName = "Id" // current connected user id
-const ViewedUserName = "ViewedUser"
+	UserIdName     = "Id" // current connected user id
+	ViewedUserName = "ViewedUser"
+
+	AllowedToCreateName = "AllowedToCreate"
+	AllowedToUpdateName = "AllowedToUpdate"
+	AllowedToDeleteName = "AllowedToDelete"
+)
 
 var htmlVoidElement = MakeSet([]string{"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"})
 
@@ -77,19 +79,15 @@ func CheckPort(port string) string {
 	return port
 }
 
-func CreateRedirect(tracer trace.Tracer, spanName string, redirecter Redirecter) gin.HandlerFunc {
+func CreateRedirect(redirecter Redirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		_, span := tracer.Start(c.Request.Context(), spanName)
-		defer span.End()
 		c.Redirect(http.StatusFound, checkTarget(redirecter(c)))
 	}
 }
 
-func CreateRedirectString(tracer trace.Tracer, spanName string, target string) gin.HandlerFunc {
+func CreateRedirectString(target string) gin.HandlerFunc {
 	target = checkTarget(target)
 	return func(c *gin.Context) {
-		_, span := tracer.Start(c.Request.Context(), spanName)
-		defer span.End()
 		c.Redirect(http.StatusFound, target)
 	}
 }

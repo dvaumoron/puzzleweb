@@ -19,18 +19,18 @@
 package remotewidget
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb/common"
+	"github.com/dvaumoron/puzzleweb/common/log"
 	"github.com/dvaumoron/puzzleweb/config"
-	puzzleweb "github.com/dvaumoron/puzzleweb/main"
-	"github.com/dvaumoron/puzzleweb/remotewidget/service"
+	puzzleweb "github.com/dvaumoron/puzzleweb/core"
+	widgetservice "github.com/dvaumoron/puzzleweb/remotewidget/service"
 	"github.com/gin-gonic/gin"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -55,15 +55,13 @@ func (w remoteWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func MakeRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName string, remoteConfig config.WidgetConfig) puzzleweb.Page {
+func MakeRemotePage(pageName string, initCtx context.Context, logger log.Logger, widgetName string, remoteConfig config.WidgetConfig) puzzleweb.Page {
 	widgetService := remoteConfig.Service
-	actions, err := widgetService.GetDesc(ctxLogger, widgetName)
+	actions, err := widgetService.GetDesc(initCtx, widgetName)
 	if err != nil {
-		ctxLogger.Fatal(initMsg, zap.Error(err))
+		logger.Fatal(initMsg, zap.Error(err))
 	}
 
-	tracer := remoteConfig.Tracer
-	widgetNameSlash := widgetName + "/"
 	handlers := make([]handlerDesc, 0, len(actions))
 	for _, action := range actions {
 		httpMethod := action.Kind
@@ -77,20 +75,19 @@ func MakeRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName
 			dataAdder := func(data gin.H, c *gin.Context) {
 				retrieveContextData(pathKeys, queryKeys, data, c)
 			}
-			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
+			handler = createHandler(widgetName, actionName, dataAdder, widgetService)
 		case http.MethodPost, http.MethodPut, http.MethodPatch:
 			dataAdder := func(data gin.H, c *gin.Context) {
 				data[formKey] = c.PostFormMap(formKey)
 				retrieveContextData(pathKeys, queryKeys, data, c)
 			}
-			handler = createHandler(tracer, widgetNameSlash+actionName, widgetName, actionName, dataAdder, widgetService)
-		case service.RawResult:
+			handler = createHandler(widgetName, actionName, dataAdder, widgetService)
+		case widgetservice.RawResult:
 			httpMethod = http.MethodGet
 			handler = func(c *gin.Context) {
-				ctxLogger := puzzleweb.GetLogger(c)
 				data := gin.H{}
 				retrieveContextData(pathKeys, queryKeys, data, c)
-				_, _, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data, map[string][]byte{})
+				_, _, resData, err := widgetService.Process(c.Request.Context(), widgetName, actionName, data, map[string][]byte{})
 				if err != nil {
 					c.AbortWithStatus(http.StatusInternalServerError)
 					return
@@ -98,7 +95,7 @@ func MakeRemotePage(pageName string, ctxLogger otelzap.LoggerWithCtx, widgetName
 				c.Data(http.StatusOK, http.DetectContentType(resData), resData)
 			}
 		default:
-			ctxLogger.Fatal(initMsg, zap.String("unknownActionKind", httpMethod))
+			logger.Fatal(initMsg, zap.String("unknownActionKind", httpMethod))
 		}
 		handlers = append(handlers, handlerDesc{httpMethod: httpMethod, path: actionPath, handler: handler})
 	}
@@ -178,18 +175,18 @@ func readFile(name string, files map[string][]byte, c *gin.Context) error {
 	return nil
 }
 
-func createHandler(tracer trace.Tracer, spanName string, widgetName string, actionName string, dataAdder common.DataAdder, widgetService service.WidgetService) gin.HandlerFunc {
-	return puzzleweb.CreateTemplate(tracer, spanName, func(data gin.H, c *gin.Context) (string, string) {
-		ctxLogger := puzzleweb.GetLogger(c)
+func createHandler(widgetName string, actionName string, dataAdder common.DataAdder, widgetService widgetservice.WidgetService) gin.HandlerFunc {
+	return puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+		logger := puzzleweb.GetLogger(c)
 		dataAdder(data, c)
 		files, err := readFiles(c)
 		if err != nil {
-			ctxLogger.Error("Failed to retrieve post file", zap.Error(err))
-			return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+			logger.Error("Failed to retrieve post file", zap.Error(err))
+			return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 		}
-		redirect, templateName, resData, err := widgetService.Process(ctxLogger, widgetName, actionName, data, files)
+		redirect, templateName, resData, err := widgetService.Process(c.Request.Context(), widgetName, actionName, data, files)
 		if err != nil {
-			return "", common.DefaultErrorRedirect(err.Error())
+			return "", common.DefaultErrorRedirect(logger, err.Error())
 		}
 		if redirect != "" {
 			return "", redirect
@@ -198,8 +195,8 @@ func createHandler(tracer trace.Tracer, spanName string, widgetName string, acti
 		if updateDataAndSession(data, resData, c) {
 			return templateName, ""
 		}
-		ctxLogger.Error("Failed to unmarshal json from remote widget", zap.Error(err))
-		return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+		logger.Error("Failed to unmarshal json from remote widget", zap.Error(err))
+		return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 	})
 }
 

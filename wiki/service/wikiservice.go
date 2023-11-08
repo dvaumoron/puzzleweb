@@ -16,14 +16,14 @@
  *
  */
 
-package service
+package wikiservice
 
 import (
+	"context"
 	"sync"
 
 	markdownservice "github.com/dvaumoron/puzzleweb/markdown/service"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
 type WikiContent struct {
@@ -34,7 +34,7 @@ type WikiContent struct {
 }
 
 // Lazy loading for markdown application on body.
-func (content *WikiContent) GetBody(logger otelzap.LoggerWithCtx, markdownService markdownservice.MarkdownService) (string, error) {
+func (content *WikiContent) GetBody(ctx context.Context, markdownService markdownservice.MarkdownService) (string, error) {
 	content.bodyMutex.RLock()
 	body := content.body
 	content.bodyMutex.RUnlock()
@@ -52,7 +52,7 @@ func (content *WikiContent) GetBody(logger otelzap.LoggerWithCtx, markdownServic
 		return body, nil
 	}
 
-	body, err := markdownService.Apply(logger, markdown)
+	body, err := markdownService.Apply(ctx, markdown)
 	if err != nil {
 		return "", err
 	}
@@ -64,12 +64,13 @@ func (content *WikiContent) GetBody(logger otelzap.LoggerWithCtx, markdownServic
 type Version struct {
 	Number  uint64
 	Creator profileservice.UserProfile
+	Date    string
 }
 
 type WikiService interface {
-	LoadContent(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string, versionStr string) (*WikiContent, error)
-	StoreContent(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string, last string, markdown string) (bool, error)
-	GetVersions(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string) ([]Version, error)
-	DeleteContent(logger otelzap.LoggerWithCtx, userId uint64, lang string, title string, versionStr string) error
-	DeleteRight(logger otelzap.LoggerWithCtx, userId uint64) bool
+	LoadContent(ctx context.Context, userId uint64, lang string, title string, version string) (*WikiContent, error)
+	StoreContent(ctx context.Context, userId uint64, lang string, title string, last string, markdown string) error
+	GetVersions(ctx context.Context, userId uint64, lang string, title string) ([]Version, error)
+	DeleteContent(ctx context.Context, userId uint64, lang string, title string, version string) error
+	DeleteRight(ctx context.Context, userId uint64) bool
 }

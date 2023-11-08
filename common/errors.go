@@ -22,35 +22,77 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"github.com/dvaumoron/puzzleweb/common/log"
 	"go.uber.org/zap"
 )
-
-const QueryError = "?error="
 
 const WrongLangKey = "WrongLang"
 
 const ReportingPlaceName = "reporting_place"
 
+const (
+	ErrorKey       = "error"
+	errorKeyEq     = ErrorKey + "="
+	QueryError     = "?" + errorKeyEq
+	AddQueryError  = "&" + errorKeyEq
+	PathQueryError = "/" + QueryError
+)
+
 // error displayed to user
-const ErrorNotAuthorizedKey = "ErrorNotAuthorized"
-const ErrorTechnicalKey = "ErrorTechnicalProblem"
-const ErrorUpdateKey = "ErrorUpdate"
+const (
+	ErrorBadRoleNameKey          = "ErrorBadRoleName"
+	ErrorBaseVersionKey          = "BaseVersionOutdated"
+	ErrorEmptyCommentKey         = "EmptyComment"
+	ErrorEmptyLoginKey           = "EmptyLogin"
+	ErrorEmptyPasswordKey        = "EmptyPassword"
+	ErrorExistingLoginKey        = "ExistingLogin"
+	ErrorNotAuthorizedKey        = "ErrorNotAuthorized"
+	ErrorTechnicalKey            = "ErrorTechnicalProblem"
+	ErrorUpdateKey               = "ErrorUpdate"
+	ErrorWeakPasswordKey         = "WeakPassword"
+	ErrorWrongConfirmPasswordKey = "WrongConfirmPassword"
+	ErrorWrongLangKey            = "WrongLang"
+	ErrorWrongLoginKey           = "WrongLogin"
+)
 
-var ErrNotAuthorized = errors.New(ErrorNotAuthorizedKey)
-var ErrTechnical = errors.New(ErrorTechnicalKey)
-var ErrUpdate = errors.New(ErrorUpdateKey)
+const originalErrorMsg = "Original error"
 
-func LogOriginalError(logger otelzap.LoggerWithCtx, err error) error {
-	logger.WithOptions(zap.AddCallerSkip(1)).Warn("Original error", zap.Error(err))
-	return ErrTechnical
+var (
+	ErrBadRoleName   = errors.New(ErrorBadRoleNameKey)
+	ErrBaseVersion   = errors.New(ErrorBaseVersionKey)
+	ErrEmptyComment  = errors.New(ErrorEmptyCommentKey)
+	ErrEmptyLogin    = errors.New(ErrorEmptyLoginKey)
+	ErrEmptyPassword = errors.New(ErrorEmptyPasswordKey)
+	ErrExistingLogin = errors.New(ErrorExistingLoginKey)
+	ErrNotAuthorized = errors.New(ErrorNotAuthorizedKey)
+	ErrTechnical     = errors.New(ErrorTechnicalKey)
+	ErrUpdate        = errors.New(ErrorUpdateKey)
+	ErrWeakPassword  = errors.New(ErrorWeakPasswordKey)
+	ErrWrongConfirm  = errors.New(ErrorWrongConfirmPasswordKey)
+	ErrWrongLogin    = errors.New(ErrorWrongLoginKey)
+)
+
+func LogOriginalError(logger log.Logger, err error) {
+	logger.Warn(originalErrorMsg, zap.Error(err))
 }
 
-func WriteError(urlBuilder *strings.Builder, errorMsg string) {
+func WriteError(urlBuilder *strings.Builder, logger log.Logger, errorMsg string) {
 	urlBuilder.WriteString(QueryError)
-	urlBuilder.WriteString(errorMsg)
+	urlBuilder.WriteString(FilterErrorMsg(logger, errorMsg))
 }
 
-func DefaultErrorRedirect(errorMsg string) string {
-	return "/?error=" + errorMsg
+func DefaultErrorRedirect(logger log.Logger, errorMsg string) string {
+	return PathQueryError + FilterErrorMsg(logger, errorMsg)
+}
+
+func FilterErrorMsg(logger log.Logger, errorMsg string) string {
+	if errorMsg == ErrorBadRoleNameKey || errorMsg == ErrorBaseVersionKey || errorMsg == ErrorEmptyCommentKey ||
+		errorMsg == ErrorEmptyLoginKey || errorMsg == ErrorEmptyPasswordKey || errorMsg == ErrorExistingLoginKey ||
+		errorMsg == ErrorNotAuthorizedKey || errorMsg == ErrorTechnicalKey || errorMsg == ErrorUpdateKey ||
+		errorMsg == ErrorWeakPasswordKey || errorMsg == ErrorWrongConfirmPasswordKey || errorMsg == ErrorWrongLangKey ||
+		errorMsg == ErrorWrongLoginKey {
+		return errorMsg
+	}
+	logger.Error(originalErrorMsg, zap.String(ErrorKey, errorMsg))
+	return ErrorTechnicalKey
 }

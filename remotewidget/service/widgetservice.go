@@ -16,10 +16,24 @@
  *
  */
 
-package service
+package widgetservice
 
-import "github.com/uptrace/opentelemetry-go-extra/otelzap"
+import (
+	"context"
 
-type TemplateService interface {
-	Render(logger otelzap.LoggerWithCtx, templateName string, data any) ([]byte, error)
+	"github.com/gin-gonic/gin"
+)
+
+const RawResult = "RAW"
+
+type Action struct {
+	Kind       string
+	Name       string
+	Path       string
+	QueryNames []string
+}
+
+type WidgetService interface {
+	GetDesc(ctx context.Context, widgetName string) ([]Action, error)
+	Process(ctx context.Context, widgetName string, actionName string, data gin.H, files map[string][]byte) (string, string, []byte, error)
 }

@@ -16,14 +16,15 @@
  *
  */
 
-package client
+package sessionclient
 
 import (
+	"context"
+
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzlesessionservice"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/session/service"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	"google.golang.org/grpc"
 )
 
@@ -31,54 +32,44 @@ type sessionClient struct {
 	grpcclient.Client
 }
 
-func New(serviceAddr string, dialOptions []grpc.DialOption) service.SessionService {
+func New(serviceAddr string, dialOptions []grpc.DialOption) sessionservice.SessionService {
 	return sessionClient{Client: grpcclient.Make(serviceAddr, dialOptions...)}
 }
 
-func (client sessionClient) Generate(logger otelzap.LoggerWithCtx) (uint64, error) {
+func (client sessionClient) Generate(ctx context.Context) (uint64, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return 0, common.LogOriginalError(logger, err)
+		return 0, err
 	}
 	defer conn.Close()
 
 	response, err := pb.NewSessionClient(conn).Generate(
-		logger.Context(), &pb.SessionInfo{Info: map[string]string{}},
+		ctx, &pb.SessionInfo{Info: map[string]string{}},
 	)
-	if err != nil {
-		return 0, common.LogOriginalError(logger, err)
-	}
-	return response.Id, nil
+	return response.GetId(), err
 }
 
-func (client sessionClient) Get(logger otelzap.LoggerWithCtx, id uint64) (map[string]string, error) {
+func (client sessionClient) Get(ctx context.Context, id uint64) (map[string]string, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(logger, err)
+		return nil, err
 	}
 	defer conn.Close()
 
-	response, err := pb.NewSessionClient(conn).GetSessionInfo(
-		logger.Context(), &pb.SessionId{Id: id},
-	)
-	if err != nil {
-		return nil, common.LogOriginalError(logger, err)
-	}
-	return response.Info, nil
+	response, err := pb.NewSessionClient(conn).GetSessionInfo(ctx, &pb.SessionId{Id: id})
+	return response.GetInfo(), err
 }
 
-func (client sessionClient) Update(logger otelzap.LoggerWithCtx, id uint64, info map[string]string) error {
+func (client sessionClient) Update(ctx context.Context, id uint64, info map[string]string) error {
 	conn, err := client.Dial()
 	if err != nil {
-		common.LogOriginalError(logger, err)
-		return common.ErrTechnical
+		return err
 	}
 	defer conn.Close()
 
-	response, err := pb.NewSessionClient(conn).UpdateSessionInfo(logger.Context(), &pb.SessionUpdate{Id: id, Info: info})
+	response, err := pb.NewSessionClient(conn).UpdateSessionInfo(ctx, &pb.SessionUpdate{Id: id, Info: info})
 	if err != nil {
-		common.LogOriginalError(logger, err)
-		return common.ErrTechnical
+		return err
 	}
 	if !response.Success {
 		return common.ErrUpdate

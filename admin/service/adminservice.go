@@ -16,9 +16,9 @@
  *
  */
 
-package service
+package adminservice
 
-import "github.com/uptrace/opentelemetry-go-extra/otelzap"
+import "context"
 
 const AdminName = "admin"
 const PublicName = "public"
@@ -33,27 +33,27 @@ const (
 )
 
 type Group struct {
-	Id   uint64
-	Name string
+	Id    uint64
+	Name  string
+	Roles []Role
 }
 
 type Role struct {
-	Name      string
-	GroupId   uint64
-	GroupName string
-	Actions   []string
+	Name    string
+	Actions []string
 }
 
 type AuthService interface {
-	AuthQuery(logger otelzap.LoggerWithCtx, userId uint64, groupId uint64, action string) error
+	AuthQuery(ctx context.Context, userId uint64, groupId uint64, action string) error
 }
 
 type AdminService interface {
 	AuthService
-	GetAllGroups(logger otelzap.LoggerWithCtx) []Group
-	GetAllRoles(logger otelzap.LoggerWithCtx, adminId uint64) ([]Role, error)
-	GetActions(logger otelzap.LoggerWithCtx, adminId uint64, roleName string, groupName string) ([]string, error)
-	UpdateUser(logger otelzap.LoggerWithCtx, adminId uint64, userId uint64, roles []Role) error
-	UpdateRole(logger otelzap.LoggerWithCtx, adminId uint64, role Role) error
-	GetUserRoles(logger otelzap.LoggerWithCtx, adminId uint64, userId uint64) ([]Role, error)
+	GetAllGroups(ctx context.Context, adminId uint64) ([]Group, error)
+	GetActions(ctx context.Context, adminId uint64, roleName string, groupName string) ([]string, error)
+	UpdateUser(ctx context.Context, adminId uint64, userId uint64, roles []Group) error
+	UpdateRole(ctx context.Context, adminId uint64, roleName string, groupName string, actions []string) error
+	GetUserRoles(ctx context.Context, adminId uint64, userId uint64) ([]Group, error)
+	ViewUserRoles(ctx context.Context, adminId uint64, userId uint64) (bool, []Group, error)
+	EditUserRoles(ctx context.Context, adminId uint64, userId uint64) ([]Group, []Group, error)
 }

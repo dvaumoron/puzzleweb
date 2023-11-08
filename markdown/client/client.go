@@ -19,11 +19,11 @@
 package client
 
 import (
+	"context"
+
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzlemarkdownservice"
-	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/markdown/service"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"google.golang.org/grpc"
 )
 
@@ -35,16 +35,13 @@ func New(serviceAddr string, dialOptions []grpc.DialOption) service.MarkdownServ
 	return markdownClient{Client: grpcclient.Make(serviceAddr, dialOptions...)}
 }
 
-func (client markdownClient) Apply(logger otelzap.LoggerWithCtx, text string) (string, error) {
+func (client markdownClient) Apply(ctx context.Context, text string) (string, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return "", common.LogOriginalError(logger, err)
+		return "", err
 	}
 	defer conn.Close()
 
-	markdownHtml, err := pb.NewMarkdownClient(conn).Apply(logger.Context(), &pb.MarkdownText{Text: text})
-	if err != nil {
-		return "", common.LogOriginalError(logger, err)
-	}
-	return markdownHtml.Html, nil
+	markdownHtml, err := pb.NewMarkdownClient(conn).Apply(ctx, &pb.MarkdownText{Text: text})
+	return markdownHtml.GetHtml(), err
 }

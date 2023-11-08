@@ -28,9 +28,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/templates"
 	"github.com/gin-gonic/gin"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -71,11 +69,12 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 func localizedTemplate(groupId uint64, templateName string) common.TemplateRedirecter {
 	return func(data gin.H, c *gin.Context) (string, string) {
 		site := getSite(c)
-		logger := site.logger.Ctx(c.Request.Context())
-		userId, _ := data[common.IdName].(uint64)
-		err := site.authService.AuthQuery(logger, userId, groupId, adminservice.ActionAccess)
+		ctx := c.Request.Context()
+		logger := site.loggerGetter.Logger(ctx)
+		userId, _ := data[common.UserIdName].(uint64)
+		err := site.authService.AuthQuery(ctx, userId, groupId, adminservice.ActionAccess)
 		if err != nil {
-			return "", common.DefaultErrorRedirect(err.Error())
+			return "", common.DefaultErrorRedirect(logger, err.Error())
 		}
 		localesManager := GetLocalesManager(c)
 		if lang := localesManager.GetLang(c); lang != localesManager.GetDefaultLang() {
@@ -90,19 +89,19 @@ func localizedTemplate(groupId uint64, templateName string) common.TemplateRedir
 	}
 }
 
-func newStaticWidget(tracer trace.Tracer, groupId uint64, templateName string) *staticWidget {
-	return &staticWidget{displayHandler: CreateTemplate(tracer, "staticWidget/displayHandler", localizedTemplate(groupId, templateName))}
+func newStaticWidget(groupId uint64, templateName string) *staticWidget {
+	return &staticWidget{displayHandler: CreateTemplate(localizedTemplate(groupId, templateName))}
 }
 
-func MakeStaticPage(tracer trace.Tracer, name string, groupId uint64, templateName string) Page {
+func MakeStaticPage(name string, groupId uint64, templateName string) Page {
 	p := MakePage(name)
-	p.Widget = newStaticWidget(tracer, groupId, templateName)
+	p.Widget = newStaticWidget(groupId, templateName)
 	return p
 }
 
-func MakeHiddenStaticPage(tracer trace.Tracer, name string, groupId uint64, templateName string) Page {
+func MakeHiddenStaticPage(name string, groupId uint64, templateName string) Page {
 	p := MakeHiddenPage(name)
-	p.Widget = newStaticWidget(tracer, groupId, templateName)
+	p.Widget = newStaticWidget(groupId, templateName)
 	return p
 }
 
@@ -113,14 +112,14 @@ func (p Page) AddSubPage(page Page) {
 	}
 }
 
-func (p Page) AddStaticPages(logger otelzap.LoggerWithCtx, tracer trace.Tracer, pageGroup parser.StaticPagesConfig) {
+func (p Page) AddStaticPages(pageGroup parser.StaticPagesConfig) {
 	for _, pagePath := range pageGroup.Locations {
 		subPage, pageName, templateName := p.extractSubPageAndNamesFromPath(pagePath)
 		var newPage Page
 		if pageGroup.Hidden {
-			newPage = MakeHiddenStaticPage(tracer, pageName, pageGroup.GroupId, templateName)
+			newPage = MakeHiddenStaticPage(pageName, pageGroup.GroupId, templateName)
 		} else {
-			newPage = MakeStaticPage(tracer, pageName, pageGroup.GroupId, templateName)
+			newPage = MakeStaticPage(pageName, pageGroup.GroupId, templateName)
 		}
 		subPage.AddSubPage(newPage)
 	}
@@ -167,11 +166,8 @@ func (p Page) extractSubPageAndNamesFromPath(path string) (Page, string, string)
 	return resPage, splitted[last], path
 }
 
-func CreateTemplate(tracer trace.Tracer, spanName string, redirecter common.TemplateRedirecter) gin.HandlerFunc {
+func CreateTemplate(redirecter common.TemplateRedirecter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx := c.Request.Context()
-		_, span := tracer.Start(ctx, spanName)
-		defer span.End()
 		data := initData(c)
 		if tmpl, redirect := redirecter(data, c); redirect == "" {
 			if pagePart := c.Query("pagePart"); pagePart != "" {
@@ -181,7 +177,9 @@ func CreateTemplate(tracer trace.Tracer, spanName string, redirecter common.Temp
 				tmplBuilder.WriteString(pagePart)
 				tmpl = tmplBuilder.String()
 			}
-			otelgin.HTML(c, http.StatusOK, tmpl, templates.ContextAndData{Ctx: ctx, Data: data})
+			otelgin.HTML(c, http.StatusOK, tmpl, templates.ContextAndData{
+				Ctx: c.Request.Context(), Data: data,
+			})
 		} else {
 			c.Redirect(http.StatusFound, redirect)
 		}

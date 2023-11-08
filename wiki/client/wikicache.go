@@ -16,13 +16,13 @@
  *
  */
 
-package client
+package wikiclient
 
 import (
 	"sync"
 
-	"github.com/dvaumoron/puzzleweb/wiki/service"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"github.com/dvaumoron/puzzleweb/common/log"
+	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
 	"go.uber.org/zap"
 )
 
@@ -30,14 +30,14 @@ const wikiRefName = "wikiRef"
 
 type wikiCache struct {
 	mutex sync.RWMutex
-	cache map[string]*service.WikiContent
+	cache map[string]*wikiservice.WikiContent
 }
 
 func newCache() *wikiCache {
-	return &wikiCache{cache: map[string]*service.WikiContent{}}
+	return &wikiCache{cache: map[string]*wikiservice.WikiContent{}}
 }
 
-func (wiki *wikiCache) load(logger otelzap.LoggerWithCtx, wikiRef string) *service.WikiContent {
+func (wiki *wikiCache) load(logger log.Logger, wikiRef string) *wikiservice.WikiContent {
 	wiki.mutex.RLock()
 	content, ok := wiki.cache[wikiRef]
 	wiki.mutex.RUnlock()
@@ -47,14 +47,14 @@ func (wiki *wikiCache) load(logger otelzap.LoggerWithCtx, wikiRef string) *servi
 	return content
 }
 
-func (wiki *wikiCache) store(logger otelzap.LoggerWithCtx, wikiRef string, content *service.WikiContent) {
+func (wiki *wikiCache) store(logger log.Logger, wikiRef string, content *wikiservice.WikiContent) {
 	wiki.mutex.Lock()
 	wiki.cache[wikiRef] = content
 	wiki.mutex.Unlock()
 	logger.Debug("wikiCache store", zap.String(wikiRefName, wikiRef))
 }
 
-func (wiki *wikiCache) delete(logger otelzap.LoggerWithCtx, wikiRef string) {
+func (wiki *wikiCache) delete(logger log.Logger, wikiRef string) {
 	wiki.mutex.Lock()
 	delete(wiki.cache, wikiRef)
 	wiki.mutex.Unlock()

@@ -16,23 +16,11 @@
  *
  */
 
-package service
+package strengthservice
 
-import (
-	"github.com/gin-gonic/gin"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
-)
+import "context"
 
-const RawResult = "RAW"
-
-type Action struct {
-	Kind       string
-	Name       string
-	Path       string
-	QueryNames []string
-}
-
-type WidgetService interface {
-	GetDesc(logger otelzap.LoggerWithCtx, widgetName string) ([]Action, error)
-	Process(logger otelzap.LoggerWithCtx, widgetName string, actionName string, data gin.H, files map[string][]byte) (string, string, []byte, error)
+type PasswordStrengthService interface {
+	Validate(ctx context.Context, password string) (bool, error)
+	GetRules(ctx context.Context, lang string) (string, error)
 }

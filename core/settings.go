@@ -19,13 +19,13 @@
 package puzzleweb
 
 import (
+	"context"
 	"errors"
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 
 	"github.com/gin-gonic/gin"
@@ -59,20 +59,20 @@ func checkSettings(settings map[string]string, c *gin.Context) error {
 	return nil
 }
 
-func (m *SettingsManager) Get(logger otelzap.LoggerWithCtx, userId uint64, c *gin.Context) map[string]string {
+func (m *SettingsManager) Get(ctx context.Context, userId uint64, c *gin.Context) map[string]string {
 	userSettings := c.GetStringMapString(settingsName)
 	if len(userSettings) != 0 {
 		return userSettings
 	}
 
-	userSettings, err := m.Service.Get(logger, userId)
+	userSettings, err := m.Service.Get(ctx, userId)
 	if err != nil {
 		m.Logger.Warn("Failed to retrieve user settings", zap.Error(err))
 	}
 
 	if len(userSettings) == 0 {
 		userSettings = m.InitSettings(c)
-		err = m.Service.Update(logger, userId, userSettings)
+		err = m.Service.Update(ctx, userId, userSettings)
 		if err != nil {
 			m.Logger.Warn("Failed to create user settings", zap.Error(err))
 		}
@@ -81,8 +81,8 @@ func (m *SettingsManager) Get(logger otelzap.LoggerWithCtx, userId uint64, c *gi
 	return userSettings
 }
 
-func (m *SettingsManager) Update(logger otelzap.LoggerWithCtx, userId uint64, settings map[string]string) error {
-	return m.Service.Update(logger, userId, settings)
+func (m *SettingsManager) Update(ctx context.Context, userId uint64, settings map[string]string) error {
+	return m.Service.Update(ctx, userId, settings)
 }
 
 type settingsWidget struct {
@@ -96,38 +96,37 @@ func (w settingsWidget) LoadInto(router gin.IRouter) {
 }
 
 func newSettingsPage(settingsConfig config.ServiceConfig[*SettingsManager]) Page {
-	tracer := settingsConfig.Tracer
 	settingsManager := settingsConfig.Service
 
 	p := MakeHiddenPage("settings")
 	p.Widget = settingsWidget{
-		editHandler: CreateTemplate(tracer, "settingsWidget/editHandler", func(data gin.H, c *gin.Context) (string, string) {
+		editHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)
-			userId, _ := data[common.IdName].(uint64)
+			userId, _ := data[common.UserIdName].(uint64)
 			if userId == 0 {
-				return "", common.DefaultErrorRedirect(unknownUserKey)
+				return "", common.DefaultErrorRedirect(logger, unknownUserKey)
 			}
 
-			data["Settings"] = settingsManager.Get(logger, userId, c)
+			data["Settings"] = settingsManager.Get(c.Request.Context(), userId, c)
 			return "settings/edit", ""
 		}),
-		saveHandler: common.CreateRedirect(tracer, "settingsWidget/saveHandler", func(c *gin.Context) string {
+		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := GetLogger(c)
 			userId := GetSessionUserId(c)
 			if userId == 0 {
-				return common.DefaultErrorRedirect(unknownUserKey)
+				return common.DefaultErrorRedirect(logger, unknownUserKey)
 			}
 
 			settings := c.PostFormMap("settings")
 			err := settingsManager.CheckSettings(settings, c)
 			if err == nil {
-				err = settingsManager.Update(logger, userId, settings)
+				err = settingsManager.Update(c.Request.Context(), userId, settings)
 			}
 
 			var targetBuilder strings.Builder
 			targetBuilder.WriteString("/settings")
 			if err != nil {
-				common.WriteError(&targetBuilder, err.Error())
+				common.WriteError(&targetBuilder, logger, err.Error())
 			}
 			return targetBuilder.String()
 		}),

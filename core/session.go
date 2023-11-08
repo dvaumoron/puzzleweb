@@ -24,14 +24,16 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/dvaumoron/puzzleweb/common/log"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/gin-gonic/gin"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
-const cookieName = "pw_session_id"
-const SessionName = "Session"
+const (
+	cookieName  = "pw_session_id"
+	SessionName = "Session"
+)
 
 var errDecodeTooShort = errors.New("the result from base64 decoding is too short")
 
@@ -41,24 +43,24 @@ func makeSessionManager(sessionConfig config.SessionConfig) sessionManager {
 	return sessionManager(sessionConfig)
 }
 
-func (m sessionManager) getSessionId(logger otelzap.LoggerWithCtx, c *gin.Context) (uint64, error) {
+func (m sessionManager) getSessionId(logger log.Logger, c *gin.Context) (uint64, error) {
 	cookie, err := c.Cookie(cookieName)
 	if err != nil {
 		logger.Info("Failed to retrieve session cookie", zap.Error(err))
-		return m.generateSessionCookie(logger, c)
+		return m.generateSessionCookie(c)
 	}
 	sessionId, err := decodeFromBase64(cookie)
 	if err != nil {
 		logger.Info("Failed to parse session cookie", zap.Error(err))
-		return m.generateSessionCookie(logger, c)
+		return m.generateSessionCookie(c)
 	}
 	// refreshing cookie
 	m.setSessionCookie(sessionId, c)
 	return sessionId, nil
 }
 
-func (m sessionManager) generateSessionCookie(logger otelzap.LoggerWithCtx, c *gin.Context) (uint64, error) {
-	sessionId, err := m.Service.Generate(logger)
+func (m sessionManager) generateSessionCookie(c *gin.Context) (uint64, error) {
+	sessionId, err := m.Service.Generate(c.Request.Context())
 	if err == nil {
 		m.setSessionCookie(sessionId, c)
 	}
@@ -147,7 +149,8 @@ func (m sessionManager) manage(c *gin.Context) {
 		return
 	}
 
-	session, err := m.Service.Get(logger, sessionId)
+	ctx := c.Request.Context()
+	session, err := m.Service.Get(ctx, sessionId)
 	if err != nil {
 		logSessionError(logger, "Failed to retrieve session", sessionId, c)
 		return
@@ -161,14 +164,14 @@ func (m sessionManager) manage(c *gin.Context) {
 	c.Next()
 
 	if s := GetSession(c); s.change {
-		if m.Service.Update(logger, sessionId, s.session) != nil {
+		if m.Service.Update(ctx, sessionId, s.session) != nil {
 			logSessionError(logger, "Failed to save session", sessionId, c)
 		}
 	}
 }
 
-func logSessionError(logger otelzap.LoggerWithCtx, msg string, sessionId uint64, c *gin.Context) {
-	logger.WithOptions(zap.AddCallerSkip(1)).Error(msg, zap.Uint64("sessionId", sessionId))
+func logSessionError(logger log.Logger, msg string, sessionId uint64, c *gin.Context) {
+	logger.Error(msg, zap.Uint64("sessionId", sessionId))
 	c.AbortWithStatus(http.StatusInternalServerError)
 }
 

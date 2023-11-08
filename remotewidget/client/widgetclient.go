@@ -16,52 +16,54 @@
  *
  */
 
-package client
+package widgetclient
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/remotewidget/service"
+	"github.com/dvaumoron/puzzleweb/common/log"
+	widgetservice "github.com/dvaumoron/puzzleweb/remotewidget/service"
 	pb "github.com/dvaumoron/puzzlewidgetservice"
 	"github.com/gin-gonic/gin"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 type widgetClient struct {
 	grpcclient.Client
-	objectId uint64
-	groupId  uint64
+	objectId     uint64
+	groupId      uint64
+	loggerGetter log.LoggerGetter
 }
 
-func New(serviceAddr string, dialOptions []grpc.DialOption, objectId uint64, groupId uint64) service.WidgetService {
-	return widgetClient{Client: grpcclient.Make(serviceAddr, dialOptions...), objectId: objectId, groupId: groupId}
+func New(serviceAddr string, dialOptions []grpc.DialOption, objectId uint64, groupId uint64, loggerGetter log.LoggerGetter) widgetservice.WidgetService {
+	return widgetClient{Client: grpcclient.Make(serviceAddr, dialOptions...), objectId: objectId, groupId: groupId, loggerGetter: loggerGetter}
 }
 
-func (client widgetClient) GetDesc(logger otelzap.LoggerWithCtx, name string) ([]service.Action, error) {
+func (client widgetClient) GetDesc(ctx context.Context, name string) ([]widgetservice.Action, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return nil, common.LogOriginalError(logger, err)
+		return nil, err
 	}
 	defer conn.Close()
 
-	response, err := pb.NewWidgetClient(conn).GetWidget(logger.Context(), &pb.WidgetRequest{Name: name})
+	response, err := pb.NewWidgetClient(conn).GetWidget(ctx, &pb.WidgetRequest{Name: name})
 	if err != nil {
-		return nil, common.LogOriginalError(logger, err)
+		return nil, err
 	}
 	return convertActions(response.Actions), nil
 }
 
-func (client widgetClient) Process(logger otelzap.LoggerWithCtx, widgetName string, actionName string, data gin.H, files map[string][]byte) (string, string, []byte, error) {
+func (client widgetClient) Process(ctx context.Context, widgetName string, actionName string, data gin.H, files map[string][]byte) (string, string, []byte, error) {
 	data["objectId"] = client.objectId
 	data["groupId"] = client.groupId
 	dataBytes, err := json.Marshal(data)
 	if err != nil {
-		logger.Error("Failed to marshal data", zap.Error(err))
+		client.loggerGetter.Logger(ctx).Error("Failed to marshal data", zap.Error(err))
 		return "", "", nil, common.ErrTechnical
 	}
 
@@ -69,23 +71,23 @@ func (client widgetClient) Process(logger otelzap.LoggerWithCtx, widgetName stri
 
 	conn, err := client.Dial()
 	if err != nil {
-		return "", "", nil, common.LogOriginalError(logger, err)
+		return "", "", nil, err
 	}
 	defer conn.Close()
 
-	response, err := pb.NewWidgetClient(conn).Process(logger.Context(), &pb.ProcessRequest{
+	response, err := pb.NewWidgetClient(conn).Process(ctx, &pb.ProcessRequest{
 		WidgetName: widgetName, ActionName: actionName, Files: files,
 	})
 	if err != nil {
-		return "", "", nil, common.LogOriginalError(logger, err)
+		return "", "", nil, err
 	}
 	return response.Redirect, response.TemplateName, response.Data, nil
 }
 
-func convertActions(actions []*pb.Action) []service.Action {
-	res := make([]service.Action, 0, len(actions))
+func convertActions(actions []*pb.Action) []widgetservice.Action {
+	res := make([]widgetservice.Action, 0, len(actions))
 	for _, action := range actions {
-		res = append(res, service.Action{
+		res = append(res, widgetservice.Action{
 			Kind: converKind(action.Kind), Name: action.Name, Path: action.Path, QueryNames: action.QueryNames},
 		)
 	}
@@ -111,7 +113,7 @@ func converKind(kind pb.MethodKind) string {
 	case pb.MethodKind_TRACE:
 		return http.MethodTrace
 	case pb.MethodKind_RAW:
-		return service.RawResult
+		return widgetservice.RawResult
 	}
 	return http.MethodGet
 }

@@ -21,6 +21,7 @@ package config
 import (
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogservice "github.com/dvaumoron/puzzleweb/blog/service"
+	"github.com/dvaumoron/puzzleweb/common/log"
 	forumservice "github.com/dvaumoron/puzzleweb/forum/service"
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
 	markdownservice "github.com/dvaumoron/puzzleweb/markdown/service"
@@ -28,39 +29,33 @@ import (
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	templateservice "github.com/dvaumoron/puzzleweb/templates/service"
 	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type BaseConfig interface {
-	GetLogger() *otelzap.Logger
-	GetTracer() trace.Tracer
+	GetLogger() log.Logger
+	GetLoggerGetter() log.LoggerGetter
 }
 
 type LocalesConfig struct {
-	Logger         *otelzap.Logger
+	Logger         log.Logger
 	Domain         string
 	SessionTimeOut int
 	AllLang        []string
 }
 
 type ServiceConfig[ServiceType any] struct {
-	Logger  *otelzap.Logger
-	Tracer  trace.Tracer
+	Logger  log.Logger // for init phase (have the context)
 	Service ServiceType
 }
 
 func MakeServiceConfig[ServiceType any](c BaseConfig, service ServiceType) ServiceConfig[ServiceType] {
-	return ServiceConfig[ServiceType]{Logger: c.GetLogger(), Tracer: c.GetTracer(), Service: service}
+	return ServiceConfig[ServiceType]{Logger: c.GetLogger(), Service: service}
 }
 
-func (c *ServiceConfig[ServiceType]) GetLogger() *otelzap.Logger {
+func (c *ServiceConfig[ServiceType]) GetLogger() log.Logger {
 	return c.Logger
-}
-
-func (c *ServiceConfig[ServiceType]) GetTracer() trace.Tracer {
-	return c.Tracer
 }
 
 type SessionConfig struct {
@@ -73,6 +68,8 @@ type SiteConfig struct {
 	ServiceConfig[sessionservice.SessionService]
 	TemplateService    templateservice.TemplateService
 	TracerProvider     *sdktrace.TracerProvider
+	Tracer             trace.Tracer
+	LoggerGetter       log.LoggerGetter
 	Domain             string
 	Port               string
 	SessionTimeOut     int
@@ -90,7 +87,7 @@ func (sc *SiteConfig) ExtractSessionConfig() SessionConfig {
 }
 
 func (sc *SiteConfig) ExtractTemplateConfig() TemplateConfig {
-	return TemplateConfig{Logger: sc.Logger, Tracer: sc.Tracer, Service: sc.TemplateService}
+	return TemplateConfig{Logger: sc.Logger, Service: sc.TemplateService}
 }
 
 type AdminConfig struct {

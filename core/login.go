@@ -28,16 +28,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const emptyLoginKey = "EmptyLogin"
-const emptyPasswordKey = "EmptyPassword"
-const wrongConfirmPasswordKey = "WrongConfirmPassword"
-
-const userIdName = "UserId"
-const loginName = "Login" // current connected user login
-const passwordName = "Password"
-const confirmPasswordName = "ConfirmPassword"
-const loginUrlName = "LoginUrl"
-const prevUrlWithErrorName = "PrevUrlWithError"
+const (
+	userIdName           = "UserId"
+	loginName            = "Login" // current connected user login
+	passwordName         = "Password"
+	confirmPasswordName  = "ConfirmPassword"
+	loginUrlName         = "LoginUrl"
+	prevUrlWithErrorName = "PrevUrlWithError"
+)
 
 type loginWidget struct {
 	displayHandler gin.HandlerFunc
@@ -52,20 +50,17 @@ func (w loginWidget) LoadInto(router gin.IRouter) {
 }
 
 func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManager) Page {
-	tracer := loginConfig.Tracer
 	loginService := loginConfig.Service
 
 	p := MakeHiddenPage("login")
 	p.Widget = loginWidget{
-		displayHandler: CreateTemplate(tracer, "loginWidget/displayHandler", func(data gin.H, c *gin.Context) (string, string) {
+		displayHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			data[common.RedirectName] = c.Query(common.RedirectName)
 
 			currentUrl := c.Request.URL
-			var errorKey string
+			errorKey := common.AddQueryError
 			if len(currentUrl.Query()) == 0 {
 				errorKey = common.QueryError
-			} else {
-				errorKey = "&error="
 			}
 			data[prevUrlWithErrorName] = currentUrl.String() + errorKey
 
@@ -74,17 +69,17 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 
 			return "login", ""
 		}),
-		submitHandler: common.CreateRedirect(tracer, "loginWidget/submitHandler", func(c *gin.Context) string {
-			logger := GetLogger(c)
+		submitHandler: common.CreateRedirect(func(c *gin.Context) string {
+			ctx := c.Request.Context()
 			login := c.PostForm(loginName)
 			password := c.PostForm(passwordName)
 			register := c.PostForm("Register") == "true"
 
 			if login == "" {
-				return c.PostForm(prevUrlWithErrorName) + emptyLoginKey
+				return c.PostForm(prevUrlWithErrorName) + common.ErrorEmptyLoginKey
 			}
 			if password == "" {
-				return c.PostForm(prevUrlWithErrorName) + emptyPasswordKey
+				return c.PostForm(prevUrlWithErrorName) + common.ErrorEmptyPasswordKey
 			}
 
 			success := true
@@ -92,12 +87,12 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 			var err error
 			if register {
 				if c.PostForm(confirmPasswordName) != password {
-					return c.PostForm(prevUrlWithErrorName) + wrongConfirmPasswordKey
+					return c.PostForm(prevUrlWithErrorName) + common.ErrorWrongConfirmPasswordKey
 				}
 
-				success, userId, err = loginService.Register(logger, login, password)
+				success, userId, err = loginService.Register(ctx, login, password)
 			} else {
-				success, userId, err = loginService.Verify(logger, login, password)
+				success, userId, err = loginService.Verify(ctx, login, password)
 			}
 
 			errorMsg := ""
@@ -105,9 +100,9 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 				errorMsg = err.Error()
 			} else if !success {
 				if register {
-					errorMsg = "ExistingLogin"
+					errorMsg = common.ErrorExistingLoginKey
 				} else {
-					errorMsg = "WrongLogin"
+					errorMsg = common.WrongLangKey
 				}
 			}
 
@@ -119,11 +114,11 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 			s.Store(loginName, login)
 			s.Store(userIdName, strconv.FormatUint(userId, 10))
 
-			GetLocalesManager(c).SetLangCookie(settingsManager.Get(logger, userId, c)[locale.LangName], c)
+			GetLocalesManager(c).SetLangCookie(settingsManager.Get(ctx, userId, c)[locale.LangName], c)
 
 			return c.PostForm(common.RedirectName)
 		}),
-		logoutHandler: common.CreateRedirect(tracer, "loginWidget/logoutHandler", func(c *gin.Context) string {
+		logoutHandler: common.CreateRedirect(func(c *gin.Context) string {
 			s := GetSession(c)
 			s.Delete(loginName)
 			s.Delete(userIdName)

@@ -25,7 +25,7 @@ import (
 
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
-	puzzleweb "github.com/dvaumoron/puzzleweb/main"
+	puzzleweb "github.com/dvaumoron/puzzleweb/core"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -59,7 +59,6 @@ func (w forumWidget) LoadInto(router gin.IRouter) {
 }
 
 func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.Page {
-	tracer := forumConfig.Tracer
 	forumService := forumConfig.Service
 	defaultPageSize := forumConfig.PageSize
 
@@ -90,51 +89,51 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 
 	p := puzzleweb.MakePage(forumName)
 	p.Widget = forumWidget{
-		listThreadHandler: puzzleweb.CreateTemplate(tracer, "forumWidget/listThreadHandler", func(data gin.H, c *gin.Context) (string, string) {
-			logger := puzzleweb.GetLogger(c)
-			userId, _ := data[common.IdName].(uint64)
+		listThreadHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+			ctx := c.Request.Context()
+			userId, _ := data[common.UserIdName].(uint64)
 
 			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
 
-			total, threads, err := forumService.GetThreads(logger, userId, start, end, filter)
+			total, threads, err := forumService.GetThreads(ctx, userId, start, end, filter)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(puzzleweb.GetLogger(c), err.Error())
 			}
 
 			common.InitPagination(data, filter, pageNumber, end, total)
 			data["Threads"] = threads
-			data[common.AllowedToCreateName] = forumService.CreateThreadRight(logger, userId)
-			data[common.AllowedToDeleteName] = forumService.DeleteRight(logger, userId)
+			data[common.AllowedToCreateName] = forumService.CreateThreadRight(ctx, userId)
+			data[common.AllowedToDeleteName] = forumService.DeleteRight(ctx, userId)
 			puzzleweb.InitNoELementMsg(data, len(threads), c)
 			return listTmpl, ""
 		}),
-		createThreadHandler: puzzleweb.CreateTemplate(tracer, "forumWidget/createThreadHandler", func(data gin.H, c *gin.Context) (string, string) {
+		createThreadHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			data[common.BaseUrlName] = common.GetBaseUrl(1, c)
 			return createTmpl, ""
 		}),
-		saveThreadHandler: common.CreateRedirect(tracer, "forumWidget/saveThreadHandler", func(c *gin.Context) string {
+		saveThreadHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			title := c.PostForm("title")
 			message := c.PostForm("message")
 
 			if title == "" {
-				return common.DefaultErrorRedirect("EmptyThreadTitle")
+				return common.DefaultErrorRedirect(logger, "EmptyThreadTitle")
 			}
 			if message == "" {
-				return common.DefaultErrorRedirect(emptyMessage)
+				return common.DefaultErrorRedirect(logger, emptyMessage)
 			}
 
-			threadId, err := forumService.CreateThread(logger, puzzleweb.GetSessionUserId(c), title, message)
+			threadId, err := forumService.CreateThread(c.Request.Context(), puzzleweb.GetSessionUserId(c), title, message)
 			if err != nil {
-				return common.DefaultErrorRedirect(err.Error())
+				return common.DefaultErrorRedirect(logger, err.Error())
 			}
 			return threadUrlBuilder(common.GetBaseUrl(1, c), threadId).String()
 		}),
-		deleteThreadHandler: common.CreateRedirect(tracer, "forumWidget/deleteThreadHandler", func(c *gin.Context) string {
+		deleteThreadHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err == nil {
-				err = forumService.DeleteThread(logger, puzzleweb.GetSessionUserId(c), threadId)
+				err = forumService.DeleteThread(c.Request.Context(), puzzleweb.GetSessionUserId(c), threadId)
 			} else {
 				logger.Warn(parsingThreadIdErrorMsg, zap.Error(err))
 				err = common.ErrTechnical
@@ -143,73 +142,74 @@ func MakeForumPage(forumName string, forumConfig config.ForumConfig) puzzleweb.P
 			var targetBuilder strings.Builder
 			targetBuilder.WriteString(common.GetBaseUrl(2, c))
 			if err != nil {
-				common.WriteError(&targetBuilder, err.Error())
+				common.WriteError(&targetBuilder, logger, err.Error())
 			}
 			return targetBuilder.String()
 		}),
-		viewThreadHandler: puzzleweb.CreateTemplate(tracer, "forumWidget/viewThreadHandler", func(data gin.H, c *gin.Context) (string, string) {
+		viewThreadHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			logger := puzzleweb.GetLogger(c)
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingThreadIdErrorMsg, zap.Error(err))
-				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+				return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 			}
 
 			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
 
-			userId, _ := data[common.IdName].(uint64)
-			total, thread, messages, err := forumService.GetThread(logger, userId, threadId, start, end, filter)
+			ctx := c.Request.Context()
+			userId, _ := data[common.UserIdName].(uint64)
+			total, thread, messages, err := forumService.GetThread(ctx, userId, threadId, start, end, filter)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(logger, err.Error())
 			}
 
 			common.InitPagination(data, filter, pageNumber, end, total)
 			data[common.BaseUrlName] = common.GetBaseUrl(2, c)
 			data["Thread"] = thread
 			data["ForumMessages"] = messages
-			data[common.AllowedToCreateName] = forumService.CreateMessageRight(logger, userId)
-			data[common.AllowedToDeleteName] = forumService.DeleteRight(logger, userId)
+			data[common.AllowedToCreateName] = forumService.CreateMessageRight(ctx, userId)
+			data[common.AllowedToDeleteName] = forumService.DeleteRight(ctx, userId)
 			puzzleweb.InitNoELementMsg(data, len(messages), c)
 			return viewTmpl, ""
 		}),
-		saveMessageHandler: common.CreateRedirect(tracer, "forumWidget/saveMessageHandler", func(c *gin.Context) string {
+		saveMessageHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingThreadIdErrorMsg, zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+				return common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 			}
 			message := c.PostForm("message")
 
 			err = errEmptyMessage
 			if message != "" {
-				err = forumService.CreateMessage(logger, puzzleweb.GetSessionUserId(c), threadId, message)
+				err = forumService.CreateMessage(c.Request.Context(), puzzleweb.GetSessionUserId(c), threadId, message)
 			}
 
 			targetBuilder := threadUrlBuilder(common.GetBaseUrl(3, c), threadId)
 			if err != nil {
-				common.WriteError(targetBuilder, err.Error())
+				common.WriteError(targetBuilder, logger, err.Error())
 			}
 			return targetBuilder.String()
 		}),
-		deleteMessageHandler: common.CreateRedirect(tracer, "forumWidget/deleteMessageHandler", func(c *gin.Context) string {
+		deleteMessageHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			threadId, err := strconv.ParseUint(c.Param(threadIdName), 10, 64)
 			if err != nil {
 				logger.Warn(parsingThreadIdErrorMsg, zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+				return common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 			}
 			messageId, err := strconv.ParseUint(c.Param("messageId"), 10, 64)
 			if err != nil {
 				logger.Warn("Failed to parse messageId", zap.Error(err))
-				return common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+				return common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 			}
 
-			err = forumService.DeleteMessage(logger, puzzleweb.GetSessionUserId(c), threadId, messageId)
+			err = forumService.DeleteMessage(c.Request.Context(), puzzleweb.GetSessionUserId(c), threadId, messageId)
 
 			targetBuilder := threadUrlBuilder(common.GetBaseUrl(4, c), threadId)
 			if err != nil {
-				common.WriteError(targetBuilder, err.Error())
+				common.WriteError(targetBuilder, logger, err.Error())
 			}
 			return targetBuilder.String()
 		}),

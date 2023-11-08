@@ -16,14 +16,14 @@
  *
  */
 
-package client
+package strengthclient
 
 import (
+	"context"
+
 	grpcclient "github.com/dvaumoron/puzzlegrpcclient"
 	pb "github.com/dvaumoron/puzzlepassstrengthservice"
-	"github.com/dvaumoron/puzzleweb/common"
-	"github.com/dvaumoron/puzzleweb/passwordstrength/service"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	strengthservice "github.com/dvaumoron/puzzleweb/passwordstrength/service"
 	"google.golang.org/grpc"
 )
 
@@ -31,34 +31,34 @@ type strengthClient struct {
 	grpcclient.Client
 }
 
-func New(serviceAddr string, dialOptions []grpc.DialOption) service.PasswordStrengthService {
+func New(serviceAddr string, dialOptions []grpc.DialOption) strengthservice.PasswordStrengthService {
 	return strengthClient{Client: grpcclient.Make(serviceAddr, dialOptions...)}
 }
 
-func (client strengthClient) Validate(logger otelzap.LoggerWithCtx, password string) (bool, error) {
+func (client strengthClient) Validate(ctx context.Context, password string) (bool, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return false, common.LogOriginalError(logger, err)
+		return false, err
 	}
 	defer conn.Close()
 
-	response, err := pb.NewPassstrengthClient(conn).Check(logger.Context(), &pb.PasswordRequest{Password: password})
+	response, err := pb.NewPassstrengthClient(conn).Check(ctx, &pb.PasswordRequest{Password: password})
 	if err != nil {
-		return false, common.LogOriginalError(logger, err)
+		return false, err
 	}
 	return response.Success, nil
 }
 
-func (client strengthClient) GetRules(logger otelzap.LoggerWithCtx, lang string) (string, error) {
+func (client strengthClient) GetRules(ctx context.Context, lang string) (string, error) {
 	conn, err := client.Dial()
 	if err != nil {
-		return "", common.LogOriginalError(logger, err)
+		return "", err
 	}
 	defer conn.Close()
 
-	response, err := pb.NewPassstrengthClient(conn).GetRules(logger.Context(), &pb.LangRequest{Lang: lang})
+	response, err := pb.NewPassstrengthClient(conn).GetRules(ctx, &pb.LangRequest{Lang: lang})
 	if err != nil {
-		return "", common.LogOriginalError(logger, err)
+		return "", err
 	}
 	return response.Description, nil
 }

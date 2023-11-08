@@ -16,10 +16,12 @@
  *
  */
 
-package service
+package sessionservice
 
 import "context"
 
-type MarkdownService interface {
-	Apply(ctx context.Context, text string) (string, error)
+type SessionService interface {
+	Generate(ctx context.Context) (uint64, error)
+	Get(ctx context.Context, id uint64) (map[string]string, error)
+	Update(ctx context.Context, id uint64, info map[string]string) error
 }

@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/dvaumoron/puzzleweb/config"
+	templateservice "github.com/dvaumoron/puzzleweb/templates/service"
 	"github.com/gin-gonic/gin/render"
 )
 
@@ -33,7 +34,7 @@ type ContextAndData struct {
 
 // match Render interface from gin.
 type remoteHTML struct {
-	config.TemplateConfig
+	Service      templateservice.TemplateService
 	ctx          context.Context
 	templateName string
 	data         any
@@ -41,9 +42,7 @@ type remoteHTML struct {
 
 func (r remoteHTML) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
-	templateConfig := r.TemplateConfig
-	logger := templateConfig.Logger.Ctx(r.ctx)
-	content, err := templateConfig.Service.Render(logger, r.templateName, r.data)
+	content, err := r.Service.Render(r.ctx, r.templateName, r.data)
 	if err != nil {
 		return err
 	}
@@ -65,14 +64,14 @@ func (r remoteHTML) WriteContentType(w http.ResponseWriter) {
 
 // match HTMLRender interface from gin.
 type remoteHTMLRender struct {
-	config.TemplateConfig
+	Service templateservice.TemplateService
 }
 
 func (r remoteHTMLRender) Instance(name string, dataWithCtx any) render.Render {
 	ctxData := dataWithCtx.(ContextAndData)
-	return remoteHTML{TemplateConfig: r.TemplateConfig, ctx: ctxData.Ctx, templateName: name, data: ctxData.Data}
+	return remoteHTML{Service: r.Service, ctx: ctxData.Ctx, templateName: name, data: ctxData.Data}
 }
 
 func NewServiceRender(templateConfig config.TemplateConfig) render.HTMLRender {
-	return remoteHTMLRender{TemplateConfig: templateConfig}
+	return remoteHTMLRender{Service: templateConfig.Service}
 }

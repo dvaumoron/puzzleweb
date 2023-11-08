@@ -16,12 +16,10 @@
  *
  */
 
-package service
+package templateservice
 
-import "github.com/uptrace/opentelemetry-go-extra/otelzap"
+import "context"
 
-type SessionService interface {
-	Generate(logger otelzap.LoggerWithCtx) (uint64, error)
-	Get(logger otelzap.LoggerWithCtx, id uint64) (map[string]string, error)
-	Update(logger otelzap.LoggerWithCtx, id uint64, info map[string]string) error
+type TemplateService interface {
+	Render(ctx context.Context, templateName string, data any) ([]byte, error)
 }

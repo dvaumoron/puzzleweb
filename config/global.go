@@ -29,6 +29,7 @@ import (
 	adminclient "github.com/dvaumoron/puzzleweb/admin/client"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogclient "github.com/dvaumoron/puzzleweb/blog/client"
+	"github.com/dvaumoron/puzzleweb/common/log"
 	"github.com/dvaumoron/puzzleweb/config/parser"
 	forumclient "github.com/dvaumoron/puzzleweb/forum/client"
 	forumservice "github.com/dvaumoron/puzzleweb/forum/service"
@@ -55,13 +56,15 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const WebKey = "puzzleWeb"
+const (
+	WebKey = "puzzleWeb"
 
-const defaultName = "default"
-const defaultSessionTimeOut = 1200
-const defaultServiceTimeOut = 5 * time.Second
+	defaultName           = "default"
+	defaultSessionTimeOut = 1200
+	defaultServiceTimeOut = 5 * time.Second
 
-const DefaultFavicon = "/favicon.ico"
+	DefaultFavicon = "/favicon.ico"
+)
 
 type AuthConfig = ServiceConfig[adminservice.AuthService]
 type LoginConfig = ServiceConfig[loginservice.LoginService]
@@ -75,6 +78,14 @@ type BaseConfigExtracter interface {
 	ExtractLoginConfig() LoginConfig
 	ExtractAdminConfig() AdminConfig
 	ExtractProfileConfig() ProfileConfig
+}
+
+type loggerWrapper struct {
+	logger *otelzap.Logger
+}
+
+func (lg loggerWrapper) Logger(ctx context.Context) log.Logger {
+	return lg.logger.Ctx(ctx)
 }
 
 type GlobalConfig struct {
@@ -95,7 +106,9 @@ type GlobalConfig struct {
 	FaviconPath string
 	Page404Url  string
 
-	CtxLogger        otelzap.LoggerWithCtx
+	InitCtx          context.Context
+	Logger           log.Logger // for init phase (have the context)
+	LoggerGetter     log.LoggerGetter
 	TracerProvider   *sdktrace.TracerProvider
 	Tracer           trace.Tracer
 	LangPicturePaths map[string]string
@@ -123,8 +136,9 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 	logger, tp := puzzletelemetry.Init(serviceName, version)
 	tracer := tp.Tracer(WebKey)
 
-	ctx, initSpan := tracer.Start(context.Background(), "initialization")
-	ctxLogger := logger.Ctx(ctx)
+	initCtx, initSpan := tracer.Start(context.Background(), "initialization")
+	ctxLogger := logger.Ctx(initCtx)
+	loggerGetter := loggerWrapper{logger: logger}
 	if err != nil {
 		ctxLogger.Fatal("Failed to read configuration file", zap.Error(err))
 	}
@@ -169,12 +183,12 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 	}
 
 	sessionService := sessionclient.New(parsedConfig.SessionServiceAddr, dialOptions)
-	templateService := templateclient.New(parsedConfig.TemplateServiceAddr, dialOptions)
+	templateService := templateclient.New(parsedConfig.TemplateServiceAddr, dialOptions, loggerGetter)
 	settingsService := sessionclient.New(parsedConfig.SettingsServiceAddr, dialOptions)
 	strengthService := strengthclient.New(parsedConfig.PasswordStrengthServiceAddr, dialOptions)
 	saltService := puzzlesaltclient.Make(parsedConfig.SaltServiceAddr, dialOptions)
 	loginService := loginclient.New(parsedConfig.LoginServiceAddr, dialOptions, dateFormat, saltService, strengthService)
-	rightClient := adminclient.Make(parsedConfig.RightServiceAddr, dialOptions)
+	rightClient := adminclient.Make(parsedConfig.RightServiceAddr, dialOptions, logger)
 
 	staticPath := retrievePath(ctxLogger, "staticPath", parsedConfig.StaticPath, "static")
 	augmentedStaticPath := staticPath + "/"
@@ -219,7 +233,7 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 	// if not setted in configuration, profile are public
 	profileGroupId := retrieveUintWithDefault(ctxLogger, "profileGroupId", parsedConfig.ProfileGroupId, adminservice.PublicGroupId)
 	profileService := profileclient.New(
-		parsedConfig.ProfileServiceAddr, dialOptions, profileGroupId, loginService, rightClient, defaultPicture,
+		parsedConfig.ProfileServiceAddr, dialOptions, profileGroupId, defaultPicture, loginService, rightClient, loggerGetter,
 	)
 
 	globalConfig := &GlobalConfig{
@@ -231,7 +245,9 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 		FaviconPath: faviconPath,
 		Page404Url:  parsedConfig.Page404Url,
 
-		CtxLogger:      ctxLogger,
+		InitCtx:        initCtx,
+		Logger:         ctxLogger,
+		LoggerGetter:   loggerGetter,
 		TracerProvider: tp,
 		Tracer:         tracer,
 
@@ -256,32 +272,32 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 
 func (c *GlobalConfig) loadMarkdown() {
 	if c.MarkdownService == nil {
-		require(c.CtxLogger, "markdownServiceAddr", c.MarkdownServiceAddr)
+		require(c.Logger, "markdownServiceAddr", c.MarkdownServiceAddr)
 		c.MarkdownService = markdownclient.New(c.MarkdownServiceAddr, c.DialOptions)
 	}
 }
 
 func (c *GlobalConfig) loadWiki() {
 	c.loadMarkdown()
-	require(c.CtxLogger, "wikiServiceAddr", c.WikiServiceAddr)
+	require(c.Logger, "wikiServiceAddr", c.WikiServiceAddr)
 }
 
 func (c *GlobalConfig) loadForum() {
-	require(c.CtxLogger, "forumServiceAddr", c.ForumServiceAddr)
+	require(c.Logger, "forumServiceAddr", c.ForumServiceAddr)
 }
 
 func (c *GlobalConfig) loadBlog() {
 	c.loadForum()
 	c.loadMarkdown()
-	require(c.CtxLogger, "blogServiceAddr", c.BlogServiceAddr)
+	require(c.Logger, "blogServiceAddr", c.BlogServiceAddr)
 }
 
-func (c *GlobalConfig) GetLogger() *otelzap.Logger {
-	return c.CtxLogger.Logger()
+func (c *GlobalConfig) GetLogger() log.Logger {
+	return c.Logger
 }
 
-func (c *GlobalConfig) GetTracer() trace.Tracer {
-	return c.Tracer
+func (c *GlobalConfig) GetLoggerGetter() log.LoggerGetter {
+	return c.LoggerGetter
 }
 
 func (c *GlobalConfig) GetServiceTimeOut() time.Duration {
@@ -331,7 +347,7 @@ func (c *GlobalConfig) CreateWikiConfig(wikiId uint64, groupId uint64, args ...s
 	c.loadWiki()
 	return WikiConfig{
 		ServiceConfig: MakeServiceConfig(c, wikiclient.New(
-			c.WikiServiceAddr, c.DialOptions, wikiId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.WikiServiceAddr, c.DialOptions, wikiId, groupId, c.DateFormat, c.RightClient, c.ProfileService, c.LoggerGetter,
 		)),
 		MarkdownService: c.MarkdownService, Args: args,
 	}
@@ -341,7 +357,7 @@ func (c *GlobalConfig) CreateForumConfig(forumId uint64, groupId uint64, args ..
 	c.loadForum()
 	return ForumConfig{
 		ServiceConfig: MakeServiceConfig[forumservice.ForumService](c, forumclient.New(
-			c.ForumServiceAddr, c.DialOptions, forumId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.ForumServiceAddr, c.DialOptions, forumId, groupId, c.DateFormat, c.RightClient, c.ProfileService, c.LoggerGetter,
 		)),
 		PageSize: c.PageSize, Args: args,
 	}
@@ -354,7 +370,7 @@ func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...s
 			c.BlogServiceAddr, c.DialOptions, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
 		)),
 		MarkdownService: c.MarkdownService, CommentService: forumclient.New(
-			c.ForumServiceAddr, c.DialOptions, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService,
+			c.ForumServiceAddr, c.DialOptions, blogId, groupId, c.DateFormat, c.RightClient, c.ProfileService, c.LoggerGetter,
 		),
 		Domain: c.Domain, Port: c.Port, DateFormat: c.DateFormat, PageSize: c.PageSize, ExtractSize: c.ExtractSize,
 		FeedFormat: c.FeedFormat, FeedSize: c.FeedSize, Args: args,
@@ -362,7 +378,7 @@ func (c *GlobalConfig) CreateBlogConfig(blogId uint64, groupId uint64, args ...s
 }
 
 func (c *GlobalConfig) CreateWidgetConfig(serviceAddr string, objectId uint64, groupId uint64) WidgetConfig {
-	return MakeServiceConfig(c, widgetclient.New(serviceAddr, c.DialOptions, objectId, groupId))
+	return MakeServiceConfig(c, widgetclient.New(serviceAddr, c.DialOptions, objectId, groupId, c.LoggerGetter))
 }
 
 func retrieveWithDefault(logger otelzap.LoggerWithCtx, name string, value string, defaultValue string) string {
@@ -389,7 +405,7 @@ func retrievePath(logger otelzap.LoggerWithCtx, name string, path string, defaul
 	return path
 }
 
-func require(logger otelzap.LoggerWithCtx, name string, value string) {
+func require(logger log.Logger, name string, value string) {
 	if value == "" {
 		logger.Fatal(name + " is required")
 	}

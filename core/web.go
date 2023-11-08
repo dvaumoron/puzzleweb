@@ -25,12 +25,12 @@ import (
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
+	"github.com/dvaumoron/puzzleweb/common/log"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/config/parser"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/templates"
 	"github.com/gin-gonic/gin"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -41,8 +41,7 @@ const siteName = "Site"
 const unknownUserKey = "ErrorUnknownUser"
 
 type Site struct {
-	logger         *otelzap.Logger
-	tracer         trace.Tracer
+	loggerGetter   log.LoggerGetter
 	localesManager locale.Manager
 	authService    adminservice.AuthService
 	timeOut        time.Duration
@@ -51,16 +50,15 @@ type Site struct {
 }
 
 func NewSite(configExtracter config.BaseConfigExtracter, localesManager locale.Manager, settingsManager *SettingsManager) *Site {
-	tracer := configExtracter.GetTracer()
 	adminConfig := configExtracter.ExtractAdminConfig()
-	root := MakeStaticPage(tracer, "root", adminservice.PublicGroupId, "index")
+	root := MakeStaticPage("root", adminservice.PublicGroupId, "index")
 	root.AddSubPage(newLoginPage(configExtracter.ExtractLoginConfig(), settingsManager))
 	root.AddSubPage(newAdminPage(adminConfig))
 	root.AddSubPage(newSettingsPage(config.MakeServiceConfig(configExtracter, settingsManager)))
 	root.AddSubPage(newProfilePage(configExtracter.ExtractProfileConfig()))
 
 	return &Site{
-		logger: configExtracter.GetLogger(), tracer: tracer, localesManager: localesManager,
+		loggerGetter: configExtracter.GetLoggerGetter(), localesManager: localesManager,
 		authService: adminConfig.Service, timeOut: configExtracter.GetServiceTimeOut(), root: root,
 	}
 }
@@ -69,8 +67,8 @@ func (site *Site) AddPage(page Page) {
 	site.root.AddSubPage(page)
 }
 
-func (site *Site) AddStaticPages(logger otelzap.LoggerWithCtx, pageGroup parser.StaticPagesConfig) {
-	site.root.AddStaticPages(logger, site.tracer, pageGroup)
+func (site *Site) AddStaticPages(pageGroup parser.StaticPagesConfig) {
+	site.root.AddStaticPages(pageGroup)
 }
 
 func (site *Site) GetPage(name string) (Page, bool) {
@@ -94,8 +92,6 @@ func (site *Site) manageTimeOut(c *gin.Context) {
 }
 
 func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
-	tracer := siteConfig.Tracer
-
 	engine := gin.New()
 	engine.Use(site.manageTimeOut, otelgin.Middleware(config.WebKey), gin.Recovery())
 
@@ -113,7 +109,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	}, makeSessionManager(siteConfig.ExtractSessionConfig()).manage)
 
 	if localesManager := site.localesManager; localesManager.GetMultipleLang() {
-		engine.GET("/changeLang", common.CreateRedirect(tracer, "changeLangHandler", changeLangRedirecter))
+		engine.GET("/changeLang", common.CreateRedirect(changeLangRedirecter))
 
 		for lang, langPicturePath := range siteConfig.LangPicturePaths {
 			// allow modified time check (instead of always sending same data)
@@ -122,7 +118,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	}
 
 	site.root.Widget.LoadInto(engine)
-	engine.NoRoute(common.CreateRedirectString(tracer, "noRouteHandler", siteConfig.Page404Url))
+	engine.NoRoute(common.CreateRedirectString(siteConfig.Page404Url))
 	return engine
 }
 
@@ -130,12 +126,12 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 func (site *Site) Run(siteConfig config.SiteConfig) error {
 	tracerProvider := siteConfig.TracerProvider
 	tracer := siteConfig.Tracer
-	logger := siteConfig.Logger
+	loggerGetter := siteConfig.LoggerGetter
 	defer func() {
 		ctx := context.Background()
 		if err := tracerProvider.Shutdown(ctx); err != nil {
 			ctx, stopSpan := tracer.Start(ctx, "shutdown")
-			logger.WarnContext(ctx, "Failed to shutdown trace provider", zap.Error(err))
+			loggerGetter.Logger(ctx).Warn("Failed to shutdown trace provider", zap.Error(err))
 			stopSpan.End()
 		}
 	}()

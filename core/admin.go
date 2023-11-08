@@ -24,19 +24,19 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dvaumoron/puzzleweb/admin/service"
+	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/config"
 	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/gin-gonic/gin"
 )
 
-const roleNameName = "RoleName"
-const groupName = "Group"
-const groupsName = "Groups"
-const viewAdminName = "ViewAdmin"
-
 const (
+	roleNameName  = "RoleName"
+	groupName     = "Group"
+	groupsName    = "Groups"
+	viewAdminName = "ViewAdmin"
+
 	accessKey = "AccessLabel"
 	createKey = "CreateLabel"
 	updateKey = "UpdateLabel"
@@ -62,7 +62,7 @@ type RoleDisplay struct {
 	Actions []string
 }
 
-func MakeRoleDisplay(role service.Role) RoleDisplay {
+func MakeRoleDisplay(role adminservice.Role) RoleDisplay {
 	return RoleDisplay{Name: role.Name, Actions: displayActions(role.Actions)}
 }
 
@@ -99,7 +99,6 @@ func (w adminWidget) LoadInto(router gin.IRouter) {
 }
 
 func newAdminPage(adminConfig config.AdminConfig) Page {
-	tracer := adminConfig.Tracer
 	adminService := adminConfig.Service
 	userService := adminConfig.UserService
 	profileService := adminConfig.ProfileService
@@ -107,24 +106,25 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 
 	p := MakeHiddenPage("admin")
 	p.Widget = adminWidget{
-		displayHandler: CreateTemplate(tracer, "adminWidget/displayHandler", func(data gin.H, c *gin.Context) (string, string) {
+		displayHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			viewAdmin, _ := data[viewAdminName].(bool)
 			if !viewAdmin {
-				return "", common.DefaultErrorRedirect(common.ErrorNotAuthorizedKey)
+				return "", common.DefaultErrorRedirect(GetLogger(c), common.ErrorNotAuthorizedKey)
 			}
 			return "admin/index", ""
 		}),
-		listUserHandler: CreateTemplate(tracer, "adminWidget/listUserHandler", func(data gin.H, c *gin.Context) (string, string) {
+		listUserHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+			logger := GetLogger(c)
 			viewAdmin, _ := data[viewAdminName].(bool)
 			if !viewAdmin {
-				return "", common.DefaultErrorRedirect(common.ErrorNotAuthorizedKey)
+				return "", common.DefaultErrorRedirect(logger, common.ErrorNotAuthorizedKey)
 			}
 
 			pageNumber, start, end, filter := common.GetPagination(defaultPageSize, c)
 
-			total, users, err := userService.ListUsers(GetLogger(c), start, end, filter)
+			total, users, err := userService.ListUsers(c.Request.Context(), start, end, filter)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(logger, err.Error())
 			}
 
 			common.InitPagination(data, filter, pageNumber, end, total)
@@ -132,116 +132,113 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			InitNoELementMsg(data, len(users), c)
 			return "admin/user/list", ""
 		}),
-		viewUserHandler: CreateTemplate(tracer, "adminWidget/viewUserHandler", func(data gin.H, c *gin.Context) (string, string) {
+		viewUserHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)
-			adminId, _ := data[common.IdName].(uint64)
+			adminId, _ := data[common.UserIdName].(uint64)
 			userId := GetRequestedUserId(c)
 			if userId == 0 {
-				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+				return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 			}
 
-			roles, err := adminService.GetUserRoles(logger, adminId, userId)
+			ctx := c.Request.Context()
+			updateRight, groups, err := adminService.ViewUserRoles(ctx, adminId, userId)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(logger, err.Error())
 			}
 
-			users, err := userService.GetUsers(logger, []uint64{userId})
+			users, err := userService.GetUsers(ctx, []uint64{userId})
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(logger, err.Error())
 			}
-
-			updateRight := adminService.AuthQuery(logger, adminId, service.AdminGroupId, service.ActionUpdate) == nil
 
 			user := users[userId]
 			data[common.ViewedUserName] = user
 			data[common.AllowedToUpdateName] = updateRight
-			data[groupsName] = DisplayGroups(roles)
+			data[groupsName] = displayGroups(groups)
 			return "admin/user/view", ""
 		}),
-		editUserHandler: CreateTemplate(tracer, "adminWidget/editUserHandler", func(data gin.H, c *gin.Context) (string, string) {
+		editUserHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)
-			adminId, _ := data[common.IdName].(uint64)
+			adminId, _ := data[common.UserIdName].(uint64)
 			userId := GetRequestedUserId(c)
 			if userId == 0 {
-				return "", common.DefaultErrorRedirect(common.ErrorTechnicalKey)
+				return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 			}
 
-			allRoles, err := adminService.GetAllRoles(logger, adminId)
+			ctx := c.Request.Context()
+			userRoles, allRoles, err := adminService.EditUserRoles(ctx, adminId, userId)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(logger, err.Error())
 			}
 
-			userRoles, err := adminService.GetUserRoles(logger, adminId, userId)
+			userIdToLogin, err := userService.GetUsers(ctx, []uint64{userId})
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
-			}
-
-			userIdToLogin, err := userService.GetUsers(logger, []uint64{userId})
-			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(logger, err.Error())
 			}
 
 			data[common.ViewedUserName] = userIdToLogin[userId]
 			data[groupsName] = displayEditGroups(userRoles, allRoles)
 			return "admin/user/edit", ""
 		}),
-		saveUserHandler: common.CreateRedirect(tracer, "adminWidget/saveUserHandler", func(c *gin.Context) string {
-			logger := GetLogger(c)
+		saveUserHandler: common.CreateRedirect(func(c *gin.Context) string {
 			userId := GetRequestedUserId(c)
 			err := common.ErrTechnical
 			if userId != 0 {
 				rolesStr := c.PostFormArray("roles")
-				roles := make([]service.Role, 0, len(rolesStr))
+				nameToGroup := make(map[string]adminservice.Group, len(rolesStr))
 				for _, roleStr := range rolesStr {
 					splitted := strings.Split(roleStr, "/")
 					if len(splitted) > 1 {
-						roles = append(roles, service.Role{Name: splitted[0], GroupName: splitted[1]})
+						groupName := splitted[1]
+						group, ok := nameToGroup[groupName]
+						if !ok {
+							group = adminservice.Group{Name: groupName}
+						}
+						group.Roles = append(group.Roles, adminservice.Role{Name: splitted[0]})
+						nameToGroup[groupName] = group
 					}
 				}
-				err = adminService.UpdateUser(logger, GetSessionUserId(c), userId, roles)
+				err = adminService.UpdateUser(c.Request.Context(), GetSessionUserId(c), userId, common.MapToValueSlice(nameToGroup))
 			}
 
 			targetBuilder := userListUrlBuilder()
 			if err != nil {
-				common.WriteError(targetBuilder, err.Error())
+				common.WriteError(targetBuilder, GetLogger(c), err.Error())
 			}
 			return targetBuilder.String()
 		}),
-		deleteUserHandler: common.CreateRedirect(tracer, "adminWidget/deleteUserHandler", func(c *gin.Context) string {
-			logger := GetLogger(c)
+		deleteUserHandler: common.CreateRedirect(func(c *gin.Context) string {
 			userId := GetRequestedUserId(c)
 			err := common.ErrTechnical
 			if userId != 0 {
 				// an empty slice delete the user right
 				// only the first service call do a right check
-				err = adminService.UpdateUser(logger, GetSessionUserId(c), userId, []service.Role{})
+				ctx := c.Request.Context()
+				err = adminService.UpdateUser(ctx, GetSessionUserId(c), userId, []adminservice.Group{})
 				if err == nil {
-					err = profileService.Delete(logger, userId)
+					err = profileService.Delete(ctx, userId)
 					if err == nil {
-						err = userService.Delete(logger, userId)
+						err = userService.Delete(ctx, userId)
 					}
 				}
 			}
 
 			targetBuilder := userListUrlBuilder()
 			if err != nil {
-				common.WriteError(targetBuilder, err.Error())
+				common.WriteError(targetBuilder, GetLogger(c), err.Error())
 			}
 			return targetBuilder.String()
 		}),
-		listRoleHandler: CreateTemplate(tracer, "adminWidget/listRoleHandler", func(data gin.H, c *gin.Context) (string, string) {
-			logger := GetLogger(c)
-			adminId, _ := data[common.IdName].(uint64)
-			allRoles, err := adminService.GetAllRoles(logger, adminId)
+		listRoleHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+			adminId, _ := data[common.UserIdName].(uint64)
+			allGroups, err := adminService.GetAllGroups(c.Request.Context(), adminId)
 			if err != nil {
-				return "", common.DefaultErrorRedirect(err.Error())
+				return "", common.DefaultErrorRedirect(GetLogger(c), err.Error())
 			}
-
-			allGroups := adminService.GetAllGroups(logger)
-			data[groupsName] = displayAllGroups(allGroups, allRoles)
+			data[groupsName] = displayGroups(allGroups)
 			return "admin/role/list", ""
 		}),
-		editRoleHandler: CreateTemplate(tracer, "adminWidget/editRoleHandler", func(data gin.H, c *gin.Context) (string, string) {
+		editRoleHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			roleName := c.Param(roleNameName)
 			group := c.Param(groupName)
 
@@ -250,37 +247,34 @@ func newAdminPage(adminConfig config.AdminConfig) Page {
 			data["GroupDisplayName"] = getGroupDisplayNameKey(group)
 
 			if roleName != "new" {
-				adminId, _ := data[common.IdName].(uint64)
-				actions, err := adminService.GetActions(GetLogger(c), adminId, roleName, group)
+				adminId, _ := data[common.UserIdName].(uint64)
+				actions, err := adminService.GetActions(c.Request.Context(), adminId, roleName, group)
 				if err != nil {
-					return "", common.DefaultErrorRedirect(err.Error())
+					return "", common.DefaultErrorRedirect(GetLogger(c), err.Error())
 				}
 
 				actionSet := common.MakeSet(actions)
-				setActionChecked(data, actionSet, service.ActionAccess, "Access")
-				setActionChecked(data, actionSet, service.ActionCreate, "Create")
-				setActionChecked(data, actionSet, service.ActionUpdate, "Update")
-				setActionChecked(data, actionSet, service.ActionDelete, "Delete")
+				setActionChecked(data, actionSet, adminservice.ActionAccess, "Access")
+				setActionChecked(data, actionSet, adminservice.ActionCreate, "Create")
+				setActionChecked(data, actionSet, adminservice.ActionUpdate, "Update")
+				setActionChecked(data, actionSet, adminservice.ActionDelete, "Delete")
 			}
 
 			return "admin/role/edit", ""
 		}),
-		saveRoleHandler: common.CreateRedirect(tracer, "adminWidget/saveRoleHandler", func(c *gin.Context) string {
+		saveRoleHandler: common.CreateRedirect(func(c *gin.Context) string {
 			roleName := c.PostForm(roleNameName)
-			err := errBadName
+			err := common.ErrBadRoleName
 			if roleName != "new" {
 				group := c.PostForm(groupName)
 				actions := c.PostFormArray("actions")
-				logger := GetLogger(c)
-				err = adminService.UpdateRole(logger, GetSessionUserId(c), service.Role{
-					Name: roleName, GroupName: group, Actions: actions,
-				})
+				err = adminService.UpdateRole(c.Request.Context(), GetSessionUserId(c), roleName, group, actions)
 			}
 
 			var targetBuilder strings.Builder
 			targetBuilder.WriteString("/admin/role/list")
 			if err != nil {
-				common.WriteError(&targetBuilder, err.Error())
+				common.WriteError(&targetBuilder, GetLogger(c), err.Error())
 			}
 			return targetBuilder.String()
 		}),
@@ -292,25 +286,26 @@ func getGroupDisplayNameKey(name string) string {
 	return "GroupLabel" + locale.CamelCase(name)
 }
 
-func DisplayGroups(roles []service.Role) []*GroupDisplay {
+func displayGroups(groups []adminservice.Group) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
-	populateGroup(nameToGroup, roles, rolesAppender)
+	populateGroup(nameToGroup, groups, rolesAppender)
 	return sortGroups(nameToGroup)
 }
 
-func populateGroup(nameToGroup map[string]*GroupDisplay, roles []service.Role, appender func(*GroupDisplay, service.Role)) {
-	for _, role := range roles {
-		groupName := role.GroupName
-		group := nameToGroup[groupName]
-		if group == nil {
-			group = NewGroupDisplay(role.GroupId, groupName)
-			nameToGroup[groupName] = group
+func populateGroup(nameToGroup map[string]*GroupDisplay, groups []adminservice.Group, appender func(*GroupDisplay, adminservice.Role)) {
+	for _, group := range groups {
+		groupDisplay := nameToGroup[group.Name]
+		if groupDisplay == nil {
+			groupDisplay = NewGroupDisplay(group.Id, group.Name)
+			nameToGroup[group.Name] = groupDisplay
 		}
-		appender(group, role)
+		for _, role := range group.Roles {
+			appender(groupDisplay, role)
+		}
 	}
 }
 
-func rolesAppender(group *GroupDisplay, role service.Role) {
+func rolesAppender(group *GroupDisplay, role adminservice.Role) {
 	group.Roles = append(group.Roles, MakeRoleDisplay(role))
 }
 
@@ -319,16 +314,16 @@ func rolesAppender(group *GroupDisplay, role service.Role) {
 func displayActions(actions []string) []string {
 	actionSet := common.MakeSet(actions)
 	res := make([]string, 0, len(actionSet))
-	if actionSet.Contains(service.ActionAccess) {
+	if actionSet.Contains(adminservice.ActionAccess) {
 		res = append(res, accessKey)
 	}
-	if actionSet.Contains(service.ActionCreate) {
+	if actionSet.Contains(adminservice.ActionCreate) {
 		res = append(res, createKey)
 	}
-	if actionSet.Contains(service.ActionUpdate) {
+	if actionSet.Contains(adminservice.ActionUpdate) {
 		res = append(res, updateKey)
 	}
-	if actionSet.Contains(service.ActionDelete) {
+	if actionSet.Contains(adminservice.ActionDelete) {
 		res = append(res, deleteKey)
 	}
 	return res
@@ -344,14 +339,14 @@ func sortGroups(nameToGroup map[string]*GroupDisplay) []*GroupDisplay {
 	return groupRoles
 }
 
-func displayEditGroups(userRoles []service.Role, allRoles []service.Role) []*GroupDisplay {
+func displayEditGroups(userRoles []adminservice.Group, allRoles []adminservice.Group) []*GroupDisplay {
 	nameToGroup := map[string]*GroupDisplay{}
 	populateGroup(nameToGroup, userRoles, rolesAppender)
 	populateGroup(nameToGroup, allRoles, addableRolesAppender)
 	return sortGroups(nameToGroup)
 }
 
-func addableRolesAppender(group *GroupDisplay, role service.Role) {
+func addableRolesAppender(group *GroupDisplay, role adminservice.Role) {
 	// check if the user already have this role
 	contains := slices.ContainsFunc(group.Roles, func(roleDisplay RoleDisplay) bool {
 		return roleDisplay.Name == role.Name
@@ -360,15 +355,6 @@ func addableRolesAppender(group *GroupDisplay, role service.Role) {
 	if !contains {
 		group.AddableRoles = append(group.AddableRoles, MakeRoleDisplay(role))
 	}
-}
-
-func displayAllGroups(groups []service.Group, roles []service.Role) []*GroupDisplay {
-	nameToGroup := map[string]*GroupDisplay{}
-	for _, group := range groups {
-		nameToGroup[group.Name] = NewGroupDisplay(group.Id, group.Name)
-	}
-	populateGroup(nameToGroup, roles, rolesAppender)
-	return sortGroups(nameToGroup)
 }
 
 func setActionChecked(data gin.H, actionSet common.Set[string], toTest string, name string) {

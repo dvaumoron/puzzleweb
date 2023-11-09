@@ -85,16 +85,7 @@ func MakeRemotePage(pageName string, initCtx context.Context, remoteConfig confi
 			handler = createHandler(action.Name, dataAdder, widgetService)
 		case widgetservice.RawResult:
 			httpMethod = http.MethodGet
-			handler = func(c *gin.Context) {
-				data := gin.H{}
-				retrieveContextData(pathKeys, queryKeys, data, c)
-				_, _, resData, err := widgetService.Process(c.Request.Context(), action.Name, data, map[string][]byte{})
-				if err != nil {
-					c.AbortWithStatus(http.StatusInternalServerError)
-					return
-				}
-				c.Data(http.StatusOK, http.DetectContentType(resData), resData)
-			}
+			handler = createRawHandler(action.Name, pathKeys, queryKeys, widgetService)
 		default:
 			remoteConfig.Logger.Error(initMsg, zap.String("unknownActionKind", httpMethod))
 			return puzzleweb.Page{}, false
@@ -234,4 +225,17 @@ func updateDataAndSession(data gin.H, resData []byte, c *gin.Context) error {
 		session.Store(key, valueStr)
 	}
 	return nil
+}
+
+func createRawHandler(actionName string, pathKeys [][2]string, queryKeys [][2]string, widgetService widgetservice.WidgetService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		data := gin.H{}
+		retrieveContextData(pathKeys, queryKeys, data, c)
+		_, _, resData, err := widgetService.Process(c.Request.Context(), actionName, data, map[string][]byte{})
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		c.Data(http.StatusOK, http.DetectContentType(resData), resData)
+	}
 }

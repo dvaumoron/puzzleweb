@@ -41,7 +41,7 @@ func main() {
 
 	parsedConfig, err := parser.ParseConfig(confPath)
 	globalConfig, initSpan := config.Init(config.WebKey, version, parsedConfig, err)
-	site, ok := puzzleweb.BuildDefaultSite(globalConfig, parsedConfig, err)
+	site, ok := puzzleweb.BuildDefaultSite(globalConfig)
 	if !ok {
 		return
 	}

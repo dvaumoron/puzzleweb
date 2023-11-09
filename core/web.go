@@ -160,7 +160,7 @@ func changeLangRedirecter(c *gin.Context) string {
 	return c.Query(common.RedirectName)
 }
 
-func BuildDefaultSite(configExtracter config.BaseConfigExtracter, parsedConfig parser.ParsedConfig, parseErr error) (*Site, bool) {
+func BuildDefaultSite(configExtracter config.BaseConfigExtracter) (*Site, bool) {
 	localesManager, ok := locale.NewManager(configExtracter.ExtractLocalesConfig())
 	if !ok {
 		return nil, false

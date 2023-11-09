@@ -19,6 +19,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"os"
 	"strings"
@@ -91,6 +92,16 @@ func main() {
 	}
 
 	initSpan.End()
+
+	loggerGetter, tracerProvider, tracer := globalConfig.LoggerGetter, globalConfig.TracerProvider, globalConfig.Tracer
+	defer func() {
+		ctx := context.Background()
+		if err := tracerProvider.Shutdown(ctx); err != nil {
+			ctx, stopSpan := tracer.Start(ctx, "shutdown")
+			loggerGetter.Logger(ctx).Warn("Failed to shutdown trace provider", zap.Error(err))
+			stopSpan.End()
+		}
+	}()
 
 	siteConfig := globalConfig.ExtractSiteConfig()
 	// emptying data no longer useful for GC cleaning

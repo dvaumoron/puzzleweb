@@ -27,6 +27,10 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
+const contentTypeName = "Content-Type"
+
+var htmlContentType = []string{"text/html; charset=utf-8"}
+
 type ContextAndData struct {
 	Ctx  context.Context
 	Data any
@@ -49,10 +53,6 @@ func (r remoteHTML) Render(w http.ResponseWriter) error {
 	_, err = w.Write(content)
 	return err
 }
-
-const contentTypeName = "Content-Type"
-
-var htmlContentType = []string{"text/html; charset=utf-8"}
 
 // Writes HTML ContentType.
 func (r remoteHTML) WriteContentType(w http.ResponseWriter) {

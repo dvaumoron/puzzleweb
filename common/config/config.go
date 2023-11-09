@@ -33,8 +33,6 @@ import (
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	templateservice "github.com/dvaumoron/puzzleweb/templates/service"
 	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type AuthConfig = ServiceConfig[adminservice.AuthService]
@@ -95,8 +93,6 @@ type SessionConfig struct {
 type SiteConfig struct {
 	ServiceConfig[sessionservice.SessionService]
 	TemplateService    templateservice.TemplateService
-	TracerProvider     *sdktrace.TracerProvider
-	Tracer             trace.Tracer
 	LoggerGetter       log.LoggerGetter
 	Domain             string
 	Port               string

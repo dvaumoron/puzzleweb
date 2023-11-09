@@ -20,6 +20,7 @@ package puzzleweb
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"time"
 
@@ -121,20 +122,12 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 	return engine
 }
 
-// Launch the site server, when finished shutdown the TracerProvider
 func (site *Site) Run(siteConfig config.SiteConfig) error {
-	tracerProvider := siteConfig.TracerProvider
-	tracer := siteConfig.Tracer
-	loggerGetter := siteConfig.LoggerGetter
-	defer func() {
-		ctx := context.Background()
-		if err := tracerProvider.Shutdown(ctx); err != nil {
-			ctx, stopSpan := tracer.Start(ctx, "shutdown")
-			loggerGetter.Logger(ctx).Warn("Failed to shutdown trace provider", zap.Error(err))
-			stopSpan.End()
-		}
-	}()
 	return site.initEngine(siteConfig).Run(common.CheckPort(siteConfig.Port))
+}
+
+func (site *Site) RunListener(siteConfig config.SiteConfig, listener net.Listener) error {
+	return site.initEngine(siteConfig).RunListener(listener)
 }
 
 type SiteAndConfig struct {

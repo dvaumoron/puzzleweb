@@ -301,7 +301,7 @@ func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
 func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {
 	return SiteConfig{
 		ServiceConfig: MakeServiceConfig(c, c.SessionService), TemplateService: c.TemplateService,
-		TracerProvider: c.TracerProvider, Domain: c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut,
+		Domain: c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut,
 		MaxMultipartMemory: c.MaxMultipartMemory, StaticPath: c.StaticPath, FaviconPath: c.FaviconPath,
 		LangPicturePaths: c.LangPicturePaths, Page404Url: c.Page404Url,
 	}

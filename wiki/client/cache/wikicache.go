@@ -16,7 +16,7 @@
  *
  */
 
-package wikiclient
+package wikicache
 
 import (
 	"sync"
@@ -28,16 +28,16 @@ import (
 
 const wikiRefName = "wikiRef"
 
-type wikiCache struct {
+type WikiCache struct {
 	mutex sync.RWMutex
 	cache map[string]*wikiservice.WikiContent
 }
 
-func newCache() *wikiCache {
-	return &wikiCache{cache: map[string]*wikiservice.WikiContent{}}
+func NewCache() *WikiCache {
+	return &WikiCache{cache: map[string]*wikiservice.WikiContent{}}
 }
 
-func (wiki *wikiCache) load(logger log.Logger, wikiRef string) *wikiservice.WikiContent {
+func (wiki *WikiCache) Load(logger log.Logger, wikiRef string) *wikiservice.WikiContent {
 	wiki.mutex.RLock()
 	content, ok := wiki.cache[wikiRef]
 	wiki.mutex.RUnlock()
@@ -47,14 +47,14 @@ func (wiki *wikiCache) load(logger log.Logger, wikiRef string) *wikiservice.Wiki
 	return content
 }
 
-func (wiki *wikiCache) store(logger log.Logger, wikiRef string, content *wikiservice.WikiContent) {
+func (wiki *WikiCache) Store(logger log.Logger, wikiRef string, content *wikiservice.WikiContent) {
 	wiki.mutex.Lock()
 	wiki.cache[wikiRef] = content
 	wiki.mutex.Unlock()
 	logger.Debug("wikiCache store", zap.String(wikiRefName, wikiRef))
 }
 
-func (wiki *wikiCache) delete(logger log.Logger, wikiRef string) {
+func (wiki *WikiCache) Delete(logger log.Logger, wikiRef string) {
 	wiki.mutex.Lock()
 	delete(wiki.cache, wikiRef)
 	wiki.mutex.Unlock()

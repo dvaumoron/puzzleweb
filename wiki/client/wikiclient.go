@@ -28,6 +28,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/common/log"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+	wikicache "github.com/dvaumoron/puzzleweb/wiki/client/cache"
 	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
 	pb "github.com/dvaumoron/puzzlewikiservice"
 	"go.uber.org/zap"
@@ -36,7 +37,7 @@ import (
 
 type wikiClient struct {
 	grpcclient.Client
-	cache          *wikiCache
+	cache          *wikicache.WikiCache
 	wikiId         uint64
 	groupId        uint64
 	dateFormat     string
@@ -47,7 +48,7 @@ type wikiClient struct {
 
 func New(serviceAddr string, dialOptions []grpc.DialOption, wikiId uint64, groupId uint64, dateFormat string, authService adminservice.AuthService, profileService profileservice.ProfileService, loggerGetter log.LoggerGetter) wikiservice.WikiService {
 	return wikiClient{
-		Client: grpcclient.Make(serviceAddr, dialOptions...), cache: newCache(), wikiId: wikiId, groupId: groupId,
+		Client: grpcclient.Make(serviceAddr, dialOptions...), cache: wikicache.NewCache(), wikiId: wikiId, groupId: groupId,
 		dateFormat: dateFormat, authService: authService, profileService: profileService, loggerGetter: loggerGetter,
 	}
 }
@@ -90,7 +91,7 @@ func (client wikiClient) LoadContent(ctx context.Context, userId uint64, lang st
 	}
 
 	if lastVersion := maxVersion(versions.List); lastVersion != nil {
-		content := client.cache.load(logger, wikiRef)
+		content := client.cache.Load(logger, wikiRef)
 		if content != nil && lastVersion.Number == content.Version {
 			return content, nil
 		}
@@ -130,7 +131,7 @@ func (client wikiClient) StoreContent(ctx context.Context, userId uint64, lang s
 		return common.ErrBaseVersion
 	}
 
-	client.cache.store(logger, wikiRef, &wikiservice.WikiContent{
+	client.cache.Store(logger, wikiRef, &wikiservice.WikiContent{
 		Version: response.Version, Markdown: markdown,
 	})
 	return nil
@@ -191,9 +192,9 @@ func (client wikiClient) DeleteContent(ctx context.Context, userId uint64, lang 
 		return common.ErrUpdate
 	}
 
-	content := client.cache.load(logger, wikiRef)
+	content := client.cache.Load(logger, wikiRef)
 	if content != nil && version == content.Version {
-		client.cache.delete(logger, wikiRef)
+		client.cache.Delete(logger, wikiRef)
 	}
 	return nil
 }
@@ -217,7 +218,7 @@ func (client wikiClient) innerLoadContent(ctx context.Context, pbWikiClient pb.W
 	logger := client.loggerGetter.Logger(ctx)
 	content := &wikiservice.WikiContent{Version: version, Markdown: response.Text}
 	if askedVersion == 0 {
-		client.cache.store(logger, wikiRef, content)
+		client.cache.Store(logger, wikiRef, content)
 	}
 	return content, nil
 }

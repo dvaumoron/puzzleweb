@@ -52,14 +52,14 @@ func Make(serviceAddr string, dialOptions []grpc.DialOption, logger log.Logger) 
 	}
 }
 
-func (client RightClient) RegisterGroup(groupId uint64, groupName string) {
-	for usedId := range client.groupIdToName {
-		if groupId == usedId {
-			client.logger.Fatal("Duplicate groupId")
-		}
+func (client RightClient) RegisterGroup(groupId uint64, groupName string) bool {
+	if _, ok := client.groupIdToName[groupId]; ok {
+		client.logger.Error("Register an already existing groupId")
+		return false
 	}
 	client.groupIdToName[groupId] = groupName
 	client.nameToGroupId[groupName] = groupId
+	return true
 }
 
 func (client RightClient) AuthQuery(ctx context.Context, userId uint64, groupId uint64, action string) error {

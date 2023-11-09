@@ -19,6 +19,8 @@
 package config
 
 import (
+	"time"
+
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogservice "github.com/dvaumoron/puzzleweb/blog/service"
 	"github.com/dvaumoron/puzzleweb/common/config/parser"
@@ -27,6 +29,7 @@ import (
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
 	markdownservice "github.com/dvaumoron/puzzleweb/markdown/service"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
+	widgetservice "github.com/dvaumoron/puzzleweb/remotewidget/service"
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	templateservice "github.com/dvaumoron/puzzleweb/templates/service"
 	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
@@ -34,16 +37,33 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+type AuthConfig = ServiceConfig[adminservice.AuthService]
+type LoginConfig = ServiceConfig[loginservice.LoginService]
+type SettingsConfig = ServiceConfig[sessionservice.SessionService]
+type TemplateConfig = ServiceConfig[templateservice.TemplateService]
+type RemoteWidgetConfig = ServiceConfig[widgetservice.WidgetService]
+
 type BaseConfig interface {
 	GetLogger() log.Logger
+}
+
+type BaseConfigExtracter interface {
+	BaseConfig
 	GetLoggerGetter() log.LoggerGetter
+	GetServiceTimeOut() time.Duration
+	ExtractLocalesConfig() LocalesConfig
+	ExtractLoginConfig() LoginConfig
+	ExtractAdminConfig() AdminConfig
+	ExtractSettingsConfig() SettingsConfig
+	ExtractProfileConfig() ProfileConfig
 }
 
 type WidgetConfigBuilder interface {
-	CreateWikiConfig(widgetConfig parser.WidgetConfig) WikiConfig
-	CreateForumConfig(widgetConfig parser.WidgetConfig) ForumConfig
-	CreateBlogConfig(widgetConfig parser.WidgetConfig) BlogConfig
-	CreateWidgetConfig(widgetConfig parser.WidgetConfig) RemoteWidgetConfig
+	BaseConfig
+	CreateWikiConfig(widgetConfig parser.WidgetConfig) (WikiConfig, bool)
+	CreateForumConfig(widgetConfig parser.WidgetConfig) (ForumConfig, bool)
+	CreateBlogConfig(widgetConfig parser.WidgetConfig) (BlogConfig, bool)
+	CreateWidgetConfig(widgetConfig parser.WidgetConfig) (RemoteWidgetConfig, bool)
 }
 
 type LocalesConfig struct {

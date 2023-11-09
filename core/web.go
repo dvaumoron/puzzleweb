@@ -32,7 +32,6 @@ import (
 	"github.com/dvaumoron/puzzleweb/templates"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -67,8 +66,8 @@ func (site *Site) AddPage(page Page) {
 	site.root.AddSubPage(page)
 }
 
-func (site *Site) AddStaticPages(pageGroup parser.StaticPagesConfig) {
-	site.root.AddStaticPages(pageGroup)
+func (site *Site) AddStaticPages(pageGroup parser.StaticPagesConfig) bool {
+	return site.root.AddStaticPages(pageGroup)
 }
 
 func (site *Site) GetPage(name string) (Page, bool) {
@@ -161,9 +160,12 @@ func changeLangRedirecter(c *gin.Context) string {
 	return c.Query(common.RedirectName)
 }
 
-func BuildDefaultSite(serviceName string, version string, parsedConfig parser.ParsedConfig, parseErr error) (*Site, *config.GlobalConfig, trace.Span) {
-	globalConfig, initSpan := config.Init(serviceName, version, parsedConfig, parseErr)
-	localesManager := locale.NewManager(globalConfig.ExtractLocalesConfig())
-	settingsManager := NewSettingsManager(globalConfig.ExtractSettingsConfig())
-	return NewSite(globalConfig, localesManager, settingsManager), globalConfig, initSpan
+func BuildDefaultSite(configExtracter config.BaseConfigExtracter, parsedConfig parser.ParsedConfig, parseErr error) (*Site, bool) {
+	localesManager, ok := locale.NewManager(configExtracter.ExtractLocalesConfig())
+	if !ok {
+		return nil, false
+	}
+
+	settingsManager := NewSettingsManager(configExtracter.ExtractSettingsConfig())
+	return NewSite(configExtracter, localesManager, settingsManager), ok
 }

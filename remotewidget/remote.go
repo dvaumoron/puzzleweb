@@ -21,24 +21,24 @@ package remotewidget
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/common/config"
-	"github.com/dvaumoron/puzzleweb/common/log"
 	puzzleweb "github.com/dvaumoron/puzzleweb/core"
 	widgetservice "github.com/dvaumoron/puzzleweb/remotewidget/service"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-const (
-	formKey       = "formData"
-	pathKeySlash  = "pathData/"
-	queryKeySlash = "queryData/"
-	initMsg       = "Failed to init remote widget"
+const initMsg = "Failed to init remote widget"
+
+var (
+	errSessionCast      = errors.New("cannot cast returned session")
+	errSessionFieldCast = errors.New("cannot cast field in returned session")
 )
 
 type handlerDesc struct {
@@ -57,19 +57,18 @@ func (w remoteWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func MakeRemotePage(pageName string, initCtx context.Context, logger log.Logger, widgetName string, remoteConfig config.RemoteWidgetConfig) puzzleweb.Page {
+func MakeRemotePage(pageName string, initCtx context.Context, remoteConfig config.RemoteWidgetConfig) (puzzleweb.Page, bool) {
 	widgetService := remoteConfig.Service
-	actions, err := widgetService.GetDesc(initCtx, widgetName)
+	actions, err := widgetService.GetDesc(initCtx)
 	if err != nil {
-		logger.Fatal(initMsg, zap.Error(err))
+		remoteConfig.Logger.Error(initMsg, zap.Error(err))
+		return puzzleweb.Page{}, false
 	}
 
 	handlers := make([]handlerDesc, 0, len(actions))
 	for _, action := range actions {
 		httpMethod := action.Kind
-		actionName := action.Name
-		actionPath := action.Path
-		pathKeys := extractKeysFromPath(actionPath)
+		pathKeys := extractKeysFromPath(action.Path)
 		queryKeys := extractQueryKeys(action.QueryNames)
 		var handler gin.HandlerFunc
 		switch httpMethod {
@@ -77,19 +76,19 @@ func MakeRemotePage(pageName string, initCtx context.Context, logger log.Logger,
 			dataAdder := func(data gin.H, c *gin.Context) {
 				retrieveContextData(pathKeys, queryKeys, data, c)
 			}
-			handler = createHandler(widgetName, actionName, dataAdder, widgetService)
+			handler = createHandler(action.Name, dataAdder, widgetService)
 		case http.MethodPost, http.MethodPut, http.MethodPatch:
 			dataAdder := func(data gin.H, c *gin.Context) {
-				data[formKey] = c.PostFormMap(formKey)
+				data[widgetservice.FormKey] = c.PostFormMap(widgetservice.FormKey)
 				retrieveContextData(pathKeys, queryKeys, data, c)
 			}
-			handler = createHandler(widgetName, actionName, dataAdder, widgetService)
+			handler = createHandler(action.Name, dataAdder, widgetService)
 		case widgetservice.RawResult:
 			httpMethod = http.MethodGet
 			handler = func(c *gin.Context) {
 				data := gin.H{}
 				retrieveContextData(pathKeys, queryKeys, data, c)
-				_, _, resData, err := widgetService.Process(c.Request.Context(), widgetName, actionName, data, map[string][]byte{})
+				_, _, resData, err := widgetService.Process(c.Request.Context(), action.Name, data, map[string][]byte{})
 				if err != nil {
 					c.AbortWithStatus(http.StatusInternalServerError)
 					return
@@ -97,14 +96,15 @@ func MakeRemotePage(pageName string, initCtx context.Context, logger log.Logger,
 				c.Data(http.StatusOK, http.DetectContentType(resData), resData)
 			}
 		default:
-			logger.Fatal(initMsg, zap.String("unknownActionKind", httpMethod))
+			remoteConfig.Logger.Error(initMsg, zap.String("unknownActionKind", httpMethod))
+			return puzzleweb.Page{}, false
 		}
-		handlers = append(handlers, handlerDesc{httpMethod: httpMethod, path: actionPath, handler: handler})
+		handlers = append(handlers, handlerDesc{httpMethod: httpMethod, path: action.Path, handler: handler})
 	}
 
 	p := puzzleweb.MakePage(pageName)
 	p.Widget = remoteWidget{handlers: handlers}
-	return p
+	return p, true
 }
 
 func extractKeysFromPath(path string) [][2]string {
@@ -113,7 +113,7 @@ func extractKeysFromPath(path string) [][2]string {
 	for _, part := range splitted {
 		if len(part) != 0 && part[0] == ':' {
 			key := part[1:]
-			keys = append(keys, [2]string{pathKeySlash + key, key})
+			keys = append(keys, [2]string{widgetservice.PathKeySlash + key, key})
 		}
 	}
 	return keys
@@ -122,9 +122,8 @@ func extractKeysFromPath(path string) [][2]string {
 func extractQueryKeys(names []string) [][2]string {
 	keys := make([][2]string, 0, len(names))
 	for _, name := range names {
-		key := strings.TrimSpace(name)
-		if len(key) != 0 {
-			keys = append(keys, [2]string{queryKeySlash + key, key})
+		if key := strings.TrimSpace(name); len(key) != 0 {
+			keys = append(keys, [2]string{widgetservice.QueryKeySlash + key, key})
 		}
 	}
 	return keys
@@ -177,7 +176,7 @@ func readFile(name string, files map[string][]byte, c *gin.Context) error {
 	return nil
 }
 
-func createHandler(widgetName string, actionName string, dataAdder common.DataAdder, widgetService widgetservice.WidgetService) gin.HandlerFunc {
+func createHandler(actionName string, dataAdder common.DataAdder, widgetService widgetservice.WidgetService) gin.HandlerFunc {
 	return puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 		logger := puzzleweb.GetLogger(c)
 		dataAdder(data, c)
@@ -186,7 +185,7 @@ func createHandler(widgetName string, actionName string, dataAdder common.DataAd
 			logger.Error("Failed to retrieve post file", zap.Error(err))
 			return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 		}
-		redirect, templateName, resData, err := widgetService.Process(c.Request.Context(), widgetName, actionName, data, files)
+		redirect, templateName, resData, err := widgetService.Process(c.Request.Context(), actionName, data, files)
 		if err != nil {
 			return "", common.DefaultErrorRedirect(logger, err.Error())
 		}
@@ -194,31 +193,45 @@ func createHandler(widgetName string, actionName string, dataAdder common.DataAd
 			return "", redirect
 		}
 
-		if updateDataAndSession(data, resData, c) {
-			return templateName, ""
+		if err = updateDataAndSession(data, resData, c); err != nil {
+			logger.Error("Failed to unmarshal json from remote widget", zap.Error(err))
+			return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
 		}
-		logger.Error("Failed to unmarshal json from remote widget", zap.Error(err))
-		return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
+		return templateName, ""
 	})
 }
 
-func updateDataAndSession(data gin.H, resData []byte, c *gin.Context) bool {
+func updateDataAndSession(data gin.H, resData []byte, c *gin.Context) error {
+	if len(resData) == 0 {
+		return nil
+	}
+
 	var newData gin.H
 	if err := json.Unmarshal(resData, &newData); err != nil {
-		return false
+		return err
 	}
+
 	for key, value := range newData {
 		data[key] = value
 	}
-	sessionMap, sessionUpdate := newData[puzzleweb.SessionName]
-	if sessionUpdate {
-		casted, ok := sessionMap.(map[string]string)
-		if ok {
-			session := puzzleweb.GetSession(c)
-			for key, value := range casted {
-				session.Store(key, value)
-			}
-		}
+
+	sessionMap, update := newData[puzzleweb.SessionName]
+	if !update {
+		return nil
 	}
-	return true
+
+	castedMap, ok := sessionMap.(map[string]any)
+	if !ok {
+		return errSessionCast
+	}
+
+	session := puzzleweb.GetSession(c)
+	for key, value := range castedMap {
+		valueStr, ok := value.(string)
+		if !ok {
+			return errSessionFieldCast
+		}
+		session.Store(key, valueStr)
+	}
+	return nil
 }

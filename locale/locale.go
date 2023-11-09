@@ -46,11 +46,12 @@ type localesManager struct {
 	matcher      language.Matcher
 }
 
-func NewManager(localesConfig config.LocalesConfig) Manager {
+func NewManager(localesConfig config.LocalesConfig) (Manager, bool) {
 	allLang := localesConfig.AllLang
 	size := len(allLang)
 	if size == 0 {
-		localesConfig.Logger.Fatal("No locales declared")
+		localesConfig.Logger.Error("No locales declared")
+		return nil, false
 	}
 
 	tags := make([]language.Tag, 0, size)
@@ -60,7 +61,7 @@ func NewManager(localesConfig config.LocalesConfig) Manager {
 
 	return &localesManager{
 		LocalesConfig: localesConfig, DefaultLang: allLang[0], MultipleLang: size > 1, matcher: language.NewMatcher(tags),
-	}
+	}, true
 }
 
 func (m *localesManager) GetDefaultLang() string {

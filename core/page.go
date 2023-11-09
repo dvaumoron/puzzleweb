@@ -66,8 +66,8 @@ func (w *staticWidget) LoadInto(router gin.IRouter) {
 	}
 }
 
-func localizedTemplate(groupId uint64, templateName string) common.TemplateRedirecter {
-	return func(data gin.H, c *gin.Context) (string, string) {
+func newStaticWidget(groupId uint64, templateName string) *staticWidget {
+	return &staticWidget{displayHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 		site := getSite(c)
 		ctx := c.Request.Context()
 		logger := site.loggerGetter.Logger(ctx)
@@ -86,11 +86,7 @@ func localizedTemplate(groupId uint64, templateName string) common.TemplateRedir
 			return builder.String(), ""
 		}
 		return templateName, ""
-	}
-}
-
-func newStaticWidget(groupId uint64, templateName string) *staticWidget {
-	return &staticWidget{displayHandler: CreateTemplate(localizedTemplate(groupId, templateName))}
+	})}
 }
 
 func MakeStaticPage(name string, groupId uint64, templateName string) Page {
@@ -105,24 +101,32 @@ func MakeHiddenStaticPage(name string, groupId uint64, templateName string) Page
 	return p
 }
 
-func (p Page) AddSubPage(page Page) {
+func (p Page) AddSubPage(page Page) bool {
 	sw, ok := p.Widget.(*staticWidget)
 	if ok {
 		sw.addSubPage(page)
 	}
+	return ok
 }
 
-func (p Page) AddStaticPages(pageGroup parser.StaticPagesConfig) {
+func (p Page) AddStaticPages(pageGroup parser.StaticPagesConfig) bool {
 	for _, pagePath := range pageGroup.Locations {
-		subPage, pageName, templateName := p.extractSubPageAndNamesFromPath(pagePath)
+		subPage, pageName, templateName, ok := p.extractSubPageAndNamesFromPath(pagePath)
+		if !ok {
+			return false
+		}
+
 		var newPage Page
 		if pageGroup.Hidden {
 			newPage = MakeHiddenStaticPage(pageName, pageGroup.GroupId, templateName)
 		} else {
 			newPage = MakeStaticPage(pageName, pageGroup.GroupId, templateName)
 		}
-		subPage.AddSubPage(newPage)
+		if !subPage.AddSubPage(newPage) {
+			return false
+		}
 	}
+	return true
 }
 
 func (p Page) GetSubPage(name string) (Page, bool) {
@@ -155,15 +159,15 @@ func (current Page) getPageWithSplittedPath(splittedPath []string) (Page, bool) 
 	return current, true
 }
 
-func (p Page) extractSubPageAndNamesFromPath(path string) (Page, string, string) {
+func (p Page) extractSubPageAndNamesFromPath(path string) (Page, string, string, bool) {
 	splitted := strings.Split(path, "/")
 	last := len(splitted) - 1
 	if splitted[last] == "" {
 		last--
 		path += "index"
 	}
-	resPage, _ := p.getPageWithSplittedPath(splitted[:last])
-	return resPage, splitted[last], path
+	resPage, ok := p.getPageWithSplittedPath(splitted[:last])
+	return resPage, splitted[last], path, ok
 }
 
 func CreateTemplate(redirecter common.TemplateRedirecter) gin.HandlerFunc {

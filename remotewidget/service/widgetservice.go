@@ -24,7 +24,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const RawResult = "RAW"
+const (
+	RawResult = "RAW"
+
+	DataKey     = "puzzledata.json"
+	FormKey     = "formData"
+	GroupIdKey  = "groupId"
+	ObjectIdKey = "objectId"
+
+	PathKeySlash  = "pathData/"
+	QueryKeySlash = "queryData/"
+)
 
 type Action struct {
 	Kind       string
@@ -34,6 +44,6 @@ type Action struct {
 }
 
 type WidgetService interface {
-	GetDesc(ctx context.Context, widgetName string) ([]Action, error)
-	Process(ctx context.Context, widgetName string, actionName string, data gin.H, files map[string][]byte) (string, string, []byte, error)
+	GetDesc(ctx context.Context) ([]Action, error)
+	Process(ctx context.Context, actionName string, data gin.H, files map[string][]byte) (string, string, []byte, error)
 }

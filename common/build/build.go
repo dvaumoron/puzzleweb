@@ -2,12 +2,10 @@ package build
 
 import (
 	"context"
-	"strings"
 
 	"github.com/dvaumoron/puzzleweb/blog"
 	"github.com/dvaumoron/puzzleweb/common/config"
 	"github.com/dvaumoron/puzzleweb/common/config/parser"
-	"github.com/dvaumoron/puzzleweb/common/log"
 	puzzleweb "github.com/dvaumoron/puzzleweb/core"
 	"github.com/dvaumoron/puzzleweb/forum"
 	"github.com/dvaumoron/puzzleweb/remotewidget"
@@ -15,21 +13,25 @@ import (
 	"go.uber.org/zap"
 )
 
-func MakeWidgetPage(pageName string, initCtx context.Context, logger log.Logger, configBuilder config.WidgetConfigBuilder, widgetConfig parser.WidgetConfig) puzzleweb.Page {
+func MakeWidgetPage(pageName string, initCtx context.Context, configBuilder config.WidgetConfigBuilder, widgetConfig parser.WidgetConfig) (puzzleweb.Page, bool) {
 	switch kind := widgetConfig.Kind; kind {
 	case "forum":
-		return forum.MakeForumPage(pageName, configBuilder.CreateForumConfig(widgetConfig))
-	case "blog":
-		return blog.MakeBlogPage(pageName, configBuilder.CreateBlogConfig(widgetConfig))
-	case "wiki":
-		return wiki.MakeWikiPage(pageName, configBuilder.CreateWikiConfig(widgetConfig))
-	default:
-		if widgetName, ok := strings.CutPrefix(kind, "remote/"); ok {
-			return remotewidget.MakeRemotePage(
-				pageName, initCtx, logger, widgetName, configBuilder.CreateWidgetConfig(widgetConfig),
-			)
+		if forumConfig, ok := configBuilder.CreateForumConfig(widgetConfig); ok {
+			return forum.MakeForumPage(pageName, forumConfig), true
 		}
-		logger.Fatal("Widget kind unknown ", zap.String("widgetKind", kind))
+	case "blog":
+		if blogConfig, ok := configBuilder.CreateBlogConfig(widgetConfig); ok {
+			return blog.MakeBlogPage(pageName, blogConfig), true
+		}
+	case "wiki":
+		if wikiConfig, ok := configBuilder.CreateWikiConfig(widgetConfig); ok {
+			return wiki.MakeWikiPage(pageName, wikiConfig), true
+		}
+	default:
+		if remoteConfig, ok := configBuilder.CreateWidgetConfig(widgetConfig); ok {
+			return remotewidget.MakeRemotePage(pageName, initCtx, remoteConfig)
+		}
+		configBuilder.GetLogger().Error("Widget kind unknown ", zap.String("widgetKind", kind))
 	}
-	return puzzleweb.Page{} // unreachable
+	return puzzleweb.Page{}, false
 }

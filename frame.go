@@ -30,8 +30,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const notFound = "notFound"
-
 //go:embed version.txt
 var version string
 
@@ -42,17 +40,26 @@ func main() {
 	}
 
 	parsedConfig, err := parser.ParseConfig(confPath)
-	site, globalConfig, initSpan := puzzleweb.BuildDefaultSite(config.WebKey, version, parsedConfig, err)
-	logger := globalConfig.Logger
-	rightClient := globalConfig.RightClient
-
-	// create group for permissions
-	for _, group := range parsedConfig.PermissionGroups {
-		rightClient.RegisterGroup(group.Id, group.Name)
+	globalConfig, initSpan := config.Init(config.WebKey, version, parsedConfig, err)
+	site, ok := puzzleweb.BuildDefaultSite(globalConfig, parsedConfig, err)
+	if !ok {
+		return
 	}
 
+	// create group for permissions
+	rightClient := globalConfig.RightClient
+	for _, group := range parsedConfig.PermissionGroups {
+		if !rightClient.RegisterGroup(group.Id, group.Name) {
+			return
+		}
+	}
+
+	logger := globalConfig.Logger
 	for _, pageGroup := range parsedConfig.StaticPages {
-		site.AddStaticPages(pageGroup)
+		if !site.AddStaticPages(pageGroup) {
+			logger.Error("Failure during static pages creation")
+			return
+		}
 	}
 
 	widgets := parsedConfig.WidgetsAsMap()
@@ -65,16 +72,21 @@ func main() {
 			name = name[index+1:]
 			parentPage, nested = site.GetPageWithPath(emplacement)
 			if !nested {
-				logger.Fatal("Failed to retrive parentPage", zap.String("emplacement", emplacement))
+				logger.Error("Failed to retrieve parentPage", zap.String("emplacement", emplacement))
+				continue
 			}
 		}
 
-		widgetPage := build.MakeWidgetPage(name, globalConfig.InitCtx, logger, globalConfig, widgets[widgetPageConfig.WidgetRef])
-
-		if nested {
-			parentPage.AddSubPage(widgetPage)
-		} else {
-			site.AddPage(widgetPage)
+		widgetPage, add := build.MakeWidgetPage(name, globalConfig.InitCtx, globalConfig, widgets[widgetPageConfig.WidgetRef])
+		if add {
+			if nested {
+				if !parentPage.AddSubPage(widgetPage) {
+					logger.Error("Only static page can have sub page")
+					return
+				}
+			} else {
+				site.AddPage(widgetPage)
+			}
 		}
 	}
 
@@ -85,6 +97,6 @@ func main() {
 	globalConfig = nil
 
 	if err := site.Run(siteConfig); err != nil {
-		siteConfig.Logger.Fatal("Failed to serve", zap.Error(err))
+		logger.Error("Failed to serve", zap.Error(err))
 	}
 }

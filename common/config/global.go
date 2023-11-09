@@ -22,6 +22,7 @@ import (
 	"context"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dvaumoron/puzzlesaltclient"
@@ -41,7 +42,6 @@ import (
 	profileclient "github.com/dvaumoron/puzzleweb/profile/client"
 	profileservice "github.com/dvaumoron/puzzleweb/profile/service"
 	widgetclient "github.com/dvaumoron/puzzleweb/remotewidget/client"
-	widgetservice "github.com/dvaumoron/puzzleweb/remotewidget/service"
 	sessionclient "github.com/dvaumoron/puzzleweb/session/client"
 	sessionservice "github.com/dvaumoron/puzzleweb/session/service"
 	templateclient "github.com/dvaumoron/puzzleweb/templates/client"
@@ -65,20 +65,6 @@ const (
 
 	DefaultFavicon = "/favicon.ico"
 )
-
-type AuthConfig = ServiceConfig[adminservice.AuthService]
-type LoginConfig = ServiceConfig[loginservice.LoginService]
-type SettingsConfig = ServiceConfig[sessionservice.SessionService]
-type TemplateConfig = ServiceConfig[templateservice.TemplateService]
-type RemoteWidgetConfig = ServiceConfig[widgetservice.WidgetService]
-
-type BaseConfigExtracter interface {
-	BaseConfig
-	GetServiceTimeOut() time.Duration
-	ExtractLoginConfig() LoginConfig
-	ExtractAdminConfig() AdminConfig
-	ExtractProfileConfig() ProfileConfig
-}
 
 type loggerWrapper struct {
 	logger *otelzap.Logger
@@ -270,26 +256,26 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 	return globalConfig, initSpan
 }
 
-func (c *GlobalConfig) loadMarkdown() {
+func (c *GlobalConfig) loadMarkdown() bool {
 	if c.MarkdownService == nil {
-		require(c.Logger, "markdownServiceAddr", c.MarkdownServiceAddr)
+		if !require(c.Logger, "markdownServiceAddr", c.MarkdownServiceAddr) {
+			return false
+		}
 		c.MarkdownService = markdownclient.New(c.MarkdownServiceAddr, c.DialOptions)
 	}
+	return true
 }
 
-func (c *GlobalConfig) loadWiki() {
-	c.loadMarkdown()
-	require(c.Logger, "wikiServiceAddr", c.WikiServiceAddr)
+func (c *GlobalConfig) loadWiki() bool {
+	return c.loadMarkdown() && require(c.Logger, "wikiServiceAddr", c.WikiServiceAddr)
 }
 
-func (c *GlobalConfig) loadForum() {
-	require(c.Logger, "forumServiceAddr", c.ForumServiceAddr)
+func (c *GlobalConfig) loadForum() bool {
+	return require(c.Logger, "forumServiceAddr", c.ForumServiceAddr)
 }
 
-func (c *GlobalConfig) loadBlog() {
-	c.loadForum()
-	c.loadMarkdown()
-	require(c.Logger, "blogServiceAddr", c.BlogServiceAddr)
+func (c *GlobalConfig) loadBlog() bool {
+	return c.loadForum() && c.loadMarkdown() && require(c.Logger, "blogServiceAddr", c.BlogServiceAddr)
 }
 
 func (c *GlobalConfig) GetLogger() log.Logger {
@@ -343,30 +329,27 @@ func (c *GlobalConfig) ExtractSettingsConfig() SettingsConfig {
 	return MakeServiceConfig(c, c.SettingsService)
 }
 
-func (c *GlobalConfig) CreateWikiConfig(widgetConfig parser.WidgetConfig) WikiConfig {
-	c.loadWiki()
+func (c *GlobalConfig) CreateWikiConfig(widgetConfig parser.WidgetConfig) (WikiConfig, bool) {
 	return WikiConfig{
 		ServiceConfig: MakeServiceConfig(c, wikiclient.New(
 			c.WikiServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
 			c.RightClient, c.ProfileService, c.LoggerGetter,
 		)),
 		MarkdownService: c.MarkdownService, Args: widgetConfig.Templates,
-	}
+	}, c.loadWiki()
 }
 
-func (c *GlobalConfig) CreateForumConfig(widgetConfig parser.WidgetConfig) ForumConfig {
-	c.loadForum()
+func (c *GlobalConfig) CreateForumConfig(widgetConfig parser.WidgetConfig) (ForumConfig, bool) {
 	return ForumConfig{
 		ServiceConfig: MakeServiceConfig[forumservice.ForumService](c, forumclient.New(
 			c.ForumServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
 			c.RightClient, c.ProfileService, c.LoggerGetter,
 		)),
 		PageSize: c.PageSize, Args: widgetConfig.Templates,
-	}
+	}, c.loadForum()
 }
 
-func (c *GlobalConfig) CreateBlogConfig(widgetConfig parser.WidgetConfig) BlogConfig {
-	c.loadBlog()
+func (c *GlobalConfig) CreateBlogConfig(widgetConfig parser.WidgetConfig) (BlogConfig, bool) {
 	return BlogConfig{
 		ServiceConfig: MakeServiceConfig(c, blogclient.New(
 			c.BlogServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
@@ -378,16 +361,17 @@ func (c *GlobalConfig) CreateBlogConfig(widgetConfig parser.WidgetConfig) BlogCo
 		),
 		Domain: c.Domain, Port: c.Port, DateFormat: c.DateFormat, PageSize: c.PageSize, ExtractSize: c.ExtractSize,
 		FeedFormat: c.FeedFormat, FeedSize: c.FeedSize, Args: widgetConfig.Templates,
-	}
+	}, c.loadBlog()
 }
 
-func (c *GlobalConfig) CreateWidgetConfig(widgetConfig parser.WidgetConfig) RemoteWidgetConfig {
+func (c *GlobalConfig) CreateWidgetConfig(widgetConfig parser.WidgetConfig) (RemoteWidgetConfig, bool) {
+	widgetName, remoteKind := strings.CutPrefix(widgetConfig.Kind, "remote/")
 	return MakeServiceConfig(c, widgetclient.New(
-		widgetConfig.ServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.LoggerGetter,
-	))
+		widgetConfig.ServiceAddr, c.DialOptions, c.LoggerGetter, widgetName, widgetConfig.ObjectId, widgetConfig.GroupId,
+	)), remoteKind
 }
 
-func retrieveWithDefault(logger otelzap.LoggerWithCtx, name string, value string, defaultValue string) string {
+func retrieveWithDefault(logger log.Logger, name string, value string, defaultValue string) string {
 	if value == "" {
 		logger.Info(name+" empty, using default", zap.String(defaultName, defaultValue))
 		return defaultValue
@@ -395,7 +379,7 @@ func retrieveWithDefault(logger otelzap.LoggerWithCtx, name string, value string
 	return value
 }
 
-func retrieveUintWithDefault(logger otelzap.LoggerWithCtx, name string, value uint64, defaultValue uint64) uint64 {
+func retrieveUintWithDefault(logger log.Logger, name string, value uint64, defaultValue uint64) uint64 {
 	if value == 0 {
 		logger.Info(name+" empty, using default", zap.Uint64(defaultName, defaultValue))
 		return defaultValue
@@ -403,7 +387,7 @@ func retrieveUintWithDefault(logger otelzap.LoggerWithCtx, name string, value ui
 	return value
 }
 
-func retrievePath(logger otelzap.LoggerWithCtx, name string, path string, defaultPath string) string {
+func retrievePath(logger log.Logger, name string, path string, defaultPath string) string {
 	path = retrieveWithDefault(logger, name, path, defaultPath)
 	if last := len(path) - 1; path[last] == '/' {
 		path = path[:last]
@@ -411,8 +395,10 @@ func retrievePath(logger otelzap.LoggerWithCtx, name string, path string, defaul
 	return path
 }
 
-func require(logger log.Logger, name string, value string) {
+func require(logger log.Logger, name string, value string) bool {
 	if value == "" {
-		logger.Fatal(name + " is required")
+		logger.Error(name + " is required")
+		return false
 	}
+	return true
 }

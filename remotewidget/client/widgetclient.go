@@ -35,39 +35,43 @@ import (
 
 type widgetClient struct {
 	grpcclient.Client
+	loggerGetter log.LoggerGetter
+	widgetName   string
 	objectId     uint64
 	groupId      uint64
-	loggerGetter log.LoggerGetter
 }
 
-func New(serviceAddr string, dialOptions []grpc.DialOption, objectId uint64, groupId uint64, loggerGetter log.LoggerGetter) widgetservice.WidgetService {
-	return widgetClient{Client: grpcclient.Make(serviceAddr, dialOptions...), objectId: objectId, groupId: groupId, loggerGetter: loggerGetter}
+func New(serviceAddr string, dialOptions []grpc.DialOption, loggerGetter log.LoggerGetter, widgetName string, objectId uint64, groupId uint64) widgetservice.WidgetService {
+	return widgetClient{
+		Client: grpcclient.Make(serviceAddr, dialOptions...), loggerGetter: loggerGetter,
+		widgetName: widgetName, objectId: objectId, groupId: groupId,
+	}
 }
 
-func (client widgetClient) GetDesc(ctx context.Context, name string) ([]widgetservice.Action, error) {
+func (client widgetClient) GetDesc(ctx context.Context) ([]widgetservice.Action, error) {
 	conn, err := client.Dial()
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 
-	response, err := pb.NewWidgetClient(conn).GetWidget(ctx, &pb.WidgetRequest{Name: name})
+	response, err := pb.NewWidgetClient(conn).GetWidget(ctx, &pb.WidgetRequest{Name: client.widgetName})
 	if err != nil {
 		return nil, err
 	}
 	return convertActions(response.Actions), nil
 }
 
-func (client widgetClient) Process(ctx context.Context, widgetName string, actionName string, data gin.H, files map[string][]byte) (string, string, []byte, error) {
-	data["objectId"] = client.objectId
-	data["groupId"] = client.groupId
+func (client widgetClient) Process(ctx context.Context, actionName string, data gin.H, files map[string][]byte) (string, string, []byte, error) {
+	data[widgetservice.ObjectIdKey] = client.objectId
+	data[widgetservice.GroupIdKey] = client.groupId
 	dataBytes, err := json.Marshal(data)
 	if err != nil {
 		client.loggerGetter.Logger(ctx).Error("Failed to marshal data", zap.Error(err))
 		return "", "", nil, common.ErrTechnical
 	}
 
-	files["puzzledata.json"] = dataBytes
+	files[widgetservice.DataKey] = dataBytes
 
 	conn, err := client.Dial()
 	if err != nil {
@@ -76,7 +80,7 @@ func (client widgetClient) Process(ctx context.Context, widgetName string, actio
 	defer conn.Close()
 
 	response, err := pb.NewWidgetClient(conn).Process(ctx, &pb.ProcessRequest{
-		WidgetName: widgetName, ActionName: actionName, Files: files,
+		WidgetName: client.widgetName, ActionName: actionName, Files: files,
 	})
 	if err != nil {
 		return "", "", nil, err

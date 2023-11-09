@@ -82,7 +82,6 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 				return c.PostForm(prevUrlWithErrorName) + common.ErrorEmptyPasswordKey
 			}
 
-			success := true
 			var userId uint64
 			var err error
 			if register {
@@ -90,24 +89,13 @@ func newLoginPage(loginConfig config.LoginConfig, settingsManager *SettingsManag
 					return c.PostForm(prevUrlWithErrorName) + common.ErrorWrongConfirmPasswordKey
 				}
 
-				success, userId, err = loginService.Register(ctx, login, password)
+				userId, err = loginService.Register(ctx, login, password)
 			} else {
-				success, userId, err = loginService.Verify(ctx, login, password)
+				userId, err = loginService.Verify(ctx, login, password)
 			}
 
-			errorMsg := ""
 			if err != nil {
-				errorMsg = err.Error()
-			} else if !success {
-				if register {
-					errorMsg = common.ErrorExistingLoginKey
-				} else {
-					errorMsg = common.WrongLangKey
-				}
-			}
-
-			if errorMsg != "" {
-				return c.PostForm(prevUrlWithErrorName) + url.QueryEscape(errorMsg)
+				return c.PostForm(prevUrlWithErrorName) + url.QueryEscape(err.Error())
 			}
 
 			s := GetSession(c)

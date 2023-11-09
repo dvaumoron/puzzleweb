@@ -62,50 +62,56 @@ func (s sortableContents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (client loginClient) Verify(ctx context.Context, login string, password string) (bool, uint64, error) {
+func (client loginClient) Verify(ctx context.Context, login string, password string) (uint64, error) {
 	salted, err := client.saltService.Salt(ctx, login, password)
 	if err != nil {
-		return false, 0, err
+		return 0, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return false, 0, err
+		return 0, err
 	}
 	defer conn.Close()
 
 	response, err := pb.NewLoginClient(conn).Verify(ctx, &pb.LoginRequest{Login: login, Salted: salted})
 	if err != nil {
-		return false, 0, err
+		return 0, err
 	}
-	return response.Success, response.Id, nil
+	if !response.Success {
+		return 0, common.ErrWrongLogin
+	}
+	return response.Id, nil
 }
 
-func (client loginClient) Register(ctx context.Context, login string, password string) (bool, uint64, error) {
+func (client loginClient) Register(ctx context.Context, login string, password string) (uint64, error) {
 	strong, err := client.strengthService.Validate(ctx, password)
 	if err != nil {
-		return false, 0, err
+		return 0, err
 	}
 	if !strong {
-		return false, 0, errWeakPassword
+		return 0, errWeakPassword
 	}
 
 	salted, err := client.saltService.Salt(ctx, login, password)
 	if err != nil {
-		return false, 0, err
+		return 0, err
 	}
 
 	conn, err := client.Dial()
 	if err != nil {
-		return false, 0, err
+		return 0, err
 	}
 	defer conn.Close()
 
 	response, err := pb.NewLoginClient(conn).Register(ctx, &pb.LoginRequest{Login: login, Salted: salted})
 	if err != nil {
-		return false, 0, err
+		return 0, err
 	}
-	return response.Success, response.Id, nil
+	if !response.Success {
+		return 0, common.ErrExistingLogin
+	}
+	return response.Id, nil
 }
 
 // You should remove duplicate id in list

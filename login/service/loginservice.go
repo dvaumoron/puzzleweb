@@ -37,8 +37,8 @@ type AdvancedUserService interface {
 }
 
 type LoginService interface {
-	Verify(ctx context.Context, login string, password string) (bool, uint64, error)
-	Register(ctx context.Context, login string, password string) (bool, uint64, error)
+	Verify(ctx context.Context, login string, password string) (uint64, error)
+	Register(ctx context.Context, login string, password string) (uint64, error)
 	ChangeLogin(ctx context.Context, userId uint64, oldLogin string, newLogin string, password string) error
 	ChangePassword(ctx context.Context, userId uint64, login string, oldPassword string, newPassword string) error
 }

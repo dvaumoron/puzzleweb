@@ -20,12 +20,12 @@ package adminservice
 
 import "context"
 
-const AdminName = "admin"
-const PublicName = "public"
-const PublicGroupId = 0 // groupId for content always allowed to access
-const AdminGroupId = 1  // groupId corresponding to role administration
-
 const (
+	AdminName     = "admin"
+	PublicName    = "public"
+	PublicGroupId = 0 // groupId for content always allowed to access
+	AdminGroupId  = 1 // groupId corresponding to role administration
+
 	ActionAccess = "access"
 	ActionCreate = "create"
 	ActionUpdate = "update"

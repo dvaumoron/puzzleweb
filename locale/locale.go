@@ -21,7 +21,9 @@ package locale
 import (
 	"unicode"
 
+	"github.com/dvaumoron/puzzleweb/common"
 	"github.com/dvaumoron/puzzleweb/common/config"
+	"github.com/dvaumoron/puzzleweb/common/log"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
@@ -32,23 +34,17 @@ const (
 	pathName = "Path"
 )
 
-type Manager interface {
-	GetDefaultLang() string
-	GetAllLang() []string
-	GetMultipleLang() bool
-	GetLang(*gin.Context) string
-	CheckLang(string) string
-	SetLangCookie(string, *gin.Context) string
-}
-
 type localesManager struct {
-	config.LocalesConfig
-	DefaultLang  string
-	MultipleLang bool
-	matcher      language.Matcher
+	LoggerGetter   log.LoggerGetter
+	Domain         string
+	SessionTimeOut int
+	AllLang        []string
+	DefaultLang    string
+	MultipleLang   bool
+	matcher        language.Matcher
 }
 
-func NewManager(localesConfig config.LocalesConfig) (Manager, bool) {
+func NewManager(localesConfig config.LocalesConfig) (common.LocalesManager, bool) {
 	allLang := localesConfig.AllLang
 	size := len(allLang)
 	if size == 0 {
@@ -62,7 +58,8 @@ func NewManager(localesConfig config.LocalesConfig) (Manager, bool) {
 	}
 
 	return &localesManager{
-		LocalesConfig: localesConfig, DefaultLang: allLang[0], MultipleLang: size > 1, matcher: language.NewMatcher(tags),
+		LoggerGetter: localesConfig.LoggerGetter, Domain: localesConfig.Domain, SessionTimeOut: localesConfig.SessionTimeOut,
+		AllLang: localesConfig.AllLang, DefaultLang: allLang[0], MultipleLang: size > 1, matcher: language.NewMatcher(tags),
 	}, true
 }
 
@@ -88,13 +85,13 @@ func (m *localesManager) GetLang(c *gin.Context) string {
 	return m.SetLangCookie(lang, c)
 }
 
-func (m *localesManager) CheckLang(lang string) string {
+func (m *localesManager) CheckLang(lang string, c *gin.Context) string {
 	for _, l := range m.AllLang {
 		if lang == l {
 			return lang
 		}
 	}
-	m.Logger.Info("Asked not declared locale", zap.String("askedLocale", lang))
+	m.LoggerGetter.Logger(c.Request.Context()).Info("Asked not declared locale", zap.String("askedLocale", lang))
 	return m.DefaultLang
 }
 
@@ -104,7 +101,7 @@ func (m *localesManager) setLangCookie(lang string, c *gin.Context) string {
 }
 
 func (m *localesManager) SetLangCookie(lang string, c *gin.Context) string {
-	return m.setLangCookie(m.CheckLang(lang), c)
+	return m.setLangCookie(m.CheckLang(lang, c), c)
 }
 
 func CamelCase(word string) string {

@@ -42,14 +42,14 @@ const unknownUserKey = "ErrorUnknownUser"
 
 type Site struct {
 	loggerGetter   log.LoggerGetter
-	localesManager locale.Manager
+	localesManager common.LocalesManager
 	authService    adminservice.AuthService
 	timeOut        time.Duration
 	root           Page
 	adders         []common.DataAdder
 }
 
-func NewSite(configExtracter config.BaseConfigExtracter, localesManager locale.Manager, settingsManager *SettingsManager) *Site {
+func NewSite(configExtracter config.BaseConfigExtracter, localesManager common.LocalesManager, settingsManager *SettingsManager) *Site {
 	adminConfig := configExtracter.ExtractAdminConfig()
 	root := MakeStaticPage("root", adminservice.PublicGroupId, "index")
 	root.AddSubPage(newLoginPage(configExtracter.ExtractLoginConfig(), settingsManager))

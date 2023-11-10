@@ -63,6 +63,7 @@ type BaseConfigExtracter interface {
 
 type LocalesConfig struct {
 	Logger         log.Logger
+	LoggerGetter   log.LoggerGetter
 	Domain         string
 	SessionTimeOut int
 	AllLang        []string

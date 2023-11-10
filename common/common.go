@@ -45,6 +45,15 @@ type DataAdder func(gin.H, *gin.Context)
 type Redirecter func(*gin.Context) string
 type TemplateRedirecter func(gin.H, *gin.Context) (string, string)
 
+type LocalesManager interface {
+	GetDefaultLang() string
+	GetAllLang() []string
+	GetMultipleLang() bool
+	GetLang(*gin.Context) string
+	CheckLang(string, *gin.Context) string
+	SetLangCookie(string, *gin.Context) string
+}
+
 func GetCurrentUrl(c *gin.Context) string {
 	path := c.Request.URL.Path
 	if path[len(path)-1] != '/' {

@@ -64,7 +64,7 @@ func GetLogger(c *gin.Context) log.Logger {
 	return getSite(c).loggerGetter.Logger(c.Request.Context())
 }
 
-func GetLocalesManager(c *gin.Context) locale.Manager {
+func GetLocalesManager(c *gin.Context) common.LocalesManager {
 	return getSite(c).localesManager
 }
 

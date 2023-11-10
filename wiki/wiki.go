@@ -103,7 +103,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			title := c.Param(titleName)
-			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
+			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang, c)
 
 			if lang != askedLang {
 				targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
@@ -144,7 +144,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
 			title := c.Param(titleName)
-			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
+			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang, c)
 
 			if lang != askedLang {
 				targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
@@ -171,7 +171,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 		saveHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
-			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
+			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang, c)
 			title := c.Param(titleName)
 
 			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, viewMode, title)
@@ -193,7 +193,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 		listHandler: puzzleweb.CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
-			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
+			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang, c)
 			title := c.Param(titleName)
 
 			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, listMode, title)
@@ -220,7 +220,7 @@ func MakeWikiPage(wikiName string, wikiConfig config.WikiConfig) puzzleweb.Page 
 		deleteHandler: common.CreateRedirect(func(c *gin.Context) string {
 			logger := puzzleweb.GetLogger(c)
 			askedLang := c.Param(locale.LangName)
-			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang)
+			lang := puzzleweb.GetLocalesManager(c).CheckLang(askedLang, c)
 			title := c.Param(titleName)
 
 			targetBuilder := wikiUrlBuilder(common.GetBaseUrl(3, c), lang, listMode, title)

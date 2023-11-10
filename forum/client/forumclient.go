@@ -153,21 +153,16 @@ func (client forumClient) CreateComment(ctx context.Context, userId uint64, elem
 		return err
 	}
 
-	var threadId uint64
 	if response.Total == 0 {
 		client.logCommentThreadNotFound(ctx, objectId, elemTitle)
 
-		response2, err := forumClient.CreateThread(ctx, &pb.CreateRequest{
-			ContainerId: client.forumId, UserId: userId, Title: elemTitle,
+		_, err := forumClient.CreateThread(ctx, &pb.CreateRequest{
+			ContainerId: client.forumId, UserId: userId, Title: elemTitle, Text: comment,
 		})
-		if err != nil {
-			return err
-		}
-		threadId = response2.Id
-	} else {
-		threadId = response.List[0].Id
+		return err
 	}
 
+	threadId := response.List[0].Id
 	response2, err := forumClient.CreateMessage(ctx, &pb.CreateRequest{
 		ContainerId: threadId, UserId: userId, Text: comment,
 	})

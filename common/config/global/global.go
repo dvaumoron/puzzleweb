@@ -49,7 +49,6 @@ import (
 	templateclient "github.com/dvaumoron/puzzleweb/templates/client"
 	templateservice "github.com/dvaumoron/puzzleweb/templates/service"
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
-	"github.com/spf13/afero"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -207,7 +206,7 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 		MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
 		FeedFormat: feedFormat, FeedSize: feedSize,
 
-		StaticFileSystem: afero.NewHttpFs(afero.NewBasePathFs(afero.NewOsFs(), staticPath)),
+		StaticFileSystem: http.FS(os.DirFS(staticPath)),
 		FaviconPath:      faviconPath,
 		Page404Url:       parsedConfig.Page404Url,
 

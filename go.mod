@@ -20,7 +20,6 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/gorilla/feeds v1.1.1
 	github.com/hashicorp/hcl/v2 v2.19.1
-	github.com/spf13/afero v1.10.0
 	github.com/uptrace/opentelemetry-go-extra/otelzap v0.2.3
 	github.com/zclconf/go-cty v1.13.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.45.0
@@ -35,7 +34,6 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect

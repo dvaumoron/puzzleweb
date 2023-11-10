@@ -38,6 +38,7 @@ const parsingThreadIdErrorMsg = "Failed to parse threadId"
 
 var errEmptyMessage = errors.New(emptyMessage)
 
+// TODO preview && markdown ?
 type forumWidget struct {
 	listThreadHandler    gin.HandlerFunc
 	createThreadHandler  gin.HandlerFunc

@@ -185,18 +185,15 @@ func (client wikiClient) DeleteContent(ctx context.Context, userId uint64, lang 
 	response, err := pb.NewWikiClient(conn).Delete(ctx, &pb.WikiRequest{
 		WikiId: client.wikiId, WikiRef: wikiRef, Version: version,
 	})
-	if err != nil {
-		return err
-	}
-	if !response.Success {
-		return common.ErrUpdate
+	if err == nil && !response.Success {
+		err = common.ErrUpdate
 	}
 
 	content := client.cache.Load(logger, wikiRef)
 	if content != nil && version == content.Version {
 		client.cache.Delete(logger, wikiRef)
 	}
-	return nil
+	return err
 }
 
 func (client wikiClient) DeleteRight(ctx context.Context, userId uint64) bool {

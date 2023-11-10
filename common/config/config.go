@@ -19,6 +19,7 @@
 package config
 
 import (
+	"net/http"
 	"time"
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
@@ -96,7 +97,7 @@ type SiteConfig struct {
 	Port               string
 	SessionTimeOut     int
 	MaxMultipartMemory int64
-	StaticPath         string
+	StaticFileSystem   http.FileSystem
 	FaviconPath        string
 	Page404Url         string
 	LangPicturePaths   map[string]string

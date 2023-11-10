@@ -101,8 +101,8 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 
 	engine.HTMLRender = templates.NewServiceRender(siteConfig.ExtractTemplateConfig())
 
-	engine.Static("/static", siteConfig.StaticPath)
-	engine.StaticFile(config.DefaultFavicon, siteConfig.FaviconPath)
+	engine.StaticFS("/static", siteConfig.StaticFileSystem)
+	engine.StaticFileFS(config.DefaultFavicon, siteConfig.FaviconPath, siteConfig.StaticFileSystem)
 
 	engine.Use(func(c *gin.Context) {
 		c.Set(siteName, site)
@@ -113,7 +113,7 @@ func (site *Site) initEngine(siteConfig config.SiteConfig) *gin.Engine {
 
 		for lang, langPicturePath := range siteConfig.LangPicturePaths {
 			// allow modified time check (instead of always sending same data)
-			engine.StaticFile("/langPicture/"+lang, langPicturePath)
+			engine.StaticFileFS("/langPicture/"+lang, langPicturePath, siteConfig.StaticFileSystem)
 		}
 	}
 

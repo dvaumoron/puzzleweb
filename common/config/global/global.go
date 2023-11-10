@@ -20,6 +20,7 @@ package globalconfig
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -48,6 +49,7 @@ import (
 	templateclient "github.com/dvaumoron/puzzleweb/templates/client"
 	templateservice "github.com/dvaumoron/puzzleweb/templates/service"
 	wikiclient "github.com/dvaumoron/puzzleweb/wiki/client"
+	"github.com/spf13/afero"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -85,9 +87,9 @@ type GlobalConfig struct {
 	FeedFormat         string
 	FeedSize           uint64
 
-	StaticPath  string
-	FaviconPath string
-	Page404Url  string
+	StaticFileSystem http.FileSystem
+	FaviconPath      string
+	Page404Url       string
 
 	InitCtx          context.Context
 	Logger           log.Logger // for init phase (have the context)
@@ -174,15 +176,7 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 	rightClient := adminclient.Make(parsedConfig.RightServiceAddr, dialOptions, logger)
 
 	staticPath := retrievePath(ctxLogger, "staticPath", parsedConfig.StaticPath, "static")
-	augmentedStaticPath := staticPath + "/"
-	faviconPath := parsedConfig.FaviconPath
-	if faviconPath == "" {
-		faviconPath = staticPath + config.DefaultFavicon
-		ctxLogger.Info("faviconPath empty, using default", zap.String(defaultName, faviconPath))
-	} else if faviconPath[0] != '/' {
-		// user should use absolute path or path relative to staticPath
-		faviconPath = augmentedStaticPath + faviconPath
-	}
+	faviconPath := retrieveWithDefault(ctxLogger, "faviconPath", parsedConfig.FaviconPath, config.DefaultFavicon)
 
 	defaultPicturePath := retrieveWithDefault(
 		ctxLogger, "profileDefaultPicturePath", parsedConfig.ProfileDefaultPicturePath, staticPath+"/images/unknownuser.png",
@@ -198,18 +192,7 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 	langPicturePaths := make(map[string]string, langNumber)
 	for _, locale := range locales {
 		allLang = append(allLang, locale.Lang)
-
-		langPicturePath := locale.PicturePath
-		if langPicturePath == "" {
-			// skip not configured picture
-			continue
-		}
-
-		// user should use absolute path or path relative to staticPath
-		if langPicturePath[0] != '/' {
-			langPicturePath = augmentedStaticPath + langPicturePath
-		}
-		langPicturePaths[locale.Lang] = langPicturePath
+		langPicturePaths[locale.Lang] = locale.PicturePath
 	}
 	ctxLogger.Info("Declared locales", zap.Strings("locales", allLang))
 
@@ -224,9 +207,9 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 		MaxMultipartMemory: maxMultipartMemory, DateFormat: dateFormat, PageSize: pageSize, ExtractSize: extractSize,
 		FeedFormat: feedFormat, FeedSize: feedSize,
 
-		StaticPath:  staticPath,
-		FaviconPath: faviconPath,
-		Page404Url:  parsedConfig.Page404Url,
+		StaticFileSystem: afero.NewHttpFs(afero.NewBasePathFs(afero.NewOsFs(), staticPath)),
+		FaviconPath:      faviconPath,
+		Page404Url:       parsedConfig.Page404Url,
 
 		InitCtx:        initCtx,
 		Logger:         ctxLogger,
@@ -300,8 +283,8 @@ func (c *GlobalConfig) ExtractLocalesConfig() config.LocalesConfig {
 func (c *GlobalConfig) ExtractSiteConfig() config.SiteConfig {
 	return config.SiteConfig{
 		ServiceConfig: config.MakeServiceConfig(c, c.SessionService), TemplateService: c.TemplateService,
-		Domain: c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut,
-		MaxMultipartMemory: c.MaxMultipartMemory, StaticPath: c.StaticPath, FaviconPath: c.FaviconPath,
+		LoggerGetter: c.LoggerGetter, Domain: c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut,
+		MaxMultipartMemory: c.MaxMultipartMemory, StaticFileSystem: c.StaticFileSystem, FaviconPath: c.FaviconPath,
 		LangPicturePaths: c.LangPicturePaths, Page404Url: c.Page404Url,
 	}
 }

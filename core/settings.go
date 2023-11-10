@@ -67,14 +67,14 @@ func (m *SettingsManager) Get(ctx context.Context, userId uint64, c *gin.Context
 
 	userSettings, err := m.Service.Get(ctx, userId)
 	if err != nil {
-		m.Logger.Warn("Failed to retrieve user settings", zap.Error(err))
+		m.LoggerGetter.Logger(ctx).Warn("Failed to retrieve user settings", zap.Error(err))
 	}
 
 	if len(userSettings) == 0 {
 		userSettings = m.InitSettings(c)
 		err = m.Service.Update(ctx, userId, userSettings)
 		if err != nil {
-			m.Logger.Warn("Failed to create user settings", zap.Error(err))
+			m.LoggerGetter.Logger(ctx).Warn("Failed to create user settings", zap.Error(err))
 		}
 	}
 	c.Set(settingsName, userSettings)

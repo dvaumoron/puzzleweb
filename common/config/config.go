@@ -49,11 +49,11 @@ type RemoteWidgetConfig = ServiceConfig[widgetservice.WidgetService]
 
 type BaseConfig interface {
 	GetLogger() log.Logger
+	GetLoggerGetter() log.LoggerGetter
 }
 
 type BaseConfigExtracter interface {
 	BaseConfig
-	GetLoggerGetter() log.LoggerGetter
 	GetServiceTimeOut() time.Duration
 	ExtractLocalesConfig() LocalesConfig
 	ExtractLoginConfig() LoginConfig
@@ -71,16 +71,21 @@ type LocalesConfig struct {
 }
 
 type ServiceConfig[ServiceType any] struct {
-	Logger  log.Logger // for init phase (have the context)
-	Service ServiceType
+	Logger       log.Logger // for init phase (have the context)
+	LoggerGetter log.LoggerGetter
+	Service      ServiceType
 }
 
 func MakeServiceConfig[ServiceType any](c BaseConfig, service ServiceType) ServiceConfig[ServiceType] {
-	return ServiceConfig[ServiceType]{Logger: c.GetLogger(), Service: service}
+	return ServiceConfig[ServiceType]{Logger: c.GetLogger(), LoggerGetter: c.GetLoggerGetter(), Service: service}
 }
 
 func (c *ServiceConfig[ServiceType]) GetLogger() log.Logger {
 	return c.Logger
+}
+
+func (c *ServiceConfig[ServiceType]) GetLoggerGetter() log.LoggerGetter {
+	return c.LoggerGetter
 }
 
 type SessionConfig struct {

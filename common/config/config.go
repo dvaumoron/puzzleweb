@@ -23,7 +23,6 @@ import (
 
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogservice "github.com/dvaumoron/puzzleweb/blog/service"
-	"github.com/dvaumoron/puzzleweb/common/config/parser"
 	"github.com/dvaumoron/puzzleweb/common/log"
 	forumservice "github.com/dvaumoron/puzzleweb/forum/service"
 	loginservice "github.com/dvaumoron/puzzleweb/login/service"
@@ -54,14 +53,6 @@ type BaseConfigExtracter interface {
 	ExtractAdminConfig() AdminConfig
 	ExtractSettingsConfig() SettingsConfig
 	ExtractProfileConfig() ProfileConfig
-}
-
-type WidgetConfigBuilder interface {
-	BaseConfig
-	CreateWikiConfig(widgetConfig parser.WidgetConfig) (WikiConfig, bool)
-	CreateForumConfig(widgetConfig parser.WidgetConfig) (ForumConfig, bool)
-	CreateBlogConfig(widgetConfig parser.WidgetConfig) (BlogConfig, bool)
-	CreateWidgetConfig(widgetConfig parser.WidgetConfig) (RemoteWidgetConfig, bool)
 }
 
 type LocalesConfig struct {

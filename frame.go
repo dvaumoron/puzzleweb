@@ -22,7 +22,6 @@ import (
 	"context"
 	_ "embed"
 	"os"
-	"strings"
 
 	"github.com/dvaumoron/puzzleweb/common/build"
 	"github.com/dvaumoron/puzzleweb/common/config"
@@ -63,32 +62,8 @@ func main() {
 		}
 	}
 
-	widgets := parsedConfig.WidgetsAsMap()
-	for _, widgetPageConfig := range parsedConfig.WidgetPages {
-		name := widgetPageConfig.Path
-		nested := false
-		var parentPage puzzleweb.Page
-		if index := strings.LastIndex(name, "/"); index != -1 {
-			emplacement := name[:index]
-			name = name[index+1:]
-			parentPage, nested = site.GetPageWithPath(emplacement)
-			if !nested {
-				logger.Error("Failed to retrieve parentPage", zap.String("emplacement", emplacement))
-				continue
-			}
-		}
-
-		widgetPage, add := build.MakeWidgetPage(name, globalConfig.InitCtx, globalConfig, widgets[widgetPageConfig.WidgetRef])
-		if add {
-			if nested {
-				if !parentPage.AddSubPage(widgetPage) {
-					logger.Error("Only static page can have sub page")
-					return
-				}
-			} else {
-				site.AddPage(widgetPage)
-			}
-		}
+	if !build.AddWidgetPages(site, globalConfig.InitCtx, parsedConfig.WidgetPages, globalConfig, parsedConfig.WidgetsAsMap()) {
+		return
 	}
 
 	initSpan.End()

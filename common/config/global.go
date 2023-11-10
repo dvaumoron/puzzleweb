@@ -329,7 +329,7 @@ func (c *GlobalConfig) ExtractSettingsConfig() SettingsConfig {
 	return MakeServiceConfig(c, c.SettingsService)
 }
 
-func (c *GlobalConfig) CreateWikiConfig(widgetConfig parser.WidgetConfig) (WikiConfig, bool) {
+func (c *GlobalConfig) MakeWikiConfig(widgetConfig parser.WidgetConfig) (WikiConfig, bool) {
 	return WikiConfig{
 		ServiceConfig: MakeServiceConfig(c, wikiclient.New(
 			c.WikiServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
@@ -339,7 +339,7 @@ func (c *GlobalConfig) CreateWikiConfig(widgetConfig parser.WidgetConfig) (WikiC
 	}, c.loadWiki()
 }
 
-func (c *GlobalConfig) CreateForumConfig(widgetConfig parser.WidgetConfig) (ForumConfig, bool) {
+func (c *GlobalConfig) MakeForumConfig(widgetConfig parser.WidgetConfig) (ForumConfig, bool) {
 	return ForumConfig{
 		ServiceConfig: MakeServiceConfig[forumservice.ForumService](c, forumclient.New(
 			c.ForumServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
@@ -349,7 +349,7 @@ func (c *GlobalConfig) CreateForumConfig(widgetConfig parser.WidgetConfig) (Foru
 	}, c.loadForum()
 }
 
-func (c *GlobalConfig) CreateBlogConfig(widgetConfig parser.WidgetConfig) (BlogConfig, bool) {
+func (c *GlobalConfig) MakeBlogConfig(widgetConfig parser.WidgetConfig) (BlogConfig, bool) {
 	return BlogConfig{
 		ServiceConfig: MakeServiceConfig(c, blogclient.New(
 			c.BlogServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
@@ -364,7 +364,7 @@ func (c *GlobalConfig) CreateBlogConfig(widgetConfig parser.WidgetConfig) (BlogC
 	}, c.loadBlog()
 }
 
-func (c *GlobalConfig) CreateWidgetConfig(widgetConfig parser.WidgetConfig) (RemoteWidgetConfig, bool) {
+func (c *GlobalConfig) MakeWidgetConfig(widgetConfig parser.WidgetConfig) (RemoteWidgetConfig, bool) {
 	widgetName, remoteKind := strings.CutPrefix(widgetConfig.Kind, "remote/")
 	return MakeServiceConfig(c, widgetclient.New(
 		widgetConfig.ServiceAddr, c.DialOptions, c.LoggerGetter, widgetName, widgetConfig.ObjectId, widgetConfig.GroupId,

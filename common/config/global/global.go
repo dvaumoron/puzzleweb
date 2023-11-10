@@ -282,9 +282,9 @@ func (c *GlobalConfig) ExtractLocalesConfig() config.LocalesConfig {
 func (c *GlobalConfig) ExtractSiteConfig() config.SiteConfig {
 	return config.SiteConfig{
 		ServiceConfig: config.MakeServiceConfig(c, c.SessionService), TemplateService: c.TemplateService,
-		LoggerGetter: c.LoggerGetter, Domain: c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut,
-		MaxMultipartMemory: c.MaxMultipartMemory, StaticFileSystem: c.StaticFileSystem, FaviconPath: c.FaviconPath,
-		LangPicturePaths: c.LangPicturePaths, Page404Url: c.Page404Url,
+		Domain: c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut, MaxMultipartMemory: c.MaxMultipartMemory,
+		StaticFileSystem: c.StaticFileSystem, FaviconPath: c.FaviconPath, LangPicturePaths: c.LangPicturePaths,
+		Page404Url: c.Page404Url,
 	}
 }
 

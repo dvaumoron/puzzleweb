@@ -92,7 +92,6 @@ type SessionConfig struct {
 type SiteConfig struct {
 	ServiceConfig[sessionservice.SessionService]
 	TemplateService    templateservice.TemplateService
-	LoggerGetter       log.LoggerGetter
 	Domain             string
 	Port               string
 	SessionTimeOut     int

@@ -46,6 +46,7 @@ var errEmptyComment = errors.New("EmptyComment")
 var errFeedFormat = errors.New("unrecognized feed format")
 
 // TODO draft with modify until publish ?
+// TODO use forum service for blog storage ?
 type blogWidget struct {
 	listHandler          gin.HandlerFunc
 	viewHandler          gin.HandlerFunc

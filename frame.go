@@ -25,8 +25,8 @@ import (
 
 	"github.com/dvaumoron/puzzleweb/common/build"
 	"github.com/dvaumoron/puzzleweb/common/config"
+	globalconfig "github.com/dvaumoron/puzzleweb/common/config/global"
 	"github.com/dvaumoron/puzzleweb/common/config/parser"
-	puzzleweb "github.com/dvaumoron/puzzleweb/core"
 	"go.uber.org/zap"
 )
 
@@ -40,8 +40,8 @@ func main() {
 	}
 
 	parsedConfig, err := parser.ParseConfig(confPath)
-	globalConfig, initSpan := config.Init(config.WebKey, version, parsedConfig, err)
-	site, ok := puzzleweb.BuildDefaultSite(globalConfig)
+	globalConfig, initSpan := globalconfig.Init(config.WebKey, version, parsedConfig, err)
+	site, ok := build.BuildDefaultSite(globalConfig)
 	if !ok {
 		return
 	}

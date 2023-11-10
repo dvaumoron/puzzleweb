@@ -9,6 +9,7 @@ import (
 	"github.com/dvaumoron/puzzleweb/common/config/parser"
 	puzzleweb "github.com/dvaumoron/puzzleweb/core"
 	"github.com/dvaumoron/puzzleweb/forum"
+	"github.com/dvaumoron/puzzleweb/locale"
 	"github.com/dvaumoron/puzzleweb/remotewidget"
 	"github.com/dvaumoron/puzzleweb/wiki"
 	"go.uber.org/zap"
@@ -20,6 +21,16 @@ type WidgetConfigBuilder interface {
 	MakeForumConfig(widgetConfig parser.WidgetConfig) (config.ForumConfig, bool)
 	MakeBlogConfig(widgetConfig parser.WidgetConfig) (config.BlogConfig, bool)
 	MakeWidgetConfig(widgetConfig parser.WidgetConfig) (config.RemoteWidgetConfig, bool)
+}
+
+func BuildDefaultSite(configExtracter config.BaseConfigExtracter) (*puzzleweb.Site, bool) {
+	localesManager, ok := locale.NewManager(configExtracter.ExtractLocalesConfig())
+	if !ok {
+		return nil, false
+	}
+
+	settingsManager := puzzleweb.NewSettingsManager(configExtracter.ExtractSettingsConfig())
+	return puzzleweb.NewSite(configExtracter, localesManager, settingsManager), ok
 }
 
 func AddWidgetPages(site *puzzleweb.Site, initCtx context.Context, widgetPages []parser.WidgetPageConfig, configBuilder WidgetConfigBuilder, widgets map[string]parser.WidgetConfig) bool {

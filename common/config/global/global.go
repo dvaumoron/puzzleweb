@@ -16,7 +16,7 @@
  *
  */
 
-package config
+package globalconfig
 
 import (
 	"context"
@@ -30,6 +30,7 @@ import (
 	adminclient "github.com/dvaumoron/puzzleweb/admin/client"
 	adminservice "github.com/dvaumoron/puzzleweb/admin/service"
 	blogclient "github.com/dvaumoron/puzzleweb/blog/client"
+	"github.com/dvaumoron/puzzleweb/common/config"
 	"github.com/dvaumoron/puzzleweb/common/config/parser"
 	"github.com/dvaumoron/puzzleweb/common/log"
 	forumclient "github.com/dvaumoron/puzzleweb/forum/client"
@@ -57,13 +58,9 @@ import (
 )
 
 const (
-	WebKey = "puzzleWeb"
-
 	defaultName           = "default"
 	defaultSessionTimeOut = 1200
 	defaultServiceTimeOut = 5 * time.Second
-
-	DefaultFavicon = "/favicon.ico"
 )
 
 type loggerWrapper struct {
@@ -120,7 +117,7 @@ type GlobalConfig struct {
 
 func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, err error) (*GlobalConfig, trace.Span) {
 	logger, tp := puzzletelemetry.Init(serviceName, version)
-	tracer := tp.Tracer(WebKey)
+	tracer := tp.Tracer(config.WebKey)
 
 	initCtx, initSpan := tracer.Start(context.Background(), "initialization")
 	ctxLogger := logger.Ctx(initCtx)
@@ -180,7 +177,7 @@ func Init(serviceName string, version string, parsedConfig parser.ParsedConfig, 
 	augmentedStaticPath := staticPath + "/"
 	faviconPath := parsedConfig.FaviconPath
 	if faviconPath == "" {
-		faviconPath = staticPath + DefaultFavicon
+		faviconPath = staticPath + config.DefaultFavicon
 		ctxLogger.Info("faviconPath empty, using default", zap.String(defaultName, faviconPath))
 	} else if faviconPath[0] != '/' {
 		// user should use absolute path or path relative to staticPath
@@ -290,48 +287,48 @@ func (c *GlobalConfig) GetServiceTimeOut() time.Duration {
 	return c.ServiceTimeOut
 }
 
-func (c *GlobalConfig) ExtractAuthConfig() AuthConfig {
-	return MakeServiceConfig[adminservice.AuthService](c, c.RightClient)
+func (c *GlobalConfig) ExtractAuthConfig() config.AuthConfig {
+	return config.MakeServiceConfig[adminservice.AuthService](c, c.RightClient)
 }
 
-func (c *GlobalConfig) ExtractLocalesConfig() LocalesConfig {
-	return LocalesConfig{Logger: c.GetLogger(), Domain: c.Domain, SessionTimeOut: c.SessionTimeOut, AllLang: c.AllLang}
+func (c *GlobalConfig) ExtractLocalesConfig() config.LocalesConfig {
+	return config.LocalesConfig{Logger: c.GetLogger(), Domain: c.Domain, SessionTimeOut: c.SessionTimeOut, AllLang: c.AllLang}
 }
 
-func (c *GlobalConfig) ExtractSiteConfig() SiteConfig {
-	return SiteConfig{
-		ServiceConfig: MakeServiceConfig(c, c.SessionService), TemplateService: c.TemplateService,
+func (c *GlobalConfig) ExtractSiteConfig() config.SiteConfig {
+	return config.SiteConfig{
+		ServiceConfig: config.MakeServiceConfig(c, c.SessionService), TemplateService: c.TemplateService,
 		Domain: c.Domain, Port: c.Port, SessionTimeOut: c.SessionTimeOut,
 		MaxMultipartMemory: c.MaxMultipartMemory, StaticPath: c.StaticPath, FaviconPath: c.FaviconPath,
 		LangPicturePaths: c.LangPicturePaths, Page404Url: c.Page404Url,
 	}
 }
 
-func (c *GlobalConfig) ExtractLoginConfig() LoginConfig {
-	return MakeServiceConfig[loginservice.LoginService](c, c.LoginService)
+func (c *GlobalConfig) ExtractLoginConfig() config.LoginConfig {
+	return config.MakeServiceConfig[loginservice.LoginService](c, c.LoginService)
 }
 
-func (c *GlobalConfig) ExtractAdminConfig() AdminConfig {
-	return AdminConfig{
-		ServiceConfig: MakeServiceConfig[adminservice.AdminService](c, c.RightClient),
+func (c *GlobalConfig) ExtractAdminConfig() config.AdminConfig {
+	return config.AdminConfig{
+		ServiceConfig: config.MakeServiceConfig[adminservice.AdminService](c, c.RightClient),
 		UserService:   c.LoginService, ProfileService: c.ProfileService, PageSize: c.PageSize,
 	}
 }
 
-func (c *GlobalConfig) ExtractProfileConfig() ProfileConfig {
-	return ProfileConfig{
-		ServiceConfig: MakeServiceConfig(c, c.ProfileService),
+func (c *GlobalConfig) ExtractProfileConfig() config.ProfileConfig {
+	return config.ProfileConfig{
+		ServiceConfig: config.MakeServiceConfig(c, c.ProfileService),
 		AdminService:  c.RightClient, LoginService: c.LoginService,
 	}
 }
 
-func (c *GlobalConfig) ExtractSettingsConfig() SettingsConfig {
-	return MakeServiceConfig(c, c.SettingsService)
+func (c *GlobalConfig) ExtractSettingsConfig() config.SettingsConfig {
+	return config.MakeServiceConfig(c, c.SettingsService)
 }
 
-func (c *GlobalConfig) MakeWikiConfig(widgetConfig parser.WidgetConfig) (WikiConfig, bool) {
-	return WikiConfig{
-		ServiceConfig: MakeServiceConfig(c, wikiclient.New(
+func (c *GlobalConfig) MakeWikiConfig(widgetConfig parser.WidgetConfig) (config.WikiConfig, bool) {
+	return config.WikiConfig{
+		ServiceConfig: config.MakeServiceConfig(c, wikiclient.New(
 			c.WikiServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
 			c.RightClient, c.ProfileService, c.LoggerGetter,
 		)),
@@ -339,9 +336,9 @@ func (c *GlobalConfig) MakeWikiConfig(widgetConfig parser.WidgetConfig) (WikiCon
 	}, c.loadWiki()
 }
 
-func (c *GlobalConfig) MakeForumConfig(widgetConfig parser.WidgetConfig) (ForumConfig, bool) {
-	return ForumConfig{
-		ServiceConfig: MakeServiceConfig[forumservice.ForumService](c, forumclient.New(
+func (c *GlobalConfig) MakeForumConfig(widgetConfig parser.WidgetConfig) (config.ForumConfig, bool) {
+	return config.ForumConfig{
+		ServiceConfig: config.MakeServiceConfig[forumservice.ForumService](c, forumclient.New(
 			c.ForumServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
 			c.RightClient, c.ProfileService, c.LoggerGetter,
 		)),
@@ -349,9 +346,9 @@ func (c *GlobalConfig) MakeForumConfig(widgetConfig parser.WidgetConfig) (ForumC
 	}, c.loadForum()
 }
 
-func (c *GlobalConfig) MakeBlogConfig(widgetConfig parser.WidgetConfig) (BlogConfig, bool) {
-	return BlogConfig{
-		ServiceConfig: MakeServiceConfig(c, blogclient.New(
+func (c *GlobalConfig) MakeBlogConfig(widgetConfig parser.WidgetConfig) (config.BlogConfig, bool) {
+	return config.BlogConfig{
+		ServiceConfig: config.MakeServiceConfig(c, blogclient.New(
 			c.BlogServiceAddr, c.DialOptions, widgetConfig.ObjectId, widgetConfig.GroupId, c.DateFormat,
 			c.RightClient, c.ProfileService,
 		)),
@@ -364,9 +361,9 @@ func (c *GlobalConfig) MakeBlogConfig(widgetConfig parser.WidgetConfig) (BlogCon
 	}, c.loadBlog()
 }
 
-func (c *GlobalConfig) MakeWidgetConfig(widgetConfig parser.WidgetConfig) (RemoteWidgetConfig, bool) {
+func (c *GlobalConfig) MakeWidgetConfig(widgetConfig parser.WidgetConfig) (config.RemoteWidgetConfig, bool) {
 	widgetName, remoteKind := strings.CutPrefix(widgetConfig.Kind, "remote/")
-	return MakeServiceConfig(c, widgetclient.New(
+	return config.MakeServiceConfig(c, widgetclient.New(
 		widgetConfig.ServiceAddr, c.DialOptions, c.LoggerGetter, widgetName, widgetConfig.ObjectId, widgetConfig.GroupId,
 	)), remoteKind
 }

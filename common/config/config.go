@@ -34,6 +34,12 @@ import (
 	wikiservice "github.com/dvaumoron/puzzleweb/wiki/service"
 )
 
+const (
+	WebKey = "puzzleWeb"
+
+	DefaultFavicon = "/favicon.ico"
+)
+
 type AuthConfig = ServiceConfig[adminservice.AuthService]
 type LoginConfig = ServiceConfig[loginservice.LoginService]
 type SettingsConfig = ServiceConfig[sessionservice.SessionService]

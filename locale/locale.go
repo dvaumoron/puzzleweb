@@ -27,8 +27,10 @@ import (
 	"golang.org/x/text/language"
 )
 
-const LangName = "lang"
-const pathName = "Path"
+const (
+	LangName = "lang"
+	pathName = "Path"
+)
 
 type Manager interface {
 	GetDefaultLang() string

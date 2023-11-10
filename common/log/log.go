@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// TODO wrapper and loggerWrappper
 type LoggerGetter interface {
 	Logger(context.Context) Logger
 }

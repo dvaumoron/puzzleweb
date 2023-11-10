@@ -292,7 +292,9 @@ func (c *GlobalConfig) ExtractAuthConfig() config.AuthConfig {
 }
 
 func (c *GlobalConfig) ExtractLocalesConfig() config.LocalesConfig {
-	return config.LocalesConfig{Logger: c.GetLogger(), Domain: c.Domain, SessionTimeOut: c.SessionTimeOut, AllLang: c.AllLang}
+	return config.LocalesConfig{
+		Logger: c.Logger, LoggerGetter: c.LoggerGetter, Domain: c.Domain, SessionTimeOut: c.SessionTimeOut, AllLang: c.AllLang,
+	}
 }
 
 func (c *GlobalConfig) ExtractSiteConfig() config.SiteConfig {

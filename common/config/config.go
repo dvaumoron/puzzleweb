@@ -109,7 +109,7 @@ func (sc *SiteConfig) ExtractSessionConfig() SessionConfig {
 }
 
 func (sc *SiteConfig) ExtractTemplateConfig() TemplateConfig {
-	return TemplateConfig{Logger: sc.Logger, Service: sc.TemplateService}
+	return MakeServiceConfig(sc, sc.TemplateService)
 }
 
 type AdminConfig struct {

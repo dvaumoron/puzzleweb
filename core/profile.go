@@ -34,6 +34,7 @@ import (
 type profileWidget struct {
 	defaultHandler        gin.HandlerFunc
 	viewHandler           gin.HandlerFunc
+	linkHandler           gin.HandlerFunc
 	editHandler           gin.HandlerFunc
 	saveHandler           gin.HandlerFunc
 	changeLoginHandler    gin.HandlerFunc
@@ -52,6 +53,7 @@ func defaultRedirecter(c *gin.Context) string {
 func (w profileWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.defaultHandler)
 	router.GET("/view/:UserId", w.viewHandler)
+	router.GET("/link/:Login", w.linkHandler)
 	router.GET("/edit", w.editHandler)
 	router.POST("/save", w.saveHandler)
 	router.POST("/changeLogin", w.changeLoginHandler)
@@ -101,6 +103,25 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 			data[common.AllowedToUpdateName] = updateRight
 			data[common.ViewedUserName] = userProfile
 			return "profile/view", ""
+		}),
+		linkHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
+			logger := GetLogger(c)
+			ctx := c.Request.Context()
+			viewedUserLogin := c.Param(loginName)
+			if viewedUserLogin == "" {
+				return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
+			}
+
+			// use 0, 1 because we just need the first result
+			nb, list, err := loginService.ListUsers(ctx, 0, 1, viewedUserLogin)
+			if err != nil || nb == 0 {
+				return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
+			}
+
+			user := list[0]
+			data[common.UserIdName] = user.Id
+			data[loginName] = user.Login
+			return "profile/link", ""
 		}),
 		editHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {
 			logger := GetLogger(c)

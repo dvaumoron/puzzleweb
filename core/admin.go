@@ -20,7 +20,6 @@ package puzzleweb
 
 import (
 	"cmp"
-	"errors"
 	"slices"
 	"strings"
 
@@ -42,8 +41,6 @@ const (
 	updateKey = "UpdateLabel"
 	deleteKey = "DeleteLabel"
 )
-
-var errBadName = errors.New("ErrorBadRoleName")
 
 type GroupDisplay struct {
 	Id           uint64

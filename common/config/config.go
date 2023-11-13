@@ -127,7 +127,7 @@ type AdminConfig struct {
 type ProfileConfig struct {
 	ServiceConfig[profileservice.AdvancedProfileService]
 	AdminService adminservice.AdminService
-	LoginService loginservice.LoginService
+	LoginService loginservice.FullLoginService
 }
 
 type BlogConfig struct {

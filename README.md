@@ -16,7 +16,7 @@ The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to 
 
 You can use PuzzleWeb directly (command `puzzleweb`, but you will have to manage the backing services).
 
-[PuzzleTest](https://github.com/dvaumoron/puzzletest) contains test data (configurations : [frame.yaml](https://github.com/dvaumoron/puzzletest/blob/main/frame.yaml) and [.env](https://github.com/dvaumoron/puzzletest/blob/main/.env), page templates : [templatedata](<https://github.com/dvaumoron/puzzletest/blob/main/templatedata>), and static files : [static](https://github.com/dvaumoron/puzzletest/blob/main/static) (use [Pico.css](https://picocss.com) and [htmx](https://htmx.org))).
+[PuzzleTest](https://github.com/dvaumoron/puzzletest) contains test data (configurations : [frame.hcl](https://github.com/dvaumoron/puzzletest/blob/main/frame.hcl), page templates : [templatedata](<https://github.com/dvaumoron/puzzletest/blob/main/templatedata>), and static files : [static](https://github.com/dvaumoron/puzzletest/blob/main/static) (use [Pico.css](https://picocss.com) and [htmx](https://htmx.org))).
 
 See [this folder](https://github.com/dvaumoron/puzzletest/tree/main/deploy/conf/helm) for an example of [Helm chart](https://helm.sh) deploying the different services.
 

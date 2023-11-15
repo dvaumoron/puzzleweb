@@ -10,13 +10,20 @@ All of the project in the Puzzle ecosystem are released under the Apache 2.0 lic
 
 ## Getting started
 
-The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to use PuzzleWeb features with a single binary (a modular monolith done with [ServiceWeaver](https://serviceweaver.dev/) and configured with [puzzleweaver.toml](https://github.com/dvaumoron/puzzletest/blob/main/puzzleweaver.toml)). Once installed, you can run it with the command :
+The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to use PuzzleWeb features with a single binary (a modular monolith done with [ServiceWeaver](https://serviceweaver.dev/) and configured with [puzzleweaver.toml](https://github.com/dvaumoron/puzzletest/blob/main/puzzleweaver.toml)). Once go installed, you can install PuzzleWeaver and ServiceWeaver with :
+
+    go install github.com/ServiceWeaver/weaver/cmd/weaver@latest
+    go install github.com/dvaumoron/puzzleweaver@latest
+
+Then you need testing resources (see [PuzzleTest](https://github.com/dvaumoron/puzzletest)) and datastores (PuzzleWeaver and PuzzleWeb rely on SQL databases, [MongoDB](https://www.mongodb.com/) instances and [Redis](https://redis.io/) instances)
+
+Finally, you can run it with the command :
 
     weaver single deploy puzzleweaver.toml
 
-You can use PuzzleWeb directly (command `puzzleweb`, but you will have to manage the backing services).
+You can use PuzzleWeb directly (but you will have to manage the [gRPC](https://grpc.io/) server for all services).
 
-[PuzzleTest](https://github.com/dvaumoron/puzzletest) contains test data (configurations : [frame.hcl](https://github.com/dvaumoron/puzzletest/blob/main/frame.hcl), page templates : [templatedata](<https://github.com/dvaumoron/puzzletest/blob/main/templatedata>), and static files : [static](https://github.com/dvaumoron/puzzletest/blob/main/static) (use [Pico.css](https://picocss.com) and [htmx](https://htmx.org))).
+[PuzzleTest](https://github.com/dvaumoron/puzzletest) contains test resources (configurations : [frame.hcl](https://github.com/dvaumoron/puzzletest/blob/main/frame.hcl), page templates : [templatedata](<https://github.com/dvaumoron/puzzletest/blob/main/templatedata>), and static files : [static](https://github.com/dvaumoron/puzzletest/blob/main/static) (use [Pico.css](https://picocss.com) and [htmx](https://htmx.org))).
 
 See [this folder](https://github.com/dvaumoron/puzzletest/tree/main/deploy/conf/helm) for an example of [Helm chart](https://helm.sh) deploying the different services.
 

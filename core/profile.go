@@ -109,9 +109,7 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 				// use 0, 1 because we just need the first result
 				nb, list, err := loginService.ListUsers(c.Request.Context(), 0, 1, viewedUserLogin)
 				if err == nil && nb != 0 {
-					user := list[0]
-					data[common.UserIdName] = user.Id
-					data[loginName] = user.Login
+					data[common.ViewedUserName] = list[0]
 				}
 			}
 			return "profile/link", ""

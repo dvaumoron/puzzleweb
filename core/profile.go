@@ -114,13 +114,11 @@ func newProfilePage(profileConfig config.ProfileConfig) Page {
 
 			// use 0, 1 because we just need the first result
 			nb, list, err := loginService.ListUsers(ctx, 0, 1, viewedUserLogin)
-			if err != nil || nb == 0 {
-				return "", common.DefaultErrorRedirect(logger, common.ErrorTechnicalKey)
+			if err == nil && nb != 0 {
+				user := list[0]
+				data[common.UserIdName] = user.Id
+				data[loginName] = user.Login
 			}
-
-			user := list[0]
-			data[common.UserIdName] = user.Id
-			data[loginName] = user.Login
 			return "profile/link", ""
 		}),
 		editHandler: CreateTemplate(func(data gin.H, c *gin.Context) (string, string) {

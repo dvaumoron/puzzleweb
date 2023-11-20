@@ -21,7 +21,7 @@ Finally, you can run it with the command :
 
     weaver single deploy puzzleweaver.toml
 
-You can use PuzzleWeb directly (but you will have to manage the [gRPC](https://grpc.io/) server for all services).
+You can use PuzzleWeb directly (however you will have to manage [gRPC](https://grpc.io/) servers for all services).
 
 [PuzzleTest](https://github.com/dvaumoron/puzzletest) contains test resources (configurations : [frame.hcl](https://github.com/dvaumoron/puzzletest/blob/main/frame.hcl), page templates : [templatedata](<https://github.com/dvaumoron/puzzletest/blob/main/templatedata>), and static files : [static](https://github.com/dvaumoron/puzzletest/blob/main/static) (use [Pico.css](https://picocss.com) and [htmx](https://htmx.org))).
 

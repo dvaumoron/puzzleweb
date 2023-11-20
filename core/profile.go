@@ -53,7 +53,7 @@ func defaultRedirecter(c *gin.Context) string {
 func (w profileWidget) LoadInto(router gin.IRouter) {
 	router.GET("/", w.defaultHandler)
 	router.GET("/view/:UserId", w.viewHandler)
-	router.GET("/link/:Login", w.linkHandler)
+	router.GET("/link/*Login", w.linkHandler)
 	router.GET("/edit", w.editHandler)
 	router.POST("/save", w.saveHandler)
 	router.POST("/changeLogin", w.changeLoginHandler)

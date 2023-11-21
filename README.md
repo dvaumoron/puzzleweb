@@ -23,7 +23,7 @@ Finally, you can run it with the command :
 
 You can use PuzzleWeb directly (however you will have to manage [gRPC](https://grpc.io/) servers for all services).
 
-[PuzzleTest](https://github.com/dvaumoron/puzzletest) contains test resources (configurations : [frame.hcl](https://github.com/dvaumoron/puzzletest/blob/main/frame.hcl), page templates : [templatedata](<https://github.com/dvaumoron/puzzletest/blob/main/templatedata>), and static files : [static](https://github.com/dvaumoron/puzzletest/blob/main/static) (use [Pico.css](https://picocss.com) and [htmx](https://htmx.org))).
+[PuzzleTest](https://github.com/dvaumoron/puzzletest) contains test resources (configurations : [frame.hcl](https://github.com/dvaumoron/puzzletest/blob/main/frame.hcl), page templates and localisation files : [templatedata](<https://github.com/dvaumoron/puzzletest/blob/main/templatedata>), and static files : [static](https://github.com/dvaumoron/puzzletest/blob/main/static) (use [Pico.css](https://picocss.com) and [htmx](https://htmx.org))).
 
 See [this folder](https://github.com/dvaumoron/puzzletest/tree/main/deploy/conf/helm) for an example of [Helm chart](https://helm.sh) deploying the different services.
 

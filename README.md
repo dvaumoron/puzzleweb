@@ -10,10 +10,16 @@ All of the project in the Puzzle ecosystem are released under the Apache 2.0 lic
 
 ## Getting started
 
-The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to use PuzzleWeb features with a single binary (a modular monolith done with [ServiceWeaver](https://serviceweaver.dev/) and configured with [puzzleweaver.toml](https://github.com/dvaumoron/puzzletest/blob/main/puzzleweaver.toml)). Once [Go](https://go.dev/) installed, you can install PuzzleWeaver and ServiceWeaver with :
+The project [PuzzleWeaver](https://github.com/dvaumoron/puzzleweaver) allows to use PuzzleWeb features with a single binary (a modular monolith done with [ServiceWeaver](https://serviceweaver.dev/) and configured with [puzzleweaver.toml](https://github.com/dvaumoron/puzzletest/blob/main/puzzleweaver.toml)).
 
-    go install github.com/ServiceWeaver/weaver/cmd/weaver@latest
-    go install github.com/dvaumoron/puzzleweaver@latest
+Install via [Homebrew](https://brew.sh/)
+
+```console
+$ brew tap dvaumoron/tap
+$ brew install puzzleweaver
+```
+
+Or get the [last binary](https://github.com/dvaumoron/puzzleweaver/releases) depending on your OS.
 
 Then you need testing resources (see [PuzzleTest](https://github.com/dvaumoron/puzzletest)) and datastores (PuzzleWeaver and PuzzleWeb rely on SQL databases, [MongoDB](https://www.mongodb.com/) instances and [Redis](https://redis.io/) instances)
 
